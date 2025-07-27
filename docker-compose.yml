@@ -8,11 +8,11 @@ networks:
 services:
   nginx:
     image: nginx:stable
-    container_name: Runnrs-Web
+    container_name: Jp-Web
     ports:
-      - 8160:80
+      - 8161:80
     volumes:
-      - .:/var/www/runnrs
+      - .:/var/www/jp
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - php
@@ -22,9 +22,9 @@ services:
     build:
       context: ./docker
       dockerfile: DockerFile
-    container_name: Runnrs-Php
+    container_name: Jp-Php
     volumes:
-      - .:/var/www/runnrs
+      - .:/var/www/jp
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     restart: unless-stopped
 

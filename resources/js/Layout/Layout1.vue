@@ -13,9 +13,22 @@
                 <span class="text-xl font-bold text-gray-800">JP Gaming</span>
             </div>
 
-            <!-- User info section (optional) -->
-            <div class="flex items-center gap-3">
+            <!-- User info section with level and points -->
+            <div class="flex items-center gap-4">
                 <div class="text-sm text-gray-600">Welcome back!</div>
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
+                    >
+                        <i class="pi pi-user text-white text-sm"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="text-sm font-medium text-gray-900">
+                            Level 1
+                        </div>
+                        <div class="text-xs text-gray-500">0 Points</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -43,7 +56,7 @@
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
-                                class="pi pi-trophy text-lg group-hover:scale-110 transition-transform"
+                                class="pi pi-chart-bar text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Leaderboards</span>
                         </router-link>
@@ -55,7 +68,7 @@
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
-                                class="pi pi-refresh text-lg group-hover:scale-110 transition-transform"
+                                class="pi pi-arrow-right-arrow-left text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Trade</span>
                         </router-link>
@@ -87,33 +100,9 @@
                         </button>
                     </nav>
                 </div>
-
-                <!-- Bottom section with user stats (optional) -->
-                <div
-                    class="absolute bottom-0 left-0 right-0 p-6 bg-gray-50 border-t"
-                >
-                    <div class="flex items-center gap-3">
-                        <div
-                            class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
-                        >
-                            <i class="pi pi-user text-white text-sm"></i>
-                        </div>
-                        <div class="flex-1">
-                            <div class="text-sm font-medium text-gray-900">
-                                Level 1
-                            </div>
-                            <div class="text-xs text-gray-500">0 Points</div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 ml-64 p-6">
-                <div class="max-w-7xl mx-auto">
-                    <slot />
-                </div>
-            </div>
         </div>
     </div>
 </template>

@@ -2,7 +2,7 @@ FROM php:8.3-fpm
 
 # 🛑 Removed the sed line that changed port 9000 to 9082
 
-WORKDIR /var/www/runnrs
+WORKDIR /var/www/jp
 
 RUN apt-get update && apt-get install -y \
     libzip-dev \
@@ -27,7 +27,7 @@ RUN php -r "readfile('https://getcomposer.org/installer');" | php -- --install-d
 RUN groupadd -g 1000 www 
 RUN useradd -u 1000 -ms /bin/bash -g www www
 
-COPY --chown=www:www . /var/www/runnrs
+COPY --chown=www:www . /var/www/jp
 
 USER www
 

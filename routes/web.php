@@ -21,10 +21,12 @@ use App\Http\Controllers\LoginController;
 // });
 
 Route::post("/login", [LoginController::class, "login"]);
-Route::post("/signup", [UserController::class, "signUp"]);
 Route::get("/checkUser", [LoginController::class, "checkLogin"]);
 Route::post("/logout", [LoginController::class, "logout"]);
 
+Route::post("/signup", [UserController::class, "signUp"]);
+Route::get('/api/user/profile', [UserController::class, 'getProfile']);
+Route::post('/api/user/upload-profile-image', [UserController::class, 'uploadProfileImage']);
 
 //kababaan amin
 Route::get('/{vue?}', function(){

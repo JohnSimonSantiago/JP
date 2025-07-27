@@ -18,6 +18,7 @@ $table->integer('level')->default(1); // users start at level 1
 $table->integer('points')->default(0); // users start with 0 points
 $table->boolean('is_premium')->default(false); // indicates membership status
 $table->string('password');
+$table->string('profile_image')->nullable(); 
 $table->timestamps();
         });
     }

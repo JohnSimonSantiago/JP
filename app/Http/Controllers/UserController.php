@@ -28,19 +28,7 @@ class UserController extends Controller
 
     return response()->json(['message' => 'User created successfully']);
 } 
-    public function createUser(Request $request){
-        $newUser = new User();
 
-        $newUser->id = $request->id;
-        $newUser->roleId = $request->roleId;
-        $newUser->name = $request->name;
-        $newUser->email = $request->email;
-        $newUser->password = $request->password;
-
-        $res = $newUser->save();
-
-        return redirect('/user');
-    }
 
     public function validatePassword(Request $request)
     {
@@ -64,30 +52,41 @@ class UserController extends Controller
         return response()->json(['valid' => false]);
     }
 
-    public function getUsers(){
-        return User::all();
-        }
 
-    public function updateUser(Request $request){
-        // dd($request->userPayload["name"]);
-        $user = User::findOrFail($request->editingUserId);
+public function getProfile()
+{
+    $user = auth()->user();
+    $membership = $user->memberships()
+        ->where('end_date', '>=', now())
+        ->orderBy('end_date', 'desc')
+        ->first();
 
-        $user->name = $request->userPayload["name"];
-        $user->email = $request->userPayload["email"];
-        $user->roleId = $request->userPayload["roleId"];
+    return response()->json([
+        'user' => $user,
+        'membership' => $membership
+    ]);
+}
+public function uploadProfileImage(Request $request)
+{
+    $request->validate([
+        'profile_image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+    ]);
 
-        $user->save();
-
-        return $user;
+    $user = auth()->user();
+    
+    // Delete old image if exists
+    if ($user->profile_image) {
+        Storage::delete('public/profiles/' . $user->profile_image);
     }
 
+    // Store new image
+    $imageName = time() . '.' . $request->profile_image->extension();
+    $request->profile_image->storeAs('public/profiles', $imageName);
 
-    public function deleteUser(Request $request){
-        // dd($request->id);
-        $deleteUser = User::find($request->id);
+    // Update user record
+    $user->update(['profile_image' => $imageName]);
 
-        $res = $deleteUser->delete();
-        return $res;
-    }
+    return response()->json(['filename' => $imageName]);
+}
 
 }

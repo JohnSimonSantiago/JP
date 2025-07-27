@@ -1,6 +1,8 @@
-import Reservations from "@/pages/Reservations.vue";
 import Signup from "@/pages/Signup.vue";
 import Dashboard from "./pages/Dashboard.vue";
+import Leaderboards from "./pages/Leaderboards.vue";
+import Profile from "./pages/Profile.vue";
+import Trade from "./pages/Trade.vue";
 import LoginNew from "./pages/LoginNew.vue";
 
 export const routes = [
@@ -19,11 +21,19 @@ export const routes = [
         name: "dashboard",
         component: Dashboard,
     },
-
     {
-        path: "/reservations",
-        name: "reservations",
-        component: Reservations,
+        path: "/leaderboards",
+        name: "leaderboards",
+        component: Leaderboards,
     },
-    ,
+    {
+        path: "/profile",
+        name: "profile",
+        component: Profile,
+    },
+    {
+        path: "/trade",
+        name: "trade",
+        component: Trade,
+    },
 ];
