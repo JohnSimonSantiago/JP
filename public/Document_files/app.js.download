@@ -1,0 +1,98 @@
+import "/resources/js/bootstrap.js";
+import { createApp } from "/node_modules/.vite/deps/vue_dist_vue__esm-bundler.js?v=73417c42";
+import App from "/resources/js/Component/App.vue?t=1714529275056";
+import Modal from "/resources/js/Component/Modal.vue";
+import Modal1 from "/resources/js/Component/Modal1.vue";
+
+import User from "/resources/js/Component/Marketing/UserAdmin/User.vue";
+import addUser from "/resources/js/Component/Marketing/UserAdmin/addUser.vue";
+import EditUser from "/resources/js/Component/Marketing/UserAdmin/EditUser.vue";
+
+import Product from "/resources/js/Component/Marketing/Inventory/Product.vue";
+import ProductList from "/resources/js/Component/Marketing/Inventory/ProductList.vue";
+import editProduct from "/resources/js/Component/Marketing/Inventory/editProduct.vue";
+
+import Transaction from "/resources/js/Component/Marketing/Inventory/Transaction.vue";
+import OrderList from "/resources/js/Component/Marketing/Inventory/OrderList.vue";
+
+import Category from "/resources/js/Component/Marketing/Inventory/Category.vue";
+import editCategory from "/resources/js/Component/Marketing/Inventory/editCategory.vue";
+import addCategory from "/resources/js/Component/Marketing/Inventory/addCategory.vue";
+
+import Pos from "/resources/js/Component/PosComp/Pos.vue?t=1714532110849";
+import Orders from "/resources/js/Component/PosComp/Orders.vue";
+//import ViewOrder from "@/Component/PosComp/ViewOrder.vue";
+// import View from "@/Component/PosComp/View.vue";
+
+import userHome from "/resources/js/Component/userHome.vue?t=1714527484653";
+import userProduct from "/resources/js/Component/User/UserInventory/userProduct.vue";
+import addProduct from "/resources/js/Component/User/UserInventory/addProduct.vue?t=1714524514589";
+
+import Return from "/resources/js/Component/Marketing/Inventory/Return.vue";
+import ReturnList from "/resources/js/Component/Marketing/Inventory/ReturnList.vue";
+
+import orderDashboard from "/resources/js/Component/OnlineOrder/orderDashboard.vue";
+
+import pendingOrder from "/resources/js/Component/OnlineOrder/pendingOrder.vue";
+
+import { createRouter, createWebHistory } from "/node_modules/.vite/deps/vue-router.js?v=73417c42";
+import { routes } from "/resources/js/routes.js";
+
+import Layout from "/resources/js/Layout/Layout.vue";
+import userLayout from "/resources/js/Layout/userLayout.vue";
+import PosLayout from "/resources/js/Layout/PosLayout.vue";
+import OrderLayout from "/resources/js/Layout/OrderLayout.vue";
+
+const router = createRouter({
+    history: createWebHistory(),
+    routes: routes,
+});
+const app = createApp({});
+
+app.use(router);
+
+app.component("app", App);
+
+app.component("User", User);
+app.component("EditUser", EditUser);
+app.component("addUser", addUser);
+
+app.component("product", Product);
+app.component("productlist", ProductList);
+app.component("editproduct", editProduct);
+
+app.component("transaction", Transaction);
+app.component("orderlist", OrderList);
+
+app.component("category", Category);
+app.component("editcategory", editCategory);
+app.component("addcategory", addCategory);
+
+app.component("return", Return);
+app.component("returnlist", ReturnList);
+// app.component("editreturn", editReturn);
+// app.component("addreturn", addReturn);
+// app.component("returnForm", returnForm);
+
+app.component("modal", Modal);
+app.component("modal1", Modal1);
+
+app.component("pos", Pos);
+app.component("orders", Orders);
+//app.component("viewOrder", ViewOrder);
+// app.component("view", View);
+
+app.component("userHome", userHome);
+app.component("userProduct", userProduct);
+app.component("addProduct", addProduct);
+
+app.component("orderDashboard", orderDashboard);
+
+app.component("pendingOrder", pendingOrder);
+
+app.component("Layout", Layout);
+app.component("userLayout", userLayout);
+app.component("posLayout", PosLayout);
+app.component("OrderLayout", OrderLayout);
+
+app.mount("#app");
