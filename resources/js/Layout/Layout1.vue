@@ -1,77 +1,118 @@
 <template lang="html">
-    <div class="h-screen">
-        <!-- Top Row -->
+    <div class="h-screen bg-gray-50">
+        <!-- Top Header -->
         <div
-            class="bg-white-100 z-50 flex items-center border-b border-yellow-400 border-b-2 ps-2.5 pt-0.5 gap-2 fixed bg-white h-16 w-screen over-flow-clip"
+            class="bg-white shadow-md z-50 flex items-center justify-between px-6 py-3 fixed w-full h-16"
         >
-            <img src="../../../public/runnrs.jpg" alt="" class="w-10 h-10" />
-            <span
-                class="pl-11 fixed self-center text-xl font-semibold whitespace-nowrap dark:text-white"
-                >CBEA Kitchen Equipment</span
-            >
+            <div class="flex items-center gap-3">
+                <img
+                    src="../../../public/runnrs.jpg"
+                    alt="Logo"
+                    class="w-10 h-10 rounded-lg"
+                />
+                <span class="text-xl font-bold text-gray-800">JP Gaming</span>
+            </div>
+
+            <!-- User info section (optional) -->
+            <div class="flex items-center gap-3">
+                <div class="text-sm text-gray-600">Welcome back!</div>
+            </div>
         </div>
 
-        <div>
-            <div
-                class="w-32 mt-16 fixed bg-white/60 shadow-sm backdrop-blur-sm h-full flex flex-col items-center px-5"
-            >
-                <div class="flex text-center items-center">
-                    <div class="space-y-20 text-center py-8">
-                        <div
-                            class="hover:bg-gray-200 rounded-md p-2.5 transition-all ease-in duration-100"
+        <div class="flex pt-16">
+            <!-- Left Sidebar -->
+            <div class="w-64 bg-white shadow-lg h-screen fixed left-0 top-16">
+                <div class="p-6">
+                    <nav class="space-y-2">
+                        <!-- Dashboard -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/dashboard"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
-                            <router-link
-                                active-class="text-green-700"
-                                to="/dashboard"
-                                class="text-sm font-medium text-gray-900 dark:text-white"
-                            >
-                                <p class="">
-                                    <i
-                                        class="pi pi-th-large"
-                                        style="font-size: 1.5rem"
-                                    >
-                                    </i>
-                                </p>
-                                Dashboard</router-link
-                            >
-                        </div>
+                            <i
+                                class="pi pi-th-large text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Dashboard</span>
+                        </router-link>
 
-                        <div
-                            class="hover:bg-gray-200 rounded-md p-2.5 transition-all ease-in duration-100"
+                        <!-- Leaderboards -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/leaderboards"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
-                            <router-link
-                                active-class="text-green-700"
-                                to="/reservations"
-                                class="text-sm font-medium text-gray-900 dark:text-white"
-                                ><p class="mx-10">
-                                    <i
-                                        class="pi pi-book"
-                                        style="font-size: 1.5rem"
-                                    ></i>
-                                </p>
-                                Reservations</router-link
-                            >
-                        </div>
+                            <i
+                                class="pi pi-trophy text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Leaderboards</span>
+                        </router-link>
 
-                        <div class="flex justify-center items-center">
-                            <button
-                                @click="logout"
-                                class="flex flex-col items-center mb-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-200"
-                            >
-                                <i
-                                    class="pi pi-sign-out"
-                                    style="font-size: 1.5rem"
-                                ></i>
-                                Logout
-                            </button>
+                        <!-- Trade -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/trade"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-refresh text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Trade</span>
+                        </router-link>
+
+                        <!-- Profile -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/profile"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-user text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Profile</span>
+                        </router-link>
+
+                        <!-- Divider -->
+                        <div class="border-t border-gray-200 my-4"></div>
+
+                        <!-- Logout -->
+                        <button
+                            @click="logout"
+                            class="w-full flex items-center gap-3 px-4 py-3 text-red-600 rounded-lg hover:bg-red-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-sign-out text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Logout</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Bottom section with user stats (optional) -->
+                <div
+                    class="absolute bottom-0 left-0 right-0 p-6 bg-gray-50 border-t"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
+                        >
+                            <i class="pi pi-user text-white text-sm"></i>
+                        </div>
+                        <div class="flex-1">
+                            <div class="text-sm font-medium text-gray-900">
+                                Level 1
+                            </div>
+                            <div class="text-xs text-gray-500">0 Points</div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div
-                class="min-h-screen flex flex-col items-center justify-center ml-32"
-            >
-                <slot />
+
+            <!-- Main Content Area -->
+            <div class="flex-1 ml-64 p-6">
+                <div class="max-w-7xl mx-auto">
+                    <slot />
+                </div>
             </div>
         </div>
     </div>
@@ -106,4 +147,22 @@ export default {
 };
 </script>
 
-<style></style>
+<style scoped>
+/* Custom scrollbar for sidebar */
+.sidebar::-webkit-scrollbar {
+    width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>

@@ -12,13 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
+    $table->id();
+$table->string('name'); // remove unique here unless usernames must be unique
+$table->integer('level')->default(1); // users start at level 1
+$table->integer('points')->default(0); // users start with 0 points
+$table->boolean('is_premium')->default(false); // indicates membership status
+$table->string('password');
+$table->timestamps();
         });
     }
 

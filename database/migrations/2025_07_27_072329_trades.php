@@ -11,12 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('memberships', function (Blueprint $table) {
+       Schema::create('trades', function (Blueprint $table) {
     $table->id();
-    $table->foreignId('user_id')->constrained()->onDelete('cascade');
-    $table->date('start_date');
-    $table->date('end_date');
-    $table->enum('type', ['monthly', 'annual'])->default('monthly');
+    $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+    $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+    $table->integer('points_amount');
+    $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
     $table->timestamps();
 });
 
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-      Schema::dropIfExists('memberships');
+         Schema::dropIfExists('trades');
     }
 };

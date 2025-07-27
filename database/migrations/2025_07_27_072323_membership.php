@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('room_status', function (Blueprint $table) {
-            $table->id('id');
-            $table->integer('roomNumber');
-            $table->integer('room_status');
-    
+Schema::create('memberships', function (Blueprint $table) {
+    $table->id();
+    $table->foreignId('user_id')->constrained()->onDelete('cascade');
+    $table->date('start_date');
+    $table->date('end_date');
+    $table->enum('type', ['monthly', 'annual'])->default('monthly');
+    $table->timestamps();
+});
 
-        });
     }
 
     /**
@@ -25,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('room_status');
+         Schema::dropIfExists('memberships');
     }
 };

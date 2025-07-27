@@ -1,4 +1,4 @@
-<template lang="">
+<template>
     <section class="flex top-16 bg-gray-50 dark:bg-gray-900">
         <div
             class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
@@ -12,7 +12,7 @@
                     alt=""
                     class="w-10 h-10"
                 />
-                Starlight Lodging House
+                JP
             </a>
             <div
                 class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700"
@@ -40,17 +40,17 @@
                     >
                         <div>
                             <label
-                                for="email"
+                                for="name"
                                 class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                                >Your email</label
+                                >Your username</label
                             >
                             <input
-                                v-model="email"
-                                type="email"
-                                name="email"
-                                id="email"
+                                v-model="name"
+                                type="text"
+                                name="name"
+                                id="name"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                placeholder="name@company.com"
+                                placeholder="Enter your username"
                                 required=""
                             />
                         </div>
@@ -82,7 +82,7 @@
                             class="text-sm font-light text-gray-500 dark:text-gray-400"
                         >
                             <RouterLink to="/signup">
-                                Don’t have an account yet?
+                                Don't have an account yet?
                                 <a
                                     href="#"
                                     class="font-medium text-blue-600 hover:underline dark:text-blue-500"
@@ -101,7 +101,7 @@
 export default {
     data() {
         return {
-            email: "",
+            name: "",
             password: "",
             message: this.$route.query.messageSent,
             errorMsg: "",
@@ -109,9 +109,9 @@ export default {
     },
     methods: {
         login() {
-            const { email, password } = this;
+            const { name, password } = this;
             axios
-                .post("/login", { email, password })
+                .post("/login", { name, password })
                 .then((res) => {
                     console.log(res);
                     if (res.status === 200) {
@@ -128,4 +128,3 @@ export default {
     },
 };
 </script>
-<style lang=""></style>
