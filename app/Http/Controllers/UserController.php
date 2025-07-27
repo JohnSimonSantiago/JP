@@ -10,6 +10,24 @@ use Illuminate\Support\Facades\Auth;
 
 class UserController extends Controller
 {
+    public function signUp(Request $request)
+{
+    $request->validate([
+        'name' => 'required|string|max:255',
+        'password' => 'required|string|min:6',
+    ]);
+
+    $newUser = new User();
+    $newUser->name = $request->name;
+    $newUser->password = Hash::make($request->password); // always hash passwords
+    $newUser->level = 1; // default
+    $newUser->points = 0; // default
+    $newUser->is_premium = false; // default
+
+    $newUser->save();
+
+    return response()->json(['message' => 'User created successfully']);
+} 
     public function createUser(Request $request){
         $newUser = new User();
 
