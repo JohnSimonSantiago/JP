@@ -1,89 +1,99 @@
 <template>
-    <div class="min-h-screen bg-gray-50 p-6">
-        <div class="max-w-4xl mx-auto">
-            <!-- Profile Header -->
-            <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
-                <div
-                    class="flex flex-col md:flex-row items-center md:items-start gap-6"
-                >
-                    <!-- Profile Picture -->
-                    <div class="relative">
-                        <div
-                            class="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500 shadow-lg"
-                        >
-                            <img
-                                v-if="user.profile_image"
-                                :src="`/storage/profiles/${user.profile_image}`"
-                                :alt="user.name"
-                                class="w-full h-full object-cover"
-                            />
+    <Layout>
+        <div class="min-h-screen bg-gray-50 p-6">
+            <div class="max-w-4xl mx-auto">
+                <!-- Profile Header -->
+                <div class="bg-white rounded-xl shadow-lg p-8 mb-6">
+                    <div
+                        class="flex flex-col md:flex-row items-center md:items-start gap-6"
+                    >
+                        <!-- Profile Picture -->
+                        <div class="relative">
                             <div
-                                v-else
-                                class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                class="w-32 h-32 rounded-full overflow-hidden border-4 border-blue-500 shadow-lg"
                             >
-                                <i class="pi pi-user text-white text-4xl"></i>
-                            </div>
-                        </div>
-                        <!-- Upload button -->
-                        <button
-                            @click="triggerFileUpload"
-                            class="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
-                        >
-                            <i class="pi pi-camera text-sm"></i>
-                        </button>
-                        <input
-                            ref="fileInput"
-                            type="file"
-                            accept="image/*"
-                            @change="uploadProfileImage"
-                            class="hidden"
-                        />
-                    </div>
-
-                    <!-- User Info -->
-                    <div class="text-center md:text-left flex-1">
-                        <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                            {{ user.name }}
-                        </h1>
-                        <div class="flex flex-col md:flex-row gap-4 mb-4">
-                            <div class="bg-blue-50 px-4 py-2 rounded-lg">
-                                <div class="text-sm text-blue-600 font-medium">
-                                    Level
-                                </div>
-                                <div class="text-2xl font-bold text-blue-700">
-                                    {{ user.level }}
-                                </div>
-                            </div>
-                            <div class="bg-green-50 px-4 py-2 rounded-lg">
-                                <div class="text-sm text-green-600 font-medium">
-                                    Points
-                                </div>
-                                <div class="text-2xl font-bold text-green-700">
-                                    {{ user.points.toLocaleString() }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Membership Status -->
-                        <div class="flex items-center gap-2">
-                            <div class="flex items-center gap-2">
-                                <div :class="membershipStatus.class">
-                                    <i :class="membershipStatus.icon"></i>
-                                </div>
-                                <span
-                                    :class="membershipStatus.textClass"
-                                    class="font-medium"
+                                <img
+                                    v-if="user.profile_image"
+                                    :src="`/storage/profiles/${user.profile_image}`"
+                                    :alt="user.name"
+                                    class="w-full h-full object-cover"
+                                />
+                                <div
+                                    v-else
+                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
                                 >
-                                    {{ membershipStatus.text }}
-                                </span>
+                                    <i
+                                        class="pi pi-user text-white text-4xl"
+                                    ></i>
+                                </div>
+                            </div>
+                            <!-- Upload button -->
+                            <button
+                                @click="triggerFileUpload"
+                                class="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white rounded-full p-2 shadow-lg transition-colors"
+                            >
+                                <i class="pi pi-camera text-sm"></i>
+                            </button>
+                            <input
+                                ref="fileInput"
+                                type="file"
+                                accept="image/*"
+                                @change="uploadProfileImage"
+                                class="hidden"
+                            />
+                        </div>
+
+                        <!-- User Info -->
+                        <div class="text-center md:text-left flex-1">
+                            <h1 class="text-3xl font-bold text-gray-800 mb-2">
+                                {{ user.name }}
+                            </h1>
+                            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                                <div class="bg-blue-50 px-4 py-2 rounded-lg">
+                                    <div
+                                        class="text-sm text-blue-600 font-medium"
+                                    >
+                                        Level
+                                    </div>
+                                    <div
+                                        class="text-2xl font-bold text-blue-700"
+                                    >
+                                        {{ user.level }}
+                                    </div>
+                                </div>
+                                <div class="bg-green-50 px-4 py-2 rounded-lg">
+                                    <div
+                                        class="text-sm text-green-600 font-medium"
+                                    >
+                                        Points
+                                    </div>
+                                    <div
+                                        class="text-2xl font-bold text-green-700"
+                                    >
+                                        {{ user.points.toLocaleString() }}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Membership Status -->
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2">
+                                    <div :class="membershipStatus.class">
+                                        <i :class="membershipStatus.icon"></i>
+                                    </div>
+                                    <span
+                                        :class="membershipStatus.textClass"
+                                        class="font-medium"
+                                    >
+                                        {{ membershipStatus.text }}
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Membership Card -->
+                <!-- Membership Card - Full Width -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <h2
                         class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"
@@ -92,7 +102,13 @@
                         Membership Status
                     </h2>
 
-                    <div v-if="activeMembership" class="space-y-4">
+                    <div
+                        v-if="
+                            activeMembership &&
+                            activeMembership.status === 'approved'
+                        "
+                        class="space-y-4"
+                    >
                         <!-- Circular Progress -->
                         <div class="flex justify-center">
                             <div class="relative w-40 h-40">
@@ -144,7 +160,7 @@
                         </div>
 
                         <!-- Membership Details -->
-                        <div class="space-y-3">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
                             <div
                                 class="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
                             >
@@ -172,6 +188,62 @@
                         </div>
                     </div>
 
+                    <!-- Pending Membership -->
+                    <div
+                        v-else-if="
+                            activeMembership &&
+                            activeMembership.status === 'pending'
+                        "
+                        class="text-center py-8"
+                    >
+                        <i
+                            class="pi pi-clock text-yellow-500 text-4xl mb-4"
+                        ></i>
+                        <h3 class="text-lg font-medium text-gray-600 mb-2">
+                            Membership Pending Approval
+                        </h3>
+                        <p class="text-gray-500 mb-4">
+                            Your {{ activeMembership.type }} membership is
+                            waiting for approval.
+                        </p>
+                        <div class="bg-yellow-50 p-4 rounded-lg">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Status</span>
+                                <span
+                                    class="font-medium capitalize bg-yellow-100 text-yellow-800 px-2 py-1 rounded"
+                                >
+                                    {{ activeMembership.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rejected Membership -->
+                    <div
+                        v-else-if="
+                            activeMembership &&
+                            activeMembership.status === 'rejected'
+                        "
+                        class="text-center py-8"
+                    >
+                        <i
+                            class="pi pi-times-circle text-red-500 text-4xl mb-4"
+                        ></i>
+                        <h3 class="text-lg font-medium text-gray-600 mb-2">
+                            Membership Application Rejected
+                        </h3>
+                        <p class="text-gray-500 mb-4">
+                            Your membership application was not approved. Please
+                            contact support for more information.
+                        </p>
+                        <button
+                            class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
+                        >
+                            Apply Again
+                        </button>
+                    </div>
+
+                    <!-- No Membership -->
                     <div v-else class="text-center py-8">
                         <i class="pi pi-crown text-gray-300 text-4xl mb-4"></i>
                         <h3 class="text-lg font-medium text-gray-600 mb-2">
@@ -187,64 +259,9 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Stats Card -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
-                    <h2
-                        class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"
-                    >
-                        <i class="pi pi-chart-line text-blue-500"></i>
-                        Statistics
-                    </h2>
-
-                    <div class="space-y-4">
-                        <!-- Level Progress -->
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-gray-600"
-                                    >Level Progress</span
-                                >
-                                <span class="text-sm font-medium"
-                                    >{{ levelProgress.current }}/{{
-                                        levelProgress.required
-                                    }}
-                                    XP</span
-                                >
-                            </div>
-                            <div class="w-full bg-gray-200 rounded-full h-3">
-                                <div
-                                    class="bg-gradient-to-r from-blue-500 to-purple-500 h-3 rounded-full transition-all duration-500"
-                                    :style="{
-                                        width: levelProgress.percentage + '%',
-                                    }"
-                                ></div>
-                            </div>
-                        </div>
-
-                        <!-- Quick Stats -->
-                        <div class="grid grid-cols-2 gap-4 mt-6">
-                            <div class="text-center p-4 bg-blue-50 rounded-lg">
-                                <div class="text-2xl font-bold text-blue-700">
-                                    {{ user.level }}
-                                </div>
-                                <div class="text-sm text-blue-600">
-                                    Current Level
-                                </div>
-                            </div>
-                            <div class="text-center p-4 bg-green-50 rounded-lg">
-                                <div class="text-2xl font-bold text-green-700">
-                                    {{ Math.floor(user.points / 100) }}
-                                </div>
-                                <div class="text-sm text-green-600">
-                                    Achievements
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
-    </div>
+    </Layout>
 </template>
 
 <script>
@@ -252,23 +269,24 @@ export default {
     data() {
         return {
             user: {
-                id: 1,
-                name: "John Player",
-                level: 5,
-                points: 2750,
-                is_premium: true,
-                profile_image: null, // Will be populated from backend
+                id: null,
+                name: "",
+                level: 1,
+                points: 0,
+                is_premium: false,
+                profile_image: null,
             },
-            activeMembership: {
-                type: "monthly",
-                start_date: "2024-01-15",
-                end_date: "2024-02-15",
-            },
+            activeMembership: null,
+            loading: true,
         };
     },
     computed: {
         membershipStatus() {
-            if (!this.user.is_premium || !this.activeMembership) {
+            if (
+                !this.user.is_premium ||
+                !this.activeMembership ||
+                this.activeMembership.status !== "approved"
+            ) {
                 return {
                     text: "Free Member",
                     class: "w-3 h-3 bg-gray-400 rounded-full",
@@ -298,7 +316,11 @@ export default {
             };
         },
         membershipProgress() {
-            if (!this.activeMembership) return null;
+            if (
+                !this.activeMembership ||
+                this.activeMembership.status !== "approved"
+            )
+                return null;
 
             const startDate = new Date(this.activeMembership.start_date);
             const endDate = new Date(this.activeMembership.end_date);
@@ -329,27 +351,23 @@ export default {
                 color,
             };
         },
-        levelProgress() {
-            // Calculate XP needed for next level (example formula)
-            const requiredForNextLevel = this.user.level * 1000;
-            const currentLevelXP = this.user.points % 1000;
-            const percentage = (currentLevelXP / 1000) * 100;
-
-            return {
-                current: currentLevelXP,
-                required: 1000,
-                percentage: Math.min(percentage, 100),
-            };
-        },
     },
     methods: {
         async fetchUserData() {
             try {
+                this.loading = true;
                 const response = await axios.get("/api/user/profile");
                 this.user = response.data.user;
                 this.activeMembership = response.data.membership;
             } catch (error) {
                 console.error("Error fetching user data:", error);
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to load profile data",
+                });
+            } finally {
+                this.loading = false;
             }
         },
         triggerFileUpload() {

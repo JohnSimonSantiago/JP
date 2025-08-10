@@ -1,9 +1,5 @@
 <template>
-    <Layout>
-       
-    </Layout>
+    <Layout> </Layout>
 </template>
 
-<script>
-
-</script>
+<script></script>

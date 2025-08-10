@@ -17,6 +17,7 @@ Schema::create('memberships', function (Blueprint $table) {
     $table->date('start_date');
     $table->date('end_date');
     $table->enum('type', ['monthly', 'annual'])->default('monthly');
+    $table->enum('status', ['pending', 'approved', 'rejected', 'expired'])->default('pending');
     $table->timestamps();
 });
 

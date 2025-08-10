@@ -32,6 +32,16 @@
                         <span class="font-medium">Log in failed!</span>
                         {{ errorMsg }}
                     </div>
+
+                    <!-- Loading indicator -->
+                    <div
+                        v-if="isLoading"
+                        class="p-4 mb-4 text-sm text-blue-800 rounded-lg bg-blue-50 dark:bg-gray-800 dark:text-blue-400"
+                        role="alert"
+                    >
+                        <span class="font-medium">Signing in...</span>
+                    </div>
+
                     <form
                         class="space-y-4 md:space-y-6"
                         action="#"
@@ -52,6 +62,7 @@
                                 class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 placeholder="Enter your username"
                                 required=""
+                                :disabled="isLoading"
                             />
                         </div>
                         <div>
@@ -68,14 +79,16 @@
                                 placeholder="••••••••"
                                 class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 required=""
+                                :disabled="isLoading"
                             />
                         </div>
 
                         <button
                             type="submit"
-                            class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                            class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            :disabled="isLoading"
                         >
-                            Sign in
+                            {{ isLoading ? "Signing in..." : "Sign in" }}
                         </button>
 
                         <p
@@ -105,26 +118,75 @@ export default {
             password: "",
             message: this.$route.query.messageSent,
             errorMsg: "",
+            isLoading: false,
         };
     },
     methods: {
-        login() {
-            const { name, password } = this;
-            axios
-                .post("/login", { name, password })
-                .then((res) => {
-                    console.log(res);
-                    if (res.status === 200) {
-                        this.$router.push("/dashboard");
-                    }
-                })
-                .catch((err) => {
-                    this.errorMsg = err.response.data.message;
-                });
+        async login() {
+            // Clear previous errors and set loading state
+            this.errorMsg = "";
+            this.isLoading = true;
+
+            try {
+                const { name, password } = this;
+
+                const response = await axios.post("/login", { name, password });
+
+                console.log("Login response:", response.data);
+
+                if (response.status === 200 && response.data.token) {
+                    const { token, user, message } = response.data;
+
+                    // Store the token in localStorage
+                    localStorage.setItem("auth-token", token);
+
+                    // Store user data (optional, for offline access)
+                    localStorage.setItem("user", JSON.stringify(user));
+
+                    // Set axios default header for future requests
+                    axios.defaults.headers.common[
+                        "Authorization"
+                    ] = `Bearer ${token}`;
+
+                    console.log("Token stored successfully:", token);
+
+                    // Redirect to dashboard
+                    this.$router.push("/dashboard");
+                } else {
+                    throw new Error("Login successful but no token received");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+
+                if (
+                    error.response &&
+                    error.response.data &&
+                    error.response.data.message
+                ) {
+                    this.errorMsg = error.response.data.message;
+                } else {
+                    this.errorMsg =
+                        "An unexpected error occurred. Please try again.";
+                }
+            } finally {
+                this.isLoading = false;
+            }
         },
+
         clearErrMsg() {
             this.errorMsg = "";
         },
+    },
+
+    mounted() {
+        // Check if user is already logged in
+        const token = localStorage.getItem("auth-token");
+        if (token) {
+            // Set the authorization header
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+            // Redirect to dashboard if already logged in
+            this.$router.push("/dashboard");
+        }
     },
 };
 </script>

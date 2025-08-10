@@ -24,9 +24,11 @@
                     </div>
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900">
-                            Level 1
+                            Level {{ user.level || 1 }}
                         </div>
-                        <div class="text-xs text-gray-500">0 Points</div>
+                        <div class="text-xs text-gray-500">
+                            {{ user.points || 0 }} Points
+                        </div>
                     </div>
                 </div>
             </div>
@@ -34,7 +36,9 @@
 
         <div class="flex pt-16">
             <!-- Left Sidebar -->
-            <div class="w-64 bg-white shadow-lg h-screen fixed left-0 top-16">
+            <div
+                class="w-64 bg-white shadow-lg h-screen fixed left-0 top-16 sidebar"
+            >
                 <div class="p-6">
                     <nav class="space-y-2">
                         <!-- Dashboard -->
@@ -103,35 +107,88 @@
             </div>
 
             <!-- Main Content Area -->
+            <div class="flex-1 ml-64 p-6 overflow-y-auto">
+                <slot />
+            </div>
         </div>
     </div>
 </template>
 
 <script>
 import Button from "primevue/button";
+
 export default {
     components: {
         Button,
     },
     data() {
-        return {};
+        return {
+            user: {
+                level: 1,
+                points: 0,
+                name: "",
+            },
+        };
     },
     methods: {
-        checkAuth() {
-            axios.get("/checkUser").then(({ data }) => {
-                if (!data) {
-                    this.$router.push("/");
-                }
-            });
+        // Set up axios with token
+        setupAxiosToken() {
+            const token = localStorage.getItem("auth-token");
+            if (token) {
+                axios.defaults.headers.common[
+                    "Authorization"
+                ] = `Bearer ${token}`;
+                return true;
+            }
+            return false;
         },
-        logout() {
-            axios.post("/logout").then(() => {
+
+        async checkAuth() {
+            try {
+                // Set up token first
+                if (!this.setupAxiosToken()) {
+                    this.$router.push("/");
+                    return;
+                }
+
+                // Use the new API endpoint with token authentication
+                const response = await axios.get("/api/user/profile");
+
+                if (response.data.success) {
+                    this.user = response.data.user;
+                } else {
+                    throw new Error("Failed to fetch user data");
+                }
+            } catch (error) {
+                console.error("Auth check failed:", error);
+
+                // Clear invalid token and redirect to login
+                localStorage.removeItem("auth-token");
+                localStorage.removeItem("user");
                 this.$router.push("/");
-            });
+            }
+        },
+
+        async logout() {
+            try {
+                this.setupAxiosToken();
+
+                // Call the API logout endpoint
+                await axios.post("/api/logout");
+            } catch (error) {
+                console.error("Logout API call failed:", error);
+                // Continue with local cleanup even if API call fails
+            } finally {
+                // Always clear local storage and redirect
+                localStorage.removeItem("auth-token");
+                localStorage.removeItem("user");
+                delete axios.defaults.headers.common["Authorization"];
+                this.$router.push("/");
+            }
         },
     },
-    mounted() {
-        this.checkAuth();
+    async mounted() {
+        await this.checkAuth();
     },
 };
 </script>
