@@ -13,11 +13,11 @@ class User extends Authenticatable
 
     protected $fillable = [
         'name',
-        'email',
         'password',
         'level',
         'points',
         'is_premium',
+        'role',
         'profile_image',
     ];
 
@@ -27,48 +27,73 @@ class User extends Authenticatable
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_premium' => 'boolean',
-        'level' => 'integer',
-        'points' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
-    /**
-     * Get all memberships for the user
-     */
-    public function memberships()
+    // Existing relationships...
+    public function sentTrades()
     {
-        return $this->hasMany(Membership::class);
+        return $this->hasMany(Trade::class, 'sender_id');
     }
 
-    /**
-     * Get the user's active membership
-     */
-    public function activeMembership()
+    public function receivedTrades()
     {
-        return $this->hasOne(Membership::class)
-            ->where('status', 'approved')
-            ->where('end_date', '>', now())
-            ->latest();
+        return $this->hasMany(Trade::class, 'receiver_id');
     }
 
-    /**
-     * Check if user has premium access
-     */
-    public function isPremium()
+    public function createdBets()
     {
-        return $this->is_premium && $this->activeMembership()->exists();
+        return $this->hasMany(Bet::class, 'creator_id');
     }
 
-    /**
-     * Get the profile image URL
-     */
-    public function getProfileImageUrlAttribute()
+    public function opponentBets()
     {
-        if ($this->profile_image) {
-            return asset('storage/profiles/' . $this->profile_image);
+        return $this->hasMany(Bet::class, 'opponent_id');
+    }
+
+    public function refereeBets()
+    {
+        return $this->hasMany(Bet::class, 'referee_id');
+    }
+
+    public function wonBets()
+    {
+        return $this->hasMany(Bet::class, 'winner_id');
+    }
+
+    // New shop relationships
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    // Helper methods
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function canAfford($amount)
+    {
+        return $this->points >= $amount;
+    }
+
+    public function spendPoints($amount)
+    {
+        if (!$this->canAfford($amount)) {
+            throw new \Exception('Insufficient points');
         }
-        return null;
+        
+        $this->decrement('points', $amount);
+        return $this;
+    }
+
+    public function earnPoints($amount)
+    {
+        $this->increment('points', $amount);
+        return $this;
     }
 }

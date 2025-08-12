@@ -29,6 +29,7 @@ Route::post("/signup", [UserController::class, "signUp"]);
 
 
 
+
 //kababaan amin
 Route::get('/{vue?}', function(){
     return view('app');

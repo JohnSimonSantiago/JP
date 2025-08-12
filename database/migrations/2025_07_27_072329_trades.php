@@ -11,14 +11,19 @@ return new class extends Migration
      */
     public function up(): void
     {
-       Schema::create('trades', function (Blueprint $table) {
-    $table->id();
-    $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
-    $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
-    $table->integer('points_amount');
-    $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
-    $table->timestamps();
-});
+     Schema::create('trades', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('sender_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('receiver_id')->constrained('users')->onDelete('cascade');
+            $table->integer('send_amount')->default(0); // Points sender gives
+            $table->integer('receive_amount')->default(0); // Points sender gets
+            $table->enum('status', ['pending', 'accepted', 'rejected'])->default('pending');
+            $table->timestamps();
+            
+            // Add indexes for better performance
+            $table->index(['sender_id', 'status']);
+            $table->index(['receiver_id', 'status']);
+        });
 
     }
 

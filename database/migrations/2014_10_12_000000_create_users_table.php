@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
     $table->id();
-$table->string('name'); // remove unique here unless usernames must be unique
+$table->string('name')->unique();
 $table->integer('level')->default(1); // users start at level 1
 $table->integer('points')->default(0); // users start with 0 points
 $table->boolean('is_premium')->default(false); // indicates membership status

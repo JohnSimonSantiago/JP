@@ -51,19 +51,171 @@
                             >
                                 Password
                             </label>
-                            <input
-                                v-model="password"
-                                type="password"
-                                name="password"
-                                id="password"
-                                placeholder="••••••••"
-                                required
-                                class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                            />
+                            <div class="relative">
+                                <input
+                                    v-model="password"
+                                    :type="showPassword ? 'text' : 'password'"
+                                    name="password"
+                                    id="password"
+                                    placeholder="••••••••"
+                                    required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                                <button
+                                    type="button"
+                                    @click="showPassword = !showPassword"
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
+                                >
+                                    <svg
+                                        v-if="!showPassword"
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                        />
+                                    </svg>
+                                    <svg
+                                        v-else
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L12 12m-3.122-3.122l1.415-1.414M12 12l2.122 2.122m0 0l1.414 1.414M12 12l-2.122-2.122"
+                                        />
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M3 3l18 18"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p
+                                v-if="
+                                    password.length > 0 && password.length < 6
+                                "
+                                class="mt-1 text-sm text-red-600 dark:text-red-400"
+                            >
+                                Password must be at least 6 characters ({{
+                                    password.length
+                                }}/6)
+                            </p>
+                            <p
+                                v-else-if="password.length >= 6"
+                                class="mt-1 text-sm text-green-600 dark:text-green-400"
+                            >
+                                Password length is valid ✓
+                            </p>
+                        </div>
+                        <div>
+                            <label
+                                for="confirm_password"
+                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                            >
+                                Confirm Password
+                            </label>
+                            <div class="relative">
+                                <input
+                                    v-model="confirmPassword"
+                                    :type="
+                                        showConfirmPassword
+                                            ? 'text'
+                                            : 'password'
+                                    "
+                                    name="confirm_password"
+                                    id="confirm_password"
+                                    placeholder="••••••••"
+                                    required
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                />
+                                <button
+                                    type="button"
+                                    @click="
+                                        showConfirmPassword =
+                                            !showConfirmPassword
+                                    "
+                                    class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
+                                >
+                                    <svg
+                                        v-if="!showConfirmPassword"
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                        />
+                                    </svg>
+                                    <svg
+                                        v-else
+                                        class="w-5 h-5"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.464 8.464m1.414 1.414L12 12m-3.122-3.122l1.415-1.414M12 12l2.122 2.122m0 0l1.414 1.414M12 12l-2.122-2.122"
+                                        />
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M3 3l18 18"
+                                        />
+                                    </svg>
+                                </button>
+                            </div>
+                            <p
+                                v-if="
+                                    password &&
+                                    confirmPassword &&
+                                    password !== confirmPassword
+                                "
+                                class="mt-1 text-sm text-red-600 dark:text-red-400"
+                            >
+                                Passwords do not match
+                            </p>
                         </div>
                         <button
                             type="submit"
-                            class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center"
+                            :disabled="!isFormValid"
+                            class="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
+                            :class="
+                                isFormValid
+                                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300'
+                                    : 'bg-gray-400 cursor-not-allowed'
+                            "
                         >
                             Create an account
                         </button>
@@ -93,21 +245,63 @@ export default {
         return {
             name: "",
             password: "",
+            confirmPassword: "",
+            showPassword: false,
+            showConfirmPassword: false,
         };
+    },
+    computed: {
+        isFormValid() {
+            return (
+                this.name.trim() !== "" &&
+                this.password.length >= 6 &&
+                this.password === this.confirmPassword
+            );
+        },
     },
     methods: {
         signup() {
+            // Client-side validation
+            if (this.password !== this.confirmPassword) {
+                alert("Passwords do not match!");
+                return;
+            }
+
+            if (this.password.length < 6) {
+                alert("Password must be at least 6 characters long!");
+                return;
+            }
+
             axios
                 .post("/signup", {
                     name: this.name,
                     password: this.password,
+                    password_confirmation: this.confirmPassword,
                 })
                 .then(() => {
+                    alert("Account created successfully!");
                     this.$router.push("/");
                 })
                 .catch((err) => {
                     console.error("Signup failed", err);
-                    alert("Signup failed. Please try again.");
+
+                    // Handle specific error messages from Laravel validation
+                    if (
+                        err.response &&
+                        err.response.data &&
+                        err.response.data.errors
+                    ) {
+                        const errors = err.response.data.errors;
+                        let errorMessage = "Signup failed:\n";
+
+                        Object.keys(errors).forEach((key) => {
+                            errorMessage += `• ${errors[key][0]}\n`;
+                        });
+
+                        alert(errorMessage);
+                    } else {
+                        alert("Signup failed. Please try again.");
+                    }
                 });
         },
     },

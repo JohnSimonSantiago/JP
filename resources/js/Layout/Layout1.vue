@@ -15,19 +15,49 @@
 
             <!-- User info section with level and points -->
             <div class="flex items-center gap-4">
-                <div class="text-sm text-gray-600">Welcome back!</div>
+                <div class="text-sm text-gray-600">
+                    Welcome back
+                    <span class="font-medium text-gray-800">{{
+                        user.name || "User"
+                    }}</span
+                    >!
+                </div>
                 <div class="flex items-center gap-3">
-                    <div
-                        class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
-                    >
-                        <i class="pi pi-user text-white text-sm"></i>
+                    <!-- Profile Image or Default Avatar -->
+                    <div class="relative">
+                        <img
+                            v-if="user.profile_image"
+                            :src="`/storage/profiles/${user.profile_image}`"
+                            :alt="user.name"
+                            class="w-8 h-8 rounded-full object-cover border-2 border-blue-200"
+                        />
+                        <div
+                            v-else
+                            class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center border-2 border-blue-200"
+                        >
+                            <i class="pi pi-user text-white text-sm"></i>
+                        </div>
+                        <!-- Premium Badge -->
+                        <div
+                            v-if="user.is_premium"
+                            class="absolute -top-1 -right-1 w-3 h-3 bg-yellow-400 rounded-full border border-white flex items-center justify-center"
+                            title="Premium Member"
+                        >
+                            <i class="pi pi-star text-white text-xs"></i>
+                        </div>
                     </div>
                     <div class="flex-1">
                         <div class="text-sm font-medium text-gray-900">
                             Level {{ user.level || 1 }}
+                            <span
+                                v-if="user.is_premium"
+                                class="ml-1 px-1.5 py-0.5 text-xs bg-yellow-100 text-yellow-800 rounded-full"
+                            >
+                                Premium
+                            </span>
                         </div>
                         <div class="text-xs text-gray-500">
-                            {{ user.points || 0 }} Points
+                            {{ formatPoints(user.points || 0) }} Points
                         </div>
                     </div>
                 </div>
@@ -89,6 +119,30 @@
                             <span class="font-medium">Profile</span>
                         </router-link>
 
+                        <!-- Bet -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/bet"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-ticket text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium"> Bet </span>
+                        </router-link>
+
+                        <!-- Bet -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/shop"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium"> Shop </span>
+                        </router-link>
+
                         <!-- Divider -->
                         <div class="border-t border-gray-200 my-4"></div>
 
@@ -127,10 +181,17 @@ export default {
                 level: 1,
                 points: 0,
                 name: "",
+                profile_image: null,
+                is_premium: false,
             },
         };
     },
     methods: {
+        // Format points with comma separators
+        formatPoints(points) {
+            return points.toLocaleString();
+        },
+
         // Set up axios with token
         setupAxiosToken() {
             const token = localStorage.getItem("auth-token");
@@ -155,7 +216,12 @@ export default {
                 const response = await axios.get("/api/user/profile");
 
                 if (response.data.success) {
-                    this.user = response.data.user;
+                    this.user = {
+                        ...this.user,
+                        ...response.data.user,
+                    };
+
+                    console.log("Layout: User data loaded:", this.user);
                 } else {
                     throw new Error("Failed to fetch user data");
                 }
@@ -210,5 +276,14 @@ export default {
 
 .sidebar::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* Smooth transitions for profile images */
+img {
+    transition: all 0.2s ease-in-out;
+}
+
+img:hover {
+    transform: scale(1.05);
 }
 </style>

@@ -4,6 +4,8 @@ import Leaderboards from "./pages/Leaderboards.vue";
 import Profile from "./pages/Profile.vue";
 import Trade from "./pages/Trade.vue";
 import LoginNew from "./pages/LoginNew.vue";
+import Bet from "./pages/Bet.vue";
+import Shop from "./pages/Shop.vue";
 
 export const routes = [
     {
@@ -35,5 +37,15 @@ export const routes = [
         path: "/trade",
         name: "trade",
         component: Trade,
+    },
+    {
+        path: "/bet",
+        name: "bet",
+        component: Bet,
+    },
+    {
+        path: "/shop",
+        name: "shop",
+        component: Shop,
     },
 ];

@@ -11,27 +11,49 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 
-
 class UserController extends Controller
 {
 public function signUp(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'password' => 'required|string|min:6',
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:255|unique:users,name',
+        'password' => 'required|string|min:6|confirmed',
+    ], [
+        'name.unique' => 'This username is already taken.',
+        'name.required' => 'Username is required.',
+        'password.required' => 'Password is required.',
+        'password.min' => 'Password must be at least 6 characters.',
+        'password.confirmed' => 'Password confirmation does not match.',
+    ]);
 
+    try {
         $newUser = new User();
         $newUser->name = $request->name;
         $newUser->password = Hash::make($request->password);
         $newUser->level = 1;
-        $newUser->points = 0;
+        $newUser->points = 100; // Changed from 0 to 100
         $newUser->is_premium = false;
 
         $newUser->save();
 
-        return response()->json(['message' => 'User created successfully']);
-    } 
+        return response()->json([
+            'message' => 'User created successfully',
+            'user' => [
+                'id' => $newUser->id,
+                'name' => $newUser->name,
+                'level' => $newUser->level,
+                'points' => $newUser->points,
+                'is_premium' => $newUser->is_premium,
+            ]
+        ], 201);
+                
+    } catch (\Exception $e) {
+        return response()->json([
+            'message' => 'Failed to create user',
+            'error' => 'Something went wrong. Please try again.'
+        ], 500);
+    }
+}
 
     public function validatePassword(Request $request)
     {
@@ -117,7 +139,7 @@ public function signUp(Request $request)
     }
 
     /**
-     * Upload profile image
+     * Upload profile image - FIXED VERSION
      */
     public function uploadProfileImage(Request $request)
     {
@@ -141,18 +163,27 @@ public function signUp(Request $request)
                 Storage::disk('public')->delete('profiles/' . $user->profile_image);
             }
 
-            // Store new image
+            // Store new image with proper extension handling
             $file = $request->file('profile_image');
-            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $extension = $file->getClientOriginalExtension();
+            $filename = time() . '_' . $user->id . '.' . $extension;
+            
+            // Store the file
             $file->storeAs('profiles', $filename, 'public');
 
-            // Update user record
+            // Update user record with the complete filename (including extension)
             $user->update(['profile_image' => $filename]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Profile image updated successfully',
-                'filename' => $filename
+                'filename' => $filename,
+                'debug_info' => [
+                    'original_name' => $file->getClientOriginalName(),
+                    'extension' => $extension,
+                    'stored_as' => $filename,
+                    'storage_path' => 'profiles/' . $filename
+                ]
             ]);
 
         } catch (\Exception $e) {
@@ -290,4 +321,61 @@ public function signUp(Request $request)
             ], 500);
         }
     }
+    public function getLeaderboard()
+{
+    try {
+        // Get all users ordered by points (descending), then by level (descending)
+        $users = User::orderBy('points', 'desc')
+                    ->orderBy('level', 'desc')
+                    ->orderBy('created_at', 'asc') // Earlier users win ties
+                    ->select(['id', 'name', 'level', 'points', 'is_premium', 'profile_image'])
+                    ->get();
+
+        return response()->json([
+            'success' => true,
+            'users' => $users,
+            'total_users' => $users->count()
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch leaderboard data',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+/**
+ * Search users by name
+ */
+public function searchUsers(Request $request)
+{
+    try {
+        $query = $request->get('q', '');
+        
+        if (strlen($query) < 2) {
+            return response()->json([
+                'success' => true,
+                'users' => []
+            ]);
+        }
+
+        $users = User::where('name', 'LIKE', '%' . $query . '%')
+                    ->select(['id', 'name', 'level', 'points', 'is_premium', 'profile_image'])
+                    ->limit(10)
+                    ->get();
+
+        return response()->json([
+            'success' => true,
+            'users' => $users
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to search users',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }
