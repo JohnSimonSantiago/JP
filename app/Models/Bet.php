@@ -13,7 +13,7 @@ class Bet extends Model
         'creator_id',
         'opponent_id',
         'referee_id',
-        'points_amount',
+        'stars_amount',
         'status',
         'winner_id',
         'accepted_at',

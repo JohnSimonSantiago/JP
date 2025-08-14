@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('creator_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('opponent_id')->constrained('users')->onDelete('cascade');
             $table->foreignId('referee_id')->constrained('users')->onDelete('cascade');
-            $table->integer('points_amount');
+            $table->integer('stars_amount');
             $table->enum('status', ['pending', 'accepted', 'rejected', 'completed', 'cancelled'])->default('pending');
             $table->foreignId('winner_id')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('accepted_at')->nullable();

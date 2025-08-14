@@ -6,6 +6,9 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\TradeController;
 use App\Http\Controllers\BetController;
+use App\Http\Controllers\ShopController;
+use App\Http\Controllers\ShopItemController;
+use App\Http\Controllers\LeaderboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -98,3 +101,64 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/purchases/{purchase}/reject', [ShopController::class, 'rejectPurchase']);
     });
 });
+
+Route::prefix('shops')->group(function () {
+    Route::get('/', [ShopController::class, 'index']); // List all shops - PUBLIC
+    Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items - PUBLIC
+    Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews - PUBLIC
+});
+
+// AUTHENTICATED ROUTES
+Route::middleware(['auth:sanctum'])->group(function () {
+    
+    // Shop interactions (authenticated users)
+    Route::prefix('shops/{shop}')->group(function () {
+        Route::post('/follow', [ShopController::class, 'toggleFollow']);
+        Route::post('/reviews', [ShopController::class, 'addReview']);
+    });
+    
+    // Shop Owner Routes
+    Route::prefix('shops')->group(function () {
+        Route::post('/', [ShopController::class, 'create']); // Create new shop
+        Route::put('/{shop}', [ShopController::class, 'update']); // Update shop
+        Route::get('/dashboard/my-shop', [ShopController::class, 'dashboard']); // Shop owner dashboard
+        
+        // Shop Items Management (Shop Owner)
+        Route::prefix('{shop}/items')->group(function () {
+            Route::get('/', [ShopItemController::class, 'shopItems']); // Get all items for shop
+            Route::post('/', [ShopItemController::class, 'store']); // Create new item
+            Route::put('/{item}', [ShopItemController::class, 'update']); // Update item
+            Route::delete('/{item}', [ShopItemController::class, 'destroy']); // Delete item
+            
+            // Order Management
+            Route::get('/purchases/pending', [ShopItemController::class, 'getPendingPurchases']);
+            Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
+            Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+        });
+    });
+    
+    // Shop Item Routes (for purchasing)
+    Route::prefix('shop-items')->group(function () {
+        Route::post('/{item}/purchase', [ShopItemController::class, 'purchase']);
+    });
+    
+    // User Purchase History
+    Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']);
+    
+    // Admin Routes
+    Route::middleware(['admin'])->prefix('admin')->group(function () {
+        // Shop Management
+        Route::get('/shops', [ShopController::class, 'adminIndex']); // All shops (including inactive)
+        Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);
+        Route::post('/shops/{shop}/toggle-active', [ShopController::class, 'toggleActive']);
+        
+        // Global Purchase Management
+        Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
+        Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
+        Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+    });
+});
+
+Route::get('/leaderboard', [LeaderboardController::class, 'index']);
+Route::get('/leaderboard/current-season', [LeaderboardController::class, 'getCurrentSeason']);
+Route::post('/leaderboard/new-season', [LeaderboardController::class, 'newSeason'])->middleware('auth');

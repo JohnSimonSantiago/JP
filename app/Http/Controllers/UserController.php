@@ -361,7 +361,7 @@ public function searchUsers(Request $request)
         }
 
         $users = User::where('name', 'LIKE', '%' . $query . '%')
-                    ->select(['id', 'name', 'level', 'points', 'is_premium', 'profile_image'])
+                    ->select(['id', 'name', 'level', 'points', 'stars', 'is_premium', 'profile_image'])
                     ->limit(10)
                     ->get();
 

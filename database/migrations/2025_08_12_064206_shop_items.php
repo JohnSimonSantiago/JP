@@ -17,13 +17,9 @@ Schema::create('shop_items', function (Blueprint $table) {
             $table->text('description')->nullable();
             $table->integer('price'); // points required to buy
             $table->string('image')->nullable();
-            $table->enum('category', ['cosmetic', 'boost', 'premium', 'special'])->default('cosmetic');
             $table->boolean('is_active')->default(true);
             $table->integer('stock')->nullable(); // null = unlimited stock
-            $table->json('properties')->nullable(); // for special item properties (e.g., point boost amount)
             $table->timestamps();
-
-            $table->index(['category', 'is_active']);
             $table->index('is_active');
         });
     }

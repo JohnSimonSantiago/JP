@@ -5,7 +5,9 @@ import Profile from "./pages/Profile.vue";
 import Trade from "./pages/Trade.vue";
 import LoginNew from "./pages/LoginNew.vue";
 import Bet from "./pages/Bet.vue";
-import Shop from "./pages/Shop.vue";
+import ShopsIndex from "./pages/ShopsIndex.vue"; // Lists all shops
+import ShopView from "./pages/ShopView.vue"; // Individual shop with items
+import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard (optional)
 
 export const routes = [
     {
@@ -43,9 +45,25 @@ export const routes = [
         name: "bet",
         component: Bet,
     },
+
+    // NEW MULTI-SHOP ROUTES
     {
-        path: "/shop",
-        name: "shop",
-        component: Shop,
+        path: "/shops",
+        name: "shops",
+        component: ShopsIndex, // Shows all shops in grid/list view
+    },
+    {
+        path: "/shop/:id",
+        name: "shop-view",
+        component: ShopView, // Shows individual shop with its items
+        props: true, // Pass route params as props
+    },
+
+    // Optional: Shop owner dashboard
+    {
+        path: "/my-shop",
+        name: "my-shop",
+        component: MyShop, // Shop owner management dashboard
+        meta: { requiresAuth: true, role: "shop_owner" },
     },
 ];

@@ -16,6 +16,7 @@ return new class extends Migration
 $table->string('name')->unique();
 $table->integer('level')->default(1); // users start at level 1
 $table->integer('points')->default(0); // users start with 0 points
+$table->integer('stars')->default(100);
 $table->boolean('is_premium')->default(false); // indicates membership status
 $table->string('password');
 $table->string('profile_image')->nullable(); 

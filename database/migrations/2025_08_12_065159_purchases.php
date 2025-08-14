@@ -18,9 +18,7 @@ return new class extends Migration
             $table->integer('price_paid'); // price at time of purchase
             $table->integer('quantity')->default(1);
             $table->enum('status', ['pending', 'completed', 'rejected'])->default('pending');
-            $table->string('rejection_reason')->nullable(); // reason for rejection
             $table->timestamps();
-
             $table->index(['user_id', 'created_at']);
             $table->index('shop_item_id');
             $table->index('status');

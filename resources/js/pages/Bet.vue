@@ -12,7 +12,8 @@
                                 class="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3"
                             >
                                 <i class="pi pi-trophy text-yellow-500"></i>
-                                Betting Arena
+                                Season {{ currentSeason.season_number }} -
+                                Matches
                             </h1>
                             <p class="text-gray-600">
                                 Challenge others and prove your worth
@@ -23,7 +24,7 @@
                             class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2 shadow-lg"
                         >
                             <i class="pi pi-plus"></i>
-                            Create New Bet
+                            Create New Match
                         </button>
                     </div>
                 </div>
@@ -38,7 +39,7 @@
                                 <i class="pi pi-send text-blue-600 text-xl"></i>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">My Bets</p>
+                                <p class="text-sm text-gray-600">My Matches</p>
                                 <p class="text-2xl font-bold text-gray-800">
                                     {{ myBets.length }}
                                 </p>
@@ -56,7 +57,7 @@
                             </div>
                             <div>
                                 <p class="text-sm text-gray-600">
-                                    Incoming Bets
+                                    Incoming Matches
                                 </p>
                                 <p class="text-2xl font-bold text-gray-800">
                                     {{ incomingBets.length }}
@@ -75,7 +76,7 @@
                             </div>
                             <div>
                                 <p class="text-sm text-gray-600">
-                                    Ongoing Bets
+                                    Ongoing Matches
                                 </p>
                                 <p class="text-2xl font-bold text-gray-800">
                                     {{ ongoingBets.length }}
@@ -89,13 +90,13 @@
                                 class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center"
                             >
                                 <i
-                                    class="pi pi-wallet text-purple-600 text-xl"
+                                    class="pi pi-star text-purple-600 text-xl"
                                 ></i>
                             </div>
                             <div>
-                                <p class="text-sm text-gray-600">Your Points</p>
+                                <p class="text-sm text-gray-600">Your Stars</p>
                                 <p class="text-2xl font-bold text-gray-800">
-                                    {{ formatPoints(currentUser.points || 0) }}
+                                    {{ formatStars(currentUser.stars || 0) }}
                                 </p>
                             </div>
                         </div>
@@ -116,7 +117,7 @@
                                 ]"
                             >
                                 <i class="pi pi-inbox mr-2"></i>
-                                Incoming Bets ({{ incomingBets.length }})
+                                Incoming Matches ({{ incomingBets.length }})
                             </button>
                             <button
                                 @click="activeTab = 'my-bets'"
@@ -128,7 +129,7 @@
                                 ]"
                             >
                                 <i class="pi pi-send mr-2"></i>
-                                My Bets ({{ myBets.length }})
+                                My Matches ({{ myBets.length }})
                             </button>
                             <button
                                 @click="activeTab = 'ongoing'"
@@ -140,8 +141,9 @@
                                 ]"
                             >
                                 <i class="pi pi-clock mr-2"></i>
-                                Ongoing Bets ({{ ongoingBets.length }})
+                                Ongoing Matches ({{ ongoingBets.length }})
                             </button>
+
                             <button
                                 @click="activeTab = 'referee'"
                                 :class="[
@@ -246,13 +248,13 @@
                                                 class="text-lg font-bold text-yellow-600"
                                             >
                                                 {{
-                                                    formatPoints(
-                                                        bet.points_amount
+                                                    formatStars(
+                                                        bet.stars_amount
                                                     )
                                                 }}
                                             </div>
                                             <div class="text-sm text-gray-500">
-                                                points
+                                                stars
                                             </div>
                                         </div>
 
@@ -422,8 +424,8 @@
                                                     class="text-lg font-bold text-green-600"
                                                 >
                                                     +{{
-                                                        formatPoints(
-                                                            bet.points_amount
+                                                        formatStars(
+                                                            bet.stars_amount
                                                         )
                                                     }}
                                                 </div>
@@ -432,15 +434,15 @@
                                                     class="text-lg font-bold text-red-600"
                                                 >
                                                     -{{
-                                                        formatPoints(
-                                                            bet.points_amount
+                                                        formatStars(
+                                                            bet.stars_amount
                                                         )
                                                     }}
                                                 </div>
                                                 <div
                                                     class="text-sm text-gray-500"
                                                 >
-                                                    points
+                                                    stars
                                                 </div>
                                             </div>
                                             <!-- Pending/Other statuses - show stake amount -->
@@ -449,15 +451,15 @@
                                                     class="text-lg font-bold text-gray-800"
                                                 >
                                                     {{
-                                                        formatPoints(
-                                                            bet.points_amount
+                                                        formatStars(
+                                                            bet.stars_amount
                                                         )
                                                     }}
                                                 </div>
                                                 <div
                                                     class="text-sm text-gray-500"
                                                 >
-                                                    points
+                                                    stars
                                                 </div>
                                             </div>
                                         </div>
@@ -618,11 +620,9 @@
 
                                         <div>
                                             <p class="text-sm text-gray-600">
-                                                Waiting for referee decision
+                                                Waiting for your judgment
                                             </p>
                                             <p class="text-xs text-gray-500">
-                                                Referee:
-                                                {{ bet.referee.name }} •
                                                 Accepted
                                                 {{
                                                     formatDate(bet.accepted_at)
@@ -634,22 +634,49 @@
                                     <!-- Bet Amount -->
                                     <div class="text-right">
                                         <div
-                                            class="text-lg font-bold text-blue-600"
+                                            class="text-lg font-bold text-purple-600"
                                         >
-                                            {{
-                                                formatPoints(bet.points_amount)
-                                            }}
+                                            {{ formatStars(bet.stars_amount) }}
                                         </div>
                                         <div class="text-sm text-gray-500">
-                                            points at stake
+                                            stars at stake
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- Declare Winner Buttons -->
+                                <div class="flex gap-3 mt-4">
+                                    <button
+                                        @click="
+                                            declareWinner(
+                                                bet.id,
+                                                bet.creator.id
+                                            )
+                                        "
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
+                                        :disabled="processingBet === bet.id"
+                                    >
+                                        <i class="pi pi-crown mr-2"></i
+                                        >{{ bet.creator.name }} Wins
+                                    </button>
+                                    <button
+                                        @click="
+                                            declareWinner(
+                                                bet.id,
+                                                bet.opponent.id
+                                            )
+                                        "
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
+                                        :disabled="processingBet === bet.id"
+                                    >
+                                        <i class="pi pi-crown mr-2"></i
+                                        >{{ bet.opponent.name }} Wins
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Referee Tab -->
+                    <!-- Referee Requests Tab - Add this after the Ongoing Bets Tab -->
                     <div v-else-if="activeTab === 'referee'" class="p-6">
                         <div
                             v-if="refereeBets.length === 0"
@@ -671,9 +698,7 @@
                                 :key="bet.id"
                                 class="border border-purple-200 bg-purple-50 rounded-lg p-6 hover:shadow-md transition-shadow"
                             >
-                                <div
-                                    class="flex items-center justify-between mb-4"
-                                >
+                                <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-4">
                                         <!-- Both participants -->
                                         <div class="flex items-center gap-2">
@@ -698,6 +723,16 @@
                                                             class="pi pi-user text-white text-sm"
                                                         ></i>
                                                     </div>
+                                                </div>
+                                                <div
+                                                    v-if="
+                                                        bet.creator.is_premium
+                                                    "
+                                                    class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border border-white flex items-center justify-center"
+                                                >
+                                                    <i
+                                                        class="pi pi-star text-white text-xs"
+                                                    ></i>
                                                 </div>
                                             </div>
                                             <span class="text-sm font-medium">{{
@@ -731,12 +766,23 @@
                                                         ></i>
                                                     </div>
                                                 </div>
+                                                <div
+                                                    v-if="
+                                                        bet.opponent.is_premium
+                                                    "
+                                                    class="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border border-white flex items-center justify-center"
+                                                >
+                                                    <i
+                                                        class="pi pi-star text-white text-xs"
+                                                    ></i>
+                                                </div>
                                             </div>
                                         </div>
 
                                         <div>
                                             <p class="text-sm text-gray-600">
-                                                Waiting for your judgment
+                                                Waiting for your judgment as
+                                                referee
                                             </p>
                                             <p class="text-xs text-gray-500">
                                                 Accepted
@@ -752,12 +798,10 @@
                                         <div
                                             class="text-lg font-bold text-purple-600"
                                         >
-                                            {{
-                                                formatPoints(bet.points_amount)
-                                            }}
+                                            {{ formatStars(bet.stars_amount) }}
                                         </div>
                                         <div class="text-sm text-gray-500">
-                                            points at stake
+                                            stars at stake
                                         </div>
                                     </div>
                                 </div>
@@ -771,11 +815,11 @@
                                                 bet.creator.id
                                             )
                                         "
-                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1 transition-colors"
                                         :disabled="processingBet === bet.id"
                                     >
-                                        <i class="pi pi-crown mr-2"></i
-                                        >{{ bet.creator.name }} Wins
+                                        <i class="pi pi-crown mr-2"></i>
+                                        {{ bet.creator.name }} Wins
                                     </button>
                                     <button
                                         @click="
@@ -784,11 +828,11 @@
                                                 bet.opponent.id
                                             )
                                         "
-                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
+                                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1 transition-colors"
                                         :disabled="processingBet === bet.id"
                                     >
-                                        <i class="pi pi-crown mr-2"></i
-                                        >{{ bet.opponent.name }} Wins
+                                        <i class="pi pi-crown mr-2"></i>
+                                        {{ bet.opponent.name }} Wins
                                     </button>
                                 </div>
                             </div>
@@ -904,10 +948,8 @@
                                         </div>
                                         <div class="text-sm text-gray-500">
                                             Level {{ user.level }} •
-                                            {{
-                                                formatPoints(user.points)
-                                            }}
-                                            points
+                                            {{ formatStars(user.stars) }}
+                                            stars
                                         </div>
                                     </div>
                                 </div>
@@ -957,11 +999,9 @@
                                     <div class="text-sm text-gray-600">
                                         Level {{ selectedOpponent.level }} •
                                         {{
-                                            formatPoints(
-                                                selectedOpponent.points
-                                            )
+                                            formatStars(selectedOpponent.stars)
                                         }}
-                                        points
+                                        stars
                                     </div>
                                 </div>
                                 <button
@@ -1061,10 +1101,8 @@
                                         </div>
                                         <div class="text-sm text-gray-500">
                                             Level {{ user.level }} •
-                                            {{
-                                                formatPoints(user.points)
-                                            }}
-                                            points
+                                            {{ formatStars(user.stars) }}
+                                            stars
                                         </div>
                                     </div>
                                 </div>
@@ -1111,10 +1149,8 @@
                                     </div>
                                     <div class="text-sm text-gray-600">
                                         Level {{ selectedReferee.level }} •
-                                        {{
-                                            formatPoints(selectedReferee.points)
-                                        }}
-                                        points
+                                        {{ formatStars(selectedReferee.stars) }}
+                                        stars
                                     </div>
                                 </div>
                                 <button
@@ -1128,25 +1164,25 @@
                         </div>
                     </div>
 
-                    <!-- Points Amount -->
+                    <!-- Stars Amount -->
                     <div>
                         <label
                             class="block text-sm font-medium text-gray-700 mb-2"
                         >
-                            Points to Bet
+                            Stars to Bet
                         </label>
                         <input
-                            v-model.number="newBet.points_amount"
+                            v-model.number="newBet.stars_amount"
                             type="number"
                             min="1"
-                            :max="currentUser.points"
+                            :max="currentUser.stars"
                             required
-                            placeholder="How many points to bet?"
+                            placeholder="How many stars to bet?"
                             class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                         <p class="text-sm text-gray-500 mt-1">
                             You have
-                            {{ formatPoints(currentUser.points || 0) }} points
+                            {{ formatStars(currentUser.stars || 0) }} stars
                             available
                         </p>
                     </div>
@@ -1202,7 +1238,7 @@ export default {
             loading: false,
             showCreateDialog: false,
             newBet: {
-                points_amount: "",
+                stars_amount: "",
             },
             myBets: [],
             incomingBets: [],
@@ -1210,7 +1246,10 @@ export default {
             ongoingBets: [],
             currentUser: {
                 id: null,
-                points: 0,
+                stars: 0,
+            },
+            currentSeason: {
+                season_number: 1,
             },
             processingBet: null,
 
@@ -1237,10 +1276,10 @@ export default {
                 isValid:
                     this.selectedOpponent &&
                     this.selectedReferee &&
-                    this.newBet.points_amount > 0,
+                    this.newBet.stars_amount > 0,
                 hasOpponent: !!this.selectedOpponent,
                 hasReferee: !!this.selectedReferee,
-                hasPoints: this.newBet.points_amount > 0,
+                hasStars: this.newBet.stars_amount > 0,
             };
         },
 
@@ -1263,19 +1302,19 @@ export default {
                 errors.push("Opponent and referee must be different users");
             }
 
-            if (!this.newBet.points_amount || this.newBet.points_amount <= 0) {
-                errors.push("Please enter a valid points amount");
+            if (!this.newBet.stars_amount || this.newBet.stars_amount <= 0) {
+                errors.push("Please enter a valid stars amount");
             }
 
-            if (this.newBet.points_amount > (this.currentUser.points || 0)) {
-                errors.push("You don't have enough points");
+            if (this.newBet.stars_amount > (this.currentUser.stars || 0)) {
+                errors.push("You don't have enough stars");
             }
 
             if (
                 this.selectedOpponent &&
-                this.newBet.points_amount > this.selectedOpponent.points
+                this.newBet.stars_amount > this.selectedOpponent.stars
             ) {
-                errors.push("Opponent doesn't have enough points");
+                errors.push("Opponent doesn't have enough stars");
             }
 
             return errors;
@@ -1412,7 +1451,7 @@ export default {
                 const response = await axios.post("/api/bets", {
                     opponent_id: this.selectedOpponent.id,
                     referee_id: this.selectedReferee.id,
-                    points_amount: this.newBet.points_amount,
+                    stars_amount: this.newBet.stars_amount,
                 });
 
                 if (response.data.success) {
@@ -1425,7 +1464,7 @@ export default {
                     this.closeCreateDialog();
                     await this.fetchBets();
 
-                    // Update current user points
+                    // Update current user stars
                     const userResponse = await axios.get("/api/user");
                     if (userResponse.data.success) {
                         this.currentUser = userResponse.data.user;
@@ -1547,7 +1586,7 @@ export default {
             this.clearSelectedOpponent();
             this.clearSelectedReferee();
             this.newBet = {
-                points_amount: "",
+                stars_amount: "",
             };
         },
 
@@ -1562,8 +1601,8 @@ export default {
             return texts[status] || status;
         },
 
-        formatPoints(points) {
-            return (points || 0).toLocaleString();
+        formatStars(stars) {
+            return (stars || 0).toLocaleString();
         },
 
         formatDate(dateString) {
@@ -1578,14 +1617,21 @@ export default {
     },
 
     async mounted() {
-        // Get current user info
+        // Get current user info and season info
         try {
             const userResponse = await axios.get("/api/user");
             if (userResponse.data.success) {
                 this.currentUser = userResponse.data.user;
             }
+
+            const seasonResponse = await axios.get(
+                "/api/leaderboard/current-season"
+            );
+            if (seasonResponse.data.success) {
+                this.currentSeason = seasonResponse.data.current_season;
+            }
         } catch (error) {
-            console.error("Error fetching current user:", error);
+            console.error("Error fetching data:", error);
         }
 
         await this.fetchBets();

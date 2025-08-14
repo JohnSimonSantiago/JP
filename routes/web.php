@@ -26,9 +26,27 @@ Route::post("/logout", [LoginController::class, "logout"]);
 
 Route::post("/signup", [UserController::class, "signUp"]);
 
+Route::get('/shops', function () {
+    return view('app'); // Your main Vue.js app view
+});
 
+Route::get('/shop/{id}', function () {
+    return view('app'); // Individual shop view
+});
 
+// Shop owner dashboard
+Route::get('/my-shop', function () {
+    return view('app');
+})->middleware(['auth', 'shop_owner']);
 
+// Admin routes
+Route::get('/admin/shops', function () {
+    return view('app');
+})->middleware(['auth', 'admin']);
+
+Route::get('/admin/purchases', function () {
+    return view('app');
+})->middleware(['auth', 'admin']);
 
 //kababaan amin
 Route::get('/{vue?}', function(){

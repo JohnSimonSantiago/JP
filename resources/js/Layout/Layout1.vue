@@ -119,7 +119,6 @@
                             <span class="font-medium">Profile</span>
                         </router-link>
 
-                        <!-- Bet -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/bet"
@@ -128,19 +127,18 @@
                             <i
                                 class="pi pi-ticket text-lg group-hover:scale-110 transition-transform"
                             ></i>
-                            <span class="font-medium"> Bet </span>
+                            <span class="font-medium"> Matches </span>
                         </router-link>
 
-                        <!-- Bet -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
-                            to="/shop"
+                            to="/shops"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
                             ></i>
-                            <span class="font-medium"> Shop </span>
+                            <span class="font-medium"> Shops </span>
                         </router-link>
 
                         <!-- Divider -->

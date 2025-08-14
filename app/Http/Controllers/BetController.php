@@ -56,23 +56,23 @@ class BetController extends Controller
         $request->validate([
             'opponent_id' => 'required|exists:users,id|different:referee_id',
             'referee_id' => 'required|exists:users,id|different:opponent_id',
-            'points_amount' => 'required|integer|min:1',
+            'stars_amount' => 'required|integer|min:1',
         ], [
             'opponent_id.required' => 'Please select an opponent.',
             'opponent_id.different' => 'Opponent and referee must be different users.',
             'referee_id.required' => 'Please select a referee.',
             'referee_id.different' => 'Referee and opponent must be different users.',
-            'points_amount.required' => 'Points amount is required.',
-            'points_amount.min' => 'Points amount must be at least 1.',
+            'stars_amount.required' => 'Stars amount is required.',
+            'stars_amount.min' => 'Stars amount must be at least 1.',
         ]);
 
         $user = Auth::user();
 
-        // Check if user has enough points
-        if ($user->points < $request->points_amount) {
+        // Check if user has enough stars
+        if ($user->stars < $request->stars_amount) {
             return response()->json([
                 'success' => false,
-                'message' => 'Insufficient points. You only have ' . $user->points . ' points.'
+                'message' => 'Insufficient stars. You only have ' . $user->stars . ' stars.'
             ], 400);
         }
 
@@ -84,12 +84,12 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Check if opponent has enough points
+        // Check if opponent has enough stars
         $opponent = User::find($request->opponent_id);
-        if ($opponent->points < $request->points_amount) {
+        if ($opponent->stars < $request->stars_amount) {
             return response()->json([
                 'success' => false,
-                'message' => 'Opponent does not have enough points for this bet.'
+                'message' => 'Opponent does not have enough stars for this bet.'
             ], 400);
         }
 
@@ -98,7 +98,7 @@ class BetController extends Controller
                 'creator_id' => $user->id,
                 'opponent_id' => $request->opponent_id,
                 'referee_id' => $request->referee_id,
-                'points_amount' => $request->points_amount,
+                'stars_amount' => $request->stars_amount,
                 'status' => 'pending'
             ]);
 
@@ -137,11 +137,11 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Check if opponent still has enough points
-        if ($user->points < $bet->points_amount) {
+        // Check if opponent still has enough stars
+        if ($user->stars < $bet->stars_amount) {
             return response()->json([
                 'success' => false,
-                'message' => 'You do not have enough points to accept this bet.'
+                'message' => 'You do not have enough stars to accept this bet.'
             ], 400);
         }
 
@@ -271,20 +271,20 @@ class BetController extends Controller
                     'completed_at' => now()
                 ]);
 
-                // Transfer points
+                // Transfer stars
                 $winner = User::find($request->winner_id);
                 $loser = $request->winner_id === $bet->creator_id 
                     ? User::find($bet->opponent_id) 
                     : User::find($bet->creator_id);
 
                 // Winner gets the bet amount, loser loses the bet amount
-                $winner->increment('points', $bet->points_amount);
-                $loser->decrement('points', $bet->points_amount);
+                $winner->increment('stars', $bet->stars_amount);
+                $loser->decrement('stars', $bet->stars_amount);
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Winner declared successfully and points transferred'
+                'message' => 'Winner declared successfully and stars transferred'
             ]);
 
         } catch (\Exception $e) {
