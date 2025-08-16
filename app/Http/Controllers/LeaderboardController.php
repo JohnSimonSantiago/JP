@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Season;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LeaderboardController extends Controller
 {
@@ -15,15 +16,14 @@ class LeaderboardController extends Controller
             $users = User::orderBy('stars', 'desc')
                 ->orderBy('level', 'desc')
                 ->orderBy('name', 'asc')
+                ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image']) // FIXED: Use stars
                 ->get();
 
             // Get current season info
             $currentSeason = Season::getOrCreateCurrentSeason();
-            
+                        
             // Get all seasons with their top players
-            $seasons = Season::where('is_current', false)
-                ->orderBy('season_number', 'desc')
-                ->get();
+            $seasons = Season::getPastSeasons(); // FIXED: Use static method
 
             return response()->json([
                 'success' => true,
@@ -44,6 +44,7 @@ class LeaderboardController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Failed to fetch leaderboard: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch leaderboard'
@@ -54,9 +55,24 @@ class LeaderboardController extends Controller
     public function newSeason(Request $request)
     {
         try {
-            // Only allow admins or specific users to start new season
-            // You can add authorization logic here
-            
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // Check if user has admin role
+            $user = Auth::user();
+            if ($user->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Only administrators can start new seasons'
+                ], 403);
+            }
+
+            // Start new season
             $newSeason = Season::startNewSeason();
 
             return response()->json([
@@ -70,6 +86,8 @@ class LeaderboardController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Failed to start new season: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to start new season'
@@ -80,8 +98,8 @@ class LeaderboardController extends Controller
     public function getCurrentSeason()
     {
         try {
-            $currentSeason = Season::getOrCreateCurrentSeason();
-            
+            $currentSeason = Season::getOrCreateCurrentSeason(); // FIXED: Use static method
+                        
             return response()->json([
                 'success' => true,
                 'current_season' => [
@@ -92,9 +110,66 @@ class LeaderboardController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            \Log::error('Failed to fetch current season: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch current season'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get admin dashboard statistics (admin only)
+     */
+    public function getAdminStats(Request $request)
+    {
+        try {
+            // Check if user is authenticated
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Authentication required'
+                ], 401);
+            }
+
+            // Check if user has admin role
+            $user = Auth::user();
+            if ($user->role !== 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Admin access required'
+                ], 403);
+            }
+
+            $currentSeason = Season::getOrCreateCurrentSeason();
+            
+            // Get various statistics
+            $totalUsers = User::count();
+            $premiumUsers = User::where('is_premium', true)->count();
+            $totalStars = User::sum('stars');
+            $averageStars = User::avg('stars');
+            $topUser = User::orderBy('stars', 'desc')->first();
+
+            return response()->json([
+                'success' => true,
+                'stats' => [
+                    'current_season' => $currentSeason->season_number,
+                    'total_users' => $totalUsers,
+                    'premium_users' => $premiumUsers,
+                    'total_stars' => $totalStars,
+                    'average_stars' => round($averageStars, 2),
+                    'top_user' => $topUser ? [
+                        'name' => $topUser->name,
+                        'stars' => $topUser->stars,
+                        'level' => $topUser->level
+                    ] : null
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch admin statistics'
             ], 500);
         }
     }

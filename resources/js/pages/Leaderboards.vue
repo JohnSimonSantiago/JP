@@ -20,10 +20,11 @@
                                 Started:
                                 {{ formatDate(currentSeason.start_date) }}
                             </span>
-                            <!-- Admin/Season Management Button -->
+                            <!-- Admin/Season Management Button - Only show for admins -->
                             <button
+                                v-if="isAdmin"
                                 @click="showNewSeasonDialog = true"
-                                class="bg-gradient-to-r from-purple-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-purple-600 hover:to-purple-700 transition-all flex items-center gap-2 text-sm"
+                                class="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-2 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all flex items-center gap-2 text-sm"
                             >
                                 <i class="pi pi-refresh"></i>
                                 Start New Season
@@ -106,7 +107,7 @@
                                                 />
                                                 <div
                                                     v-else
-                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
                                                 >
                                                     <i
                                                         class="pi pi-user text-white text-2xl"
@@ -175,7 +176,7 @@
                                                 />
                                                 <div
                                                     v-else
-                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
                                                 >
                                                     <i
                                                         class="pi pi-user text-white text-3xl"
@@ -249,7 +250,7 @@
                                                 />
                                                 <div
                                                     v-else
-                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
                                                 >
                                                     <i
                                                         class="pi pi-user text-white text-2xl"
@@ -439,7 +440,7 @@
                                                                 />
                                                                 <div
                                                                     v-else
-                                                                    class="h-full w-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                                    class="h-full w-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
                                                                 >
                                                                     <i
                                                                         class="pi pi-user text-white text-sm"
@@ -581,7 +582,7 @@
                             <div
                                 v-for="season in pastSeasons"
                                 :key="season.season_number"
-                                class="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200"
+                                class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200"
                             >
                                 <div
                                     class="flex items-center justify-between mb-4"
@@ -688,9 +689,9 @@
                     </div>
                 </div>
 
-                <!-- New Season Dialog -->
+                <!-- New Season Dialog - Only shows for admins -->
                 <div
-                    v-if="showNewSeasonDialog"
+                    v-if="showNewSeasonDialog && isAdmin"
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
                     @click.self="showNewSeasonDialog = false"
                 >
@@ -699,10 +700,10 @@
                     >
                         <div class="text-center">
                             <div
-                                class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                                class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4"
                             >
                                 <i
-                                    class="pi pi-refresh text-purple-600 text-2xl"
+                                    class="pi pi-refresh text-blue-600 text-2xl"
                                 ></i>
                             </div>
                             <h3 class="text-xl font-bold text-gray-800 mb-2">
@@ -758,7 +759,7 @@
                                 <button
                                     @click="startNewSeason"
                                     :disabled="loadingNewSeason"
-                                    class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <i
                                         v-if="loadingNewSeason"
@@ -777,6 +778,13 @@
 
 <script>
 export default {
+    // Add props if using Inertia.js
+    props: {
+        auth: {
+            type: Object,
+            default: () => ({}),
+        },
+    },
     data() {
         return {
             users: [],
@@ -789,14 +797,47 @@ export default {
             pastSeasons: [],
             showNewSeasonDialog: false,
             loadingNewSeason: false,
+            currentUser: null, // Store current user data
         };
     },
     computed: {
         topUsers() {
             return this.users.slice(0, 3);
         },
+        // Helper to check if current user is admin
+        isAdmin() {
+            // Method 1: If using Inertia.js props
+            if (this.auth && this.auth.user) {
+                return this.auth.user.role === "admin";
+            }
+
+            // Method 2: If using stored user data
+            if (this.currentUser) {
+                return this.currentUser.role === "admin";
+            }
+
+            // Method 3: If using global Vue properties
+            if (this.$auth && this.$auth.user) {
+                return this.$auth.user.role === "admin";
+            }
+
+            return false;
+        },
     },
     methods: {
+        async fetchCurrentUser() {
+            try {
+                const response = await axios.get("/api/user");
+                if (response.data.success) {
+                    this.currentUser = response.data.user;
+                }
+            } catch (error) {
+                console.error("Error fetching current user:", error);
+                // User might not be authenticated
+                this.currentUser = null;
+            }
+        },
+
         async fetchLeaderboard() {
             try {
                 this.loading = true;
@@ -822,6 +863,16 @@ export default {
         },
 
         async startNewSeason() {
+            // Double-check admin authorization on frontend
+            if (!this.isAdmin) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Unauthorized",
+                    detail: "Only administrators can start new seasons",
+                });
+                return;
+            }
+
             try {
                 this.loadingNewSeason = true;
                 const response = await axios.post(
@@ -867,8 +918,13 @@ export default {
             });
         },
     },
-    mounted() {
-        this.fetchLeaderboard();
+    async mounted() {
+        // Fetch current user data if not passed via props
+        if (!this.auth || !this.auth.user) {
+            await this.fetchCurrentUser();
+        }
+
+        await this.fetchLeaderboard();
     },
 };
 </script>

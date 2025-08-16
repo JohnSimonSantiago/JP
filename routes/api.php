@@ -21,33 +21,36 @@ use App\Http\Controllers\LeaderboardController;
 |
 */
 
-// Public routes
+// Public routes (no authentication needed)
 Route::post('/logout', [LoginController::class, 'logout']);
 
-Route::middleware(['auth:sanctum'])->group(function () {
+// Public shop routes
+Route::prefix('shops')->group(function () {
+    Route::get('/', [ShopController::class, 'index']); // List all shops
+    Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items
+    Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews
+});
+
+// AUTHENTICATED ROUTES
+Route::middleware('auth:sanctum')->group(function () {
+    
     // User routes
+    Route::get('/user', [UserController::class, 'getCurrentUser']); // FIXED: For leaderboard auth
     Route::prefix('user')->group(function () {
         Route::get('/profile', [UserController::class, 'getProfile']);
         Route::put('/profile', [UserController::class, 'updateProfile']);
         Route::post('/upload-profile-image', [UserController::class, 'uploadProfileImage']);
         Route::get('/memberships', [UserController::class, 'getMembershipHistory']);
         Route::post('/memberships', [UserController::class, 'createMembership']);
-        
-        // Current authenticated user
-        Route::get('/', function () {
-            return response()->json([
-                'success' => true,
-                'user' => auth()->user()
-            ]);
-        });
     });
 
     // Users routes (for searching/listing)
     Route::prefix('users')->group(function () {
         Route::get('/search', [UserController::class, 'searchUsers']);
         Route::get('/', function () {
-            $users = \App\Models\User::select('id', 'name', 'level', 'points', 'is_premium')
-                                    ->orderBy('points', 'desc')
+            $users = \App\Models\User::select('id', 'name', 'level', 'stars', 'points', 'is_premium', 'profile_image')
+                                    ->orderBy('stars', 'desc') // FIXED: Use stars instead of points
+                                    ->orderBy('points', 'desc') // Fallback to points
                                     ->get();
             
             return response()->json([
@@ -57,8 +60,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
     });
 
-    // Leaderboard
-    Route::get('/leaderboard', [UserController::class, 'getLeaderboard']);
+    // LEADERBOARD ROUTES - FIXED
+    Route::prefix('leaderboard')->group(function () {
+        Route::get('/', [LeaderboardController::class, 'index']); // Get leaderboard data
+        Route::post('/new-season', [LeaderboardController::class, 'newSeason']); // Start new season (admin only)
+        Route::get('/current-season', [LeaderboardController::class, 'getCurrentSeason']); // Get current season
+    });
 
     // Trade routes
     Route::prefix('trades')->group(function () {
@@ -78,39 +85,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/{bet}/cancel', [BetController::class, 'cancel']);
         Route::post('/{bet}/declare-winner', [BetController::class, 'declareWinner']);
     });
-});
 
-Route::middleware('auth:sanctum')->group(function () {
-    // Public shop routes (for all authenticated users)
-    Route::prefix('shop')->group(function () {
-        Route::get('/', [ShopController::class, 'index']);
-        Route::post('/{item}/purchase', [ShopController::class, 'purchase']);
-        Route::get('/purchases', [ShopController::class, 'getPurchases']);
-    });
-
-    // Admin-only shop routes
-    Route::middleware('admin')->prefix('admin/shop')->group(function () {
-        Route::get('/items', [ShopController::class, 'adminIndex']);
-        Route::post('/items', [ShopController::class, 'store']);
-        Route::put('/items/{item}', [ShopController::class, 'update']);
-        Route::delete('/items/{item}', [ShopController::class, 'destroy']);
-        
-        // Purchase management
-        Route::get('/purchases/pending', [ShopController::class, 'getPendingPurchases']);
-        Route::post('/purchases/{purchase}/approve', [ShopController::class, 'approvePurchase']);
-        Route::post('/purchases/{purchase}/reject', [ShopController::class, 'rejectPurchase']);
-    });
-});
-
-Route::prefix('shops')->group(function () {
-    Route::get('/', [ShopController::class, 'index']); // List all shops - PUBLIC
-    Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items - PUBLIC
-    Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews - PUBLIC
-});
-
-// AUTHENTICATED ROUTES
-Route::middleware(['auth:sanctum'])->group(function () {
-    
     // Shop interactions (authenticated users)
     Route::prefix('shops/{shop}')->group(function () {
         Route::post('/follow', [ShopController::class, 'toggleFollow']);
@@ -144,6 +119,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     
     // User Purchase History
     Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']);
+
+    // Public shop routes (for all authenticated users)
+    Route::prefix('shop')->group(function () {
+        Route::get('/', [ShopController::class, 'index']);
+        Route::post('/{item}/purchase', [ShopController::class, 'purchase']);
+        Route::get('/purchases', [ShopController::class, 'getPurchases']);
+    });
     
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->group(function () {
@@ -156,9 +138,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
         Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
         Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+
+        // Admin-only shop routes
+        Route::prefix('shop')->group(function () {
+            Route::get('/items', [ShopController::class, 'adminIndex']);
+            Route::post('/items', [ShopController::class, 'store']);
+            Route::put('/items/{item}', [ShopController::class, 'update']);
+            Route::delete('/items/{item}', [ShopController::class, 'destroy']);
+            
+            // Purchase management
+            Route::get('/purchases/pending', [ShopController::class, 'getPendingPurchases']);
+            Route::post('/purchases/{purchase}/approve', [ShopController::class, 'approvePurchase']);
+            Route::post('/purchases/{purchase}/reject', [ShopController::class, 'rejectPurchase']);
+        });
     });
 });
-
-Route::get('/leaderboard', [LeaderboardController::class, 'index']);
-Route::get('/leaderboard/current-season', [LeaderboardController::class, 'getCurrentSeason']);
-Route::post('/leaderboard/new-season', [LeaderboardController::class, 'newSeason'])->middleware('auth');

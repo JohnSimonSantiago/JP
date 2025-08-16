@@ -12,15 +12,26 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
-    $table->id();
-$table->string('name')->unique();
-$table->integer('level')->default(1); // users start at level 1
-$table->integer('points')->default(0); // users start with 0 points
-$table->integer('stars')->default(100);
-$table->boolean('is_premium')->default(false); // indicates membership status
-$table->string('password');
-$table->string('profile_image')->nullable(); 
-$table->timestamps();
+            $table->id();
+            $table->string('name')->unique();
+            $table->string('email')->unique()->nullable(); // Optional email for auth
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('role')->default('user'); // ADDED: For admin functionality
+            $table->integer('level')->default(1);
+            $table->integer('points')->default(100); // FIXED: Consistent with stars
+            $table->integer('stars')->default(100);
+            $table->boolean('is_premium')->default(false);
+            $table->string('password');
+            $table->string('profile_image')->nullable();
+            $table->rememberToken(); // For Laravel auth
+            $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index('role');
+            $table->index('stars');
+            $table->index('points');
+            $table->index('level');
+            $table->index('is_premium');
         });
     }
 

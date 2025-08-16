@@ -31,7 +31,8 @@ class User extends Authenticatable
     protected $casts = [
         'password' => 'hashed',
         'is_premium' => 'boolean',
-        'points' => 'integer', // Add this for consistency
+        'points' => 'integer',
+        'stars' => 'integer',  // Add this for consistency
         'level' => 'integer', // Add this for consistency
         'created_at' => 'datetime',
         'updated_at' => 'datetime',

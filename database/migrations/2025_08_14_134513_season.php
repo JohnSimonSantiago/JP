@@ -6,35 +6,32 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
-        // Create seasons table
         Schema::create('seasons', function (Blueprint $table) {
             $table->id();
-            $table->integer('season_number'); // Season 1, 2, 3, etc.
-            $table->date('start_date');
-            $table->date('end_date')->nullable(); // null for current season
+            $table->integer('season_number')->unique(); // Season 1, 2, 3, etc.
+            $table->timestamp('start_date'); // FIXED: Use timestamp instead of date
+            $table->timestamp('end_date')->nullable(); // null for current season
             $table->boolean('is_current')->default(false);
-            $table->json('top_players')->nullable(); // Store top 3 players data
+            $table->json('top_players')->nullable(); // Store top 3 players data as JSON
             $table->timestamps();
-        });
 
-        // Create season_rankings table for historical records
-        Schema::create('season_rankings', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('season_id')->constrained()->onDelete('cascade');
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->integer('rank'); // 1, 2, 3
-            $table->integer('final_stars'); // Stars at end of season
-            $table->timestamps();
-            
-            $table->unique(['season_id', 'rank']); // Only one rank 1, 2, 3 per season
+            // Indexes for better performance
+            $table->index('is_current');
+            $table->index('season_number');
+            $table->index('start_date');
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
-        Schema::dropIfExists('season_rankings');
         Schema::dropIfExists('seasons');
     }
 };

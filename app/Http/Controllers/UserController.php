@@ -13,47 +13,93 @@ use Carbon\Carbon;
 
 class UserController extends Controller
 {
-public function signUp(Request $request)
-{
-    $request->validate([
-        'name' => 'required|string|max:255|unique:users,name',
-        'password' => 'required|string|min:6|confirmed',
-    ], [
-        'name.unique' => 'This username is already taken.',
-        'name.required' => 'Username is required.',
-        'password.required' => 'Password is required.',
-        'password.min' => 'Password must be at least 6 characters.',
-        'password.confirmed' => 'Password confirmation does not match.',
-    ]);
+    /**
+     * Get current authenticated user data - NEW METHOD FOR LEADERBOARD
+     */
+    public function getCurrentUser(Request $request)
+    {
+        try {
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Not authenticated',
+                    'user' => null
+                ], 401);
+            }
 
-    try {
-        $newUser = new User();
-        $newUser->name = $request->name;
-        $newUser->password = Hash::make($request->password);
-        $newUser->level = 1;
-        $newUser->points = 100; // Changed from 0 to 100
-        $newUser->is_premium = false;
+            $user = Auth::user();
 
-        $newUser->save();
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email ?? null,
+                    'role' => $user->role ?? 'user', // Default to 'user' if no role field
+                    'level' => $user->level ?? 1,
+                    'stars' => $user->stars ?? $user->points ?? 100, // Use stars if exists, fallback to points
+                    'points' => $user->points ?? $user->stars ?? 100, // Keep both for compatibility
+                    'is_premium' => $user->is_premium ?? false,
+                    'profile_image' => $user->profile_image,
+                    'created_at' => $user->created_at,
+                ]
+            ]);
 
-        return response()->json([
-            'message' => 'User created successfully',
-            'user' => [
-                'id' => $newUser->id,
-                'name' => $newUser->name,
-                'level' => $newUser->level,
-                'points' => $newUser->points,
-                'is_premium' => $newUser->is_premium,
-            ]
-        ], 201);
-                
-    } catch (\Exception $e) {
-        return response()->json([
-            'message' => 'Failed to create user',
-            'error' => 'Something went wrong. Please try again.'
-        ], 500);
+        } catch (\Exception $e) {
+            \Log::error('Failed to fetch current user: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch user data'
+            ], 500);
+        }
     }
-}
+
+    public function signUp(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|unique:users,name',
+            'password' => 'required|string|min:6|confirmed',
+        ], [
+            'name.unique' => 'This username is already taken.',
+            'name.required' => 'Username is required.',
+            'password.required' => 'Password is required.',
+            'password.min' => 'Password must be at least 6 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
+
+        try {
+            $newUser = new User();
+            $newUser->name = $request->name;
+            $newUser->password = Hash::make($request->password);
+            $newUser->level = 1;
+            $newUser->stars = 100; // FIXED: Use stars instead of points
+            $newUser->points = 100; // Keep both for compatibility
+            $newUser->is_premium = false;
+            $newUser->role = 'user'; // Set default role
+
+            $newUser->save();
+
+            return response()->json([
+                'message' => 'User created successfully',
+                'user' => [
+                    'id' => $newUser->id,
+                    'name' => $newUser->name,
+                    'level' => $newUser->level,
+                    'stars' => $newUser->stars,
+                    'points' => $newUser->points,
+                    'is_premium' => $newUser->is_premium,
+                    'role' => $newUser->role,
+                ]
+            ], 201);
+                
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to create user',
+                'error' => 'Something went wrong. Please try again.'
+            ], 500);
+        }
+    }
 
     public function validatePassword(Request $request)
     {
@@ -78,7 +124,7 @@ public function signUp(Request $request)
     }
     
     /**
-     * Get user profile with membership data
+     * Get user profile with membership data - UPDATED
      */
     public function getProfile()
     {
@@ -115,9 +161,11 @@ public function signUp(Request $request)
                     'id' => $user->id,
                     'name' => $user->name,
                     'level' => $user->level,
-                    'points' => $user->points,
+                    'stars' => $user->stars ?? $user->points ?? 100, // FIXED: Include stars
+                    'points' => $user->points ?? $user->stars ?? 100, // Keep both
                     'is_premium' => $isPremium,
                     'profile_image' => $user->profile_image,
+                    'role' => $user->role ?? 'user', // ADDED: Include role
                 ],
                 'membership' => $membership ? [
                     'id' => $membership->id,
@@ -196,7 +244,7 @@ public function signUp(Request $request)
     }
 
     /**
-     * Update user profile
+     * Update user profile - UPDATED
      */
     public function updateProfile(Request $request)
     {
@@ -204,7 +252,8 @@ public function signUp(Request $request)
             $validator = Validator::make($request->all(), [
                 'name' => 'sometimes|required|string|max:255',
                 'level' => 'sometimes|integer|min:1',
-                'points' => 'sometimes|integer|min:0',
+                'stars' => 'sometimes|integer|min:0', // FIXED: Use stars
+                'points' => 'sometimes|integer|min:0', // Keep both
             ]);
 
             if ($validator->fails()) {
@@ -216,7 +265,7 @@ public function signUp(Request $request)
             }
 
             $user = Auth::user();
-            $user->update($request->only(['name', 'level', 'points']));
+            $user->update($request->only(['name', 'level', 'stars', 'points']));
 
             return response()->json([
                 'success' => true,
@@ -321,61 +370,66 @@ public function signUp(Request $request)
             ], 500);
         }
     }
+
+    /**
+     * Get leaderboard - UPDATED for consistency
+     */
     public function getLeaderboard()
-{
-    try {
-        // Get all users ordered by points (descending), then by level (descending)
-        $users = User::orderBy('points', 'desc')
-                    ->orderBy('level', 'desc')
-                    ->orderBy('created_at', 'asc') // Earlier users win ties
-                    ->select(['id', 'name', 'level', 'points', 'is_premium', 'profile_image'])
-                    ->get();
+    {
+        try {
+            // Get all users ordered by stars (descending), then by level (descending)
+            $users = User::orderBy('stars', 'desc') // FIXED: Use stars instead of points
+                        ->orderBy('level', 'desc')
+                        ->orderBy('created_at', 'asc') // Earlier users win ties
+                        ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image']) // FIXED: Select stars
+                        ->get();
 
-        return response()->json([
-            'success' => true,
-            'users' => $users,
-            'total_users' => $users->count()
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to fetch leaderboard data',
-            'error' => $e->getMessage()
-        ], 500);
-    }
-}
-/**
- * Search users by name
- */
-public function searchUsers(Request $request)
-{
-    try {
-        $query = $request->get('q', '');
-        
-        if (strlen($query) < 2) {
             return response()->json([
                 'success' => true,
-                'users' => []
+                'users' => $users,
+                'total_users' => $users->count()
             ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch leaderboard data',
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $users = User::where('name', 'LIKE', '%' . $query . '%')
-                    ->select(['id', 'name', 'level', 'points', 'stars', 'is_premium', 'profile_image'])
-                    ->limit(10)
-                    ->get();
-
-        return response()->json([
-            'success' => true,
-            'users' => $users
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Failed to search users',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
+    /**
+     * Search users by name - UPDATED
+     */
+    public function searchUsers(Request $request)
+    {
+        try {
+            $query = $request->get('q', '');
+            
+            if (strlen($query) < 2) {
+                return response()->json([
+                    'success' => true,
+                    'users' => []
+                ]);
+            }
+
+            $users = User::where('name', 'LIKE', '%' . $query . '%')
+                        ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image']) // FIXED: Only select stars
+                        ->limit(10)
+                        ->get();
+
+            return response()->json([
+                'success' => true,
+                'users' => $users
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to search users',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
