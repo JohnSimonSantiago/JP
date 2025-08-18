@@ -250,4 +250,10 @@ class User extends Authenticatable
     {
         return $this->profile_image ? \Storage::url($this->profile_image) : null;
     }
+
+    // Add these methods to your User.php model
+
+// Add these methods to your User.php model if they're missing
+
+
 }

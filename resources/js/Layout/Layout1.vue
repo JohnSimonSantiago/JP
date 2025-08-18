@@ -119,6 +119,7 @@
                             <span class="font-medium">Profile</span>
                         </router-link>
 
+                        <!-- Matches -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/bet"
@@ -127,9 +128,10 @@
                             <i
                                 class="pi pi-ticket text-lg group-hover:scale-110 transition-transform"
                             ></i>
-                            <span class="font-medium"> Matches </span>
+                            <span class="font-medium">Matches</span>
                         </router-link>
 
+                        <!-- Shops (Public) -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/shops"
@@ -138,7 +140,26 @@
                             <i
                                 class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
                             ></i>
-                            <span class="font-medium"> Shops </span>
+                            <span class="font-medium">Shops</span>
+                        </router-link>
+
+                        <!-- My Shop (Shop Owners & Admins Only) -->
+                        <router-link
+                            v-if="isShopOwnerOrAdmin"
+                            active-class="bg-purple-50 text-purple-700 border-r-2 border-purple-600"
+                            to="/my-shop"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-shop text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">My Shop</span>
+                            <!-- Shop Owner Badge -->
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full"
+                            >
+                                {{ user.role === "admin" ? "Admin" : "Owner" }}
+                            </span>
                         </router-link>
 
                         <!-- Divider -->
@@ -181,8 +202,17 @@ export default {
                 name: "",
                 profile_image: null,
                 is_premium: false,
+                role: "user", // Default role
             },
         };
+    },
+    computed: {
+        // Check if user is shop owner or admin
+        isShopOwnerOrAdmin() {
+            return (
+                this.user.role === "shop_owner" || this.user.role === "admin"
+            );
+        },
     },
     methods: {
         // Format points with comma separators

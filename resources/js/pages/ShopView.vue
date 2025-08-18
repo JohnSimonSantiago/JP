@@ -3,7 +3,7 @@
         <div class="min-h-screen bg-gray-50">
             <!-- Loading State -->
             <div v-if="loading" class="flex justify-center py-12">
-                <i class="pi pi-spin pi-spinner text-purple-500 text-3xl"></i>
+                <i class="pi pi-spin pi-spinner text-blue-500 text-3xl"></i>
             </div>
 
             <div v-else-if="shop" class="space-y-6">
@@ -11,7 +11,7 @@
                 <div class="relative">
                     <!-- Banner -->
                     <div
-                        class="h-64 bg-gradient-to-r from-purple-600 to-blue-600 relative overflow-hidden"
+                        class="h-64 bg-gradient-to-r from-blue-600 to-blue-600 relative overflow-hidden"
                     >
                         <img
                             v-if="shop.banner_url"
@@ -44,7 +44,7 @@
                                     />
                                     <div
                                         v-else
-                                        class="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center"
+                                        class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
                                     >
                                         <i
                                             class="pi pi-shop text-white text-2xl"
@@ -87,7 +87,7 @@
                                                 :class="
                                                     isFollowing
                                                         ? 'bg-green-500 hover:bg-green-600 text-white'
-                                                        : 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
                                                 "
                                                 class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
                                             >
@@ -127,7 +127,7 @@
                                     >
                                         <div class="text-center">
                                             <div
-                                                class="text-2xl font-bold text-purple-600"
+                                                class="text-2xl font-bold text-blue-600"
                                             >
                                                 {{ shop.total_items }}
                                             </div>
@@ -184,10 +184,10 @@
                 <!-- User Points Display -->
                 <div class="max-w-6xl mx-auto px-6">
                     <div
-                        class="bg-purple-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
+                        class="bg-blue-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
                     >
-                        <i class="pi pi-wallet text-purple-600"></i>
-                        <span class="text-lg font-bold text-purple-700">
+                        <i class="pi pi-wallet text-blue-600"></i>
+                        <span class="text-lg font-bold text-blue-700">
                             {{ formatPoints(currentUser.points || 0) }} Points
                         </span>
                     </div>
@@ -208,7 +208,7 @@
                                     @input="debounceSearch"
                                     type="text"
                                     placeholder="Search items..."
-                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
 
@@ -216,7 +216,7 @@
                             <select
                                 v-model="filters.category"
                                 @change="applyFilters"
-                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="">All Categories</option>
                                 <option
@@ -232,7 +232,7 @@
                             <select
                                 v-model="filters.sort"
                                 @change="applyFilters"
-                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             >
                                 <option value="name">Name (A-Z)</option>
                                 <option value="price_low">
@@ -259,7 +259,7 @@
                     <!-- Items Grid -->
                     <div v-if="itemsLoading" class="flex justify-center py-12">
                         <i
-                            class="pi pi-spin pi-spinner text-purple-500 text-2xl"
+                            class="pi pi-spin pi-spinner text-blue-500 text-2xl"
                         ></i>
                     </div>
 
@@ -307,7 +307,7 @@
                                 </p>
 
                                 <!-- Stock Info -->
-                                <div v-if="item.stock !== null" class="mb-3">
+                                <div class="mb-3">
                                     <div
                                         class="flex items-center justify-between text-sm"
                                     >
@@ -315,6 +315,13 @@
                                             >Stock:</span
                                         >
                                         <span
+                                            v-if="item.stock === null"
+                                            class="text-green-600 font-medium"
+                                        >
+                                            Unlimited
+                                        </span>
+                                        <span
+                                            v-else
                                             :class="
                                                 item.stock > 10
                                                     ? 'text-green-600'
@@ -335,7 +342,7 @@
                                 <!-- Price and Buy Button -->
                                 <div class="flex items-center justify-between">
                                     <div
-                                        class="text-xl font-bold text-purple-600"
+                                        class="text-xl font-bold text-blue-600"
                                     >
                                         {{ formatPoints(item.price) }}
                                         <span class="text-sm text-gray-500"
@@ -350,7 +357,7 @@
                                         "
                                         :class="
                                             canBuyItem(item)
-                                                ? 'bg-purple-500 hover:bg-purple-600 text-white'
+                                                ? 'bg-blue-500 hover:bg-blue-600 text-white'
                                                 : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                         "
                                         class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
@@ -427,24 +434,23 @@
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
                 <div class="text-center">
                     <div
-                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center"
+                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center"
                     >
                         <i
-                            class="pi pi-shopping-cart text-purple-500 text-2xl"
+                            class="pi pi-shopping-cart text-blue-500 text-2xl"
                         ></i>
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mb-2">
                         Confirm Purchase
                     </h3>
                     <p class="text-gray-600 mb-4">
-                        Are you sure you want to buy
-                        <strong>{{ selectedItem?.name }}</strong
-                        >?
+                        Select quantity for
+                        <strong>{{ selectedItem?.name }}</strong>
                     </p>
 
                     <!-- Item preview -->
                     <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                        <div class="flex items-center justify-between">
+                        <div class="flex items-center justify-between mb-3">
                             <div>
                                 <p class="font-medium text-gray-800">
                                     {{ selectedItem?.name }}
@@ -454,10 +460,79 @@
                                 </p>
                             </div>
                             <div class="text-right">
-                                <p class="text-lg font-bold text-purple-600">
+                                <p class="text-lg font-bold text-blue-600">
                                     {{ formatPoints(selectedItem?.price) }}
                                 </p>
-                                <p class="text-sm text-gray-500">points</p>
+                                <p class="text-sm text-gray-500">per item</p>
+                            </div>
+                        </div>
+
+                        <!-- Quantity Selection -->
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <label
+                                    class="text-sm font-medium text-gray-700"
+                                >
+                                    Quantity:
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        @click="decreaseQuantity"
+                                        :disabled="purchaseQuantity <= 1"
+                                        class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        <i class="pi pi-minus text-sm"></i>
+                                    </button>
+                                    <input
+                                        v-model.number="purchaseQuantity"
+                                        type="number"
+                                        :min="1"
+                                        :max="getMaxQuantity(selectedItem)"
+                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        @input="validateQuantity"
+                                    />
+                                    <button
+                                        @click="increaseQuantity"
+                                        :disabled="
+                                            purchaseQuantity >=
+                                            getMaxQuantity(selectedItem)
+                                        "
+                                        class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        <i class="pi pi-plus text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Stock info -->
+                            <div class="text-xs text-gray-500 text-left">
+                                <span v-if="selectedItem?.stock === null">
+                                    Unlimited stock available
+                                </span>
+                                <span v-else>
+                                    {{ selectedItem?.stock }} items available
+                                </span>
+                            </div>
+
+                            <!-- Total cost -->
+                            <div
+                                class="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400"
+                            >
+                                <div class="flex justify-between items-center">
+                                    <span
+                                        class="text-sm font-medium text-blue-700"
+                                    >
+                                        Total Cost:
+                                    </span>
+                                    <span
+                                        class="text-lg font-bold text-blue-600"
+                                    >
+                                        {{
+                                            formatPoints(getTotalCost())
+                                        }}
+                                        points
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -476,14 +551,17 @@
                         <div class="flex justify-between">
                             <span>After purchase:</span>
                             <span
-                                >{{
-                                    formatPoints(
-                                        currentUser.points -
-                                            (selectedItem?.price || 0)
-                                    )
-                                }}
-                                points</span
+                                :class="
+                                    getBalanceAfterPurchase() >= 0
+                                        ? 'text-green-600'
+                                        : 'text-red-600'
+                                "
                             >
+                                {{
+                                    formatPoints(getBalanceAfterPurchase())
+                                }}
+                                points
+                            </span>
                         </div>
                     </div>
 
@@ -496,14 +574,20 @@
                         </button>
                         <button
                             @click="confirmPurchase"
-                            :disabled="processingPurchase"
-                            class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            :disabled="
+                                processingPurchase || !canAffordPurchase()
+                            "
+                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                         >
                             <i
                                 v-if="processingPurchase"
                                 class="pi pi-spin pi-spinner mr-2"
                             ></i>
-                            Confirm Purchase
+                            {{
+                                !canAffordPurchase()
+                                    ? "Not Enough Points"
+                                    : "Confirm Purchase"
+                            }}
                         </button>
                     </div>
                 </div>
@@ -557,7 +641,7 @@
                             <textarea
                                 v-model="newReview.comment"
                                 rows="4"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 placeholder="Share your experience..."
                             ></textarea>
                         </div>
@@ -616,6 +700,7 @@ export default {
             selectedItem: null,
             processingPurchase: false,
             purchasingItem: null,
+            purchaseQuantity: 1, // NEW: Default quantity
 
             // Review dialog
             showReviewDialog: false,
@@ -635,14 +720,25 @@ export default {
             try {
                 this.loading = true;
                 const shopId = this.$route.params.id;
-                const response = await axios.get(`/api/shops/${shopId}`);
 
-                if (response.data.success) {
-                    this.shop = response.data.shop;
-                    this.items = response.data.items;
-                    this.isFollowing = response.data.is_following;
-                    this.canReview = response.data.can_review;
-                    this.currentUser = response.data.user || {};
+                // Fetch shop data and user data separately
+                const [shopResponse, userResponse] = await Promise.all([
+                    axios.get(`/api/shops/${shopId}`),
+                    axios.get("/api/user/profile"), // Get fresh user data
+                ]);
+
+                if (shopResponse.data.success) {
+                    this.shop = shopResponse.data.shop;
+                    this.items = shopResponse.data.items;
+                    this.isFollowing = shopResponse.data.is_following;
+                    this.canReview = shopResponse.data.can_review;
+
+                    // Use fresh user data from profile endpoint
+                    if (userResponse.data.success) {
+                        this.currentUser = userResponse.data.user;
+                    } else {
+                        this.currentUser = {};
+                    }
                 } else {
                     this.$router.push("/shops");
                 }
@@ -756,6 +852,7 @@ export default {
             }
 
             this.selectedItem = item;
+            this.purchaseQuantity = 1; // Reset quantity
             this.showPurchaseDialog = true;
         },
 
@@ -765,7 +862,10 @@ export default {
             try {
                 this.processingPurchase = true;
                 const response = await axios.post(
-                    `/api/shop-items/${this.selectedItem.id}/purchase`
+                    `/api/shop-items/${this.selectedItem.id}/purchase`,
+                    {
+                        quantity: this.purchaseQuantity, // Send quantity to backend
+                    }
                 );
 
                 if (response.data.success) {
@@ -778,6 +878,9 @@ export default {
                     // Update user balance
                     this.currentUser.points = response.data.new_balance;
                     this.cancelPurchase();
+
+                    // Refresh shop data to update stock counts
+                    await this.fetchShop();
                 }
             } catch (error) {
                 this.$toast?.add({
@@ -794,6 +897,61 @@ export default {
             this.showPurchaseDialog = false;
             this.selectedItem = null;
             this.processingPurchase = false;
+            this.purchaseQuantity = 1; // Reset quantity
+        },
+
+        // NEW: Quantity management methods
+        increaseQuantity() {
+            const max = this.getMaxQuantity(this.selectedItem);
+            if (this.purchaseQuantity < max) {
+                this.purchaseQuantity++;
+            }
+        },
+
+        decreaseQuantity() {
+            if (this.purchaseQuantity > 1) {
+                this.purchaseQuantity--;
+            }
+        },
+
+        validateQuantity() {
+            const max = this.getMaxQuantity(this.selectedItem);
+            if (this.purchaseQuantity > max) {
+                this.purchaseQuantity = max;
+            } else if (this.purchaseQuantity < 1) {
+                this.purchaseQuantity = 1;
+            }
+        },
+
+        getMaxQuantity(item) {
+            if (!item) return 1;
+
+            // If unlimited stock, limit to what user can afford or max 10
+            if (item.stock === null) {
+                const affordableQuantity = Math.floor(
+                    this.currentUser.points / item.price
+                );
+                return Math.min(affordableQuantity, 10); // Backend has max 10 validation
+            }
+
+            // For limited stock, take minimum of stock, what user can afford, and max 10
+            const affordableQuantity = Math.floor(
+                this.currentUser.points / item.price
+            );
+            return Math.min(item.stock, affordableQuantity, 10);
+        },
+
+        getTotalCost() {
+            if (!this.selectedItem) return 0;
+            return this.selectedItem.price * this.purchaseQuantity;
+        },
+
+        getBalanceAfterPurchase() {
+            return this.currentUser.points - this.getTotalCost();
+        },
+
+        canAffordPurchase() {
+            return this.getBalanceAfterPurchase() >= 0;
         },
 
         goToItemsPage(page) {

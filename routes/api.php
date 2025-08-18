@@ -14,11 +14,6 @@ use App\Http\Controllers\LeaderboardController;
 |--------------------------------------------------------------------------
 | API Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
 */
 
 // Public routes (no authentication needed)
@@ -35,7 +30,7 @@ Route::prefix('shops')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     
     // User routes
-    Route::get('/user', [UserController::class, 'getCurrentUser']); // FIXED: For leaderboard auth
+    Route::get('/user', [UserController::class, 'getCurrentUser']);
     Route::prefix('user')->group(function () {
         Route::get('/profile', [UserController::class, 'getProfile']);
         Route::put('/profile', [UserController::class, 'updateProfile']);
@@ -49,8 +44,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/search', [UserController::class, 'searchUsers']);
         Route::get('/', function () {
             $users = \App\Models\User::select('id', 'name', 'level', 'stars', 'points', 'is_premium', 'profile_image')
-                                    ->orderBy('stars', 'desc') // FIXED: Use stars instead of points
-                                    ->orderBy('points', 'desc') // Fallback to points
+                                    ->orderBy('stars', 'desc')
+                                    ->orderBy('points', 'desc')
                                     ->get();
             
             return response()->json([
@@ -60,11 +55,11 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
-    // LEADERBOARD ROUTES - FIXED
+    // Leaderboard routes
     Route::prefix('leaderboard')->group(function () {
-        Route::get('/', [LeaderboardController::class, 'index']); // Get leaderboard data
-        Route::post('/new-season', [LeaderboardController::class, 'newSeason']); // Start new season (admin only)
-        Route::get('/current-season', [LeaderboardController::class, 'getCurrentSeason']); // Get current season
+        Route::get('/', [LeaderboardController::class, 'index']);
+        Route::post('/new-season', [LeaderboardController::class, 'newSeason']);
+        Route::get('/current-season', [LeaderboardController::class, 'getCurrentSeason']);
     });
 
     // Trade routes
@@ -92,18 +87,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/reviews', [ShopController::class, 'addReview']);
     });
     
-    // Shop Owner Routes
+    // Shop Owner Routes (Authorization handled in controllers)
     Route::prefix('shops')->group(function () {
         Route::post('/', [ShopController::class, 'create']); // Create new shop
-        Route::put('/{shop}', [ShopController::class, 'update']); // Update shop
+        Route::post('/{shop}', [ShopController::class, 'update']); // Update shop (POST for file uploads)
+        Route::put('/{shop}', [ShopController::class, 'update']); // Update shop (PUT for form data)
         Route::get('/dashboard/my-shop', [ShopController::class, 'dashboard']); // Shop owner dashboard
         
         // Shop Items Management (Shop Owner)
         Route::prefix('{shop}/items')->group(function () {
             Route::get('/', [ShopItemController::class, 'shopItems']); // Get all items for shop
             Route::post('/', [ShopItemController::class, 'store']); // Create new item
-            Route::put('/{item}', [ShopItemController::class, 'update']); // Update item
-            Route::delete('/{item}', [ShopItemController::class, 'destroy']); // Delete item
+            Route::post('/{shopItem}', [ShopItemController::class, 'update']); // Update item (POST for file uploads)
+            Route::put('/{shopItem}', [ShopItemController::class, 'update']); // Update item (PUT for form data)
+            Route::delete('/{shopItem}', [ShopItemController::class, 'destroy']); // Delete item
             
             // Order Management
             Route::get('/purchases/pending', [ShopItemController::class, 'getPendingPurchases']);
@@ -119,13 +116,6 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // User Purchase History
     Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']);
-
-    // Public shop routes (for all authenticated users)
-    Route::prefix('shop')->group(function () {
-        Route::get('/', [ShopController::class, 'index']);
-        Route::post('/{item}/purchase', [ShopController::class, 'purchase']);
-        Route::get('/purchases', [ShopController::class, 'getPurchases']);
-    });
     
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->group(function () {
@@ -138,18 +128,5 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
         Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
         Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
-
-        // Admin-only shop routes
-        Route::prefix('shop')->group(function () {
-            Route::get('/items', [ShopController::class, 'adminIndex']);
-            Route::post('/items', [ShopController::class, 'store']);
-            Route::put('/items/{item}', [ShopController::class, 'update']);
-            Route::delete('/items/{item}', [ShopController::class, 'destroy']);
-            
-            // Purchase management
-            Route::get('/purchases/pending', [ShopController::class, 'getPendingPurchases']);
-            Route::post('/purchases/{purchase}/approve', [ShopController::class, 'approvePurchase']);
-            Route::post('/purchases/{purchase}/reject', [ShopController::class, 'rejectPurchase']);
-        });
     });
 });

@@ -9,6 +9,26 @@ import ShopsIndex from "./pages/ShopsIndex.vue"; // Lists all shops
 import ShopView from "./pages/ShopView.vue"; // Individual shop with items
 import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard (optional)
 
+const requiresShopOwner = (to, from, next) => {
+    // Get user from localStorage or your auth store
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!user) {
+        // Not logged in, redirect to login
+        next("/");
+        return;
+    }
+
+    if (user.role !== "shop_owner" && user.role !== "admin") {
+        // Not a shop owner, redirect to dashboard
+        next("/dashboard");
+        return;
+    }
+
+    // User is shop owner or admin, allow access
+    next();
+};
+
 export const routes = [
     {
         path: "/",
@@ -65,5 +85,12 @@ export const routes = [
         name: "my-shop",
         component: MyShop, // Shop owner management dashboard
         meta: { requiresAuth: true, role: "shop_owner" },
+    },
+
+    {
+        path: "/my-shop",
+        name: "my-shop",
+        component: MyShop,
+        beforeEnter: requiresShopOwner, // Route protection
     },
 ];

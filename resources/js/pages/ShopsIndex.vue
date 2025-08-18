@@ -539,11 +539,23 @@ export default {
                     ...this.filters,
                 });
 
-                const response = await axios.get(`/api/shops?${params}`);
+                // Fetch shops and user data separately for fresh data
+                const [shopsResponse, userResponse] = await Promise.all([
+                    axios.get(`/api/shops?${params}`),
+                    axios
+                        .get("/api/user/profile")
+                        .catch(() => ({ data: { user: {} } })), // Handle unauthenticated users
+                ]);
 
-                if (response.data.success) {
-                    this.shops = response.data.shops;
-                    this.currentUser = response.data.user || {};
+                if (shopsResponse.data.success) {
+                    this.shops = shopsResponse.data.shops;
+
+                    // Use fresh user data from profile endpoint
+                    if (userResponse.data.success) {
+                        this.currentUser = userResponse.data.user;
+                    } else {
+                        this.currentUser = {};
+                    }
                 }
             } catch (error) {
                 console.error("Error fetching shops:", error);
@@ -552,6 +564,9 @@ export default {
                     summary: "Error",
                     detail: "Failed to load shops",
                 });
+
+                // Set defaults for unauthenticated users
+                this.currentUser = {};
             } finally {
                 this.loading = false;
             }
