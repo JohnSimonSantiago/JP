@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ShopItemController extends Controller
 {
@@ -96,173 +97,234 @@ class ShopItemController extends Controller
     /**
      * Shop Owner: Create new shop item
      */
-    public function store(Request $request)
-    {
-        try {
-            // Get shop ID from route
-            $shopId = $request->route('shop');
-            
-            // Handle if it's an object (extract ID)
-            if (is_object($shopId)) {
-                $shopId = $shopId->id;
-            }
-            
-            // Find the shop
-            $shop = Shop::findOrFail($shopId);
-            
-            // Check authorization
-            if (!$shop->canBeEditedBy(Auth::user())) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'price' => 'required|integer|min:1',
-                'stock' => 'nullable|integer|min:0',
-                'unlimited_stock' => 'boolean',
-                'image' => 'nullable|image|max:2048',
-                'properties' => 'nullable|array',
-                'is_active' => 'boolean'
-            ]);
-
-            // Prepare data
-            $data = $request->except(['image', 'unlimited_stock']);
-            $data['shop_id'] = $shop->id;
-            $data['is_active'] = $request->get('is_active', true);
-            
-            // Handle stock based on unlimited_stock flag
-            $unlimitedStock = filter_var($request->get('unlimited_stock', false), FILTER_VALIDATE_BOOLEAN);
-            
-            if ($unlimitedStock) {
-                $data['stock'] = null; // Unlimited stock
-            } else {
-                // Limited stock - use provided value or default to 0
-                $data['stock'] = (int) $request->get('stock', 0);
-            }
-            
-            // Handle image upload
-            if ($request->hasFile('image')) {
-                $imagePath = $request->file('image')->store('shop-items', 'public');
-                $data['image'] = $imagePath;
-            }
-
-            // Create the item
-            $item = ShopItem::create($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Item created successfully',
-                'item' => $item->fresh() // Return fresh instance with all data
-            ], 201);
-
-        } catch (\Exception $e) {
+  public function store(Request $request)
+{
+    try {
+        // Get route parameters
+        $shopId = $request->route('shop');
+        if (is_object($shopId)) {
+            $shopId = $shopId->id;
+        }
+        
+        $shop = Shop::findOrFail($shopId);
+        $user = Auth::user();
+        
+        // Check authorization
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create item',
-                'error' => $e->getMessage(),
-                'debug' => [
-                    'shop_route' => $request->route('shop'),
-                    'error_line' => $e->getLine()
-                ]
-            ], 500);
+                'message' => 'Unauthorized'
+            ], 403);
         }
+
+        // Validate based on user role
+        $rules = [
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+            'stock' => 'nullable|integer|min:0',
+            'unlimited_stock' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ];
+
+        // Role-based price validation
+        if ($user->isAdmin()) {
+            // Admins can set both prices (but at least one is required)
+            $rules['price'] = 'nullable|integer|min:0';
+            $rules['cash_price'] = 'nullable|numeric|min:0';
+        } else {
+            // Shop owners can only set cash price (and it's required)
+            $rules['cash_price'] = 'required|numeric|min:0.01';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Prepare data based on user role
+        $data = $request->except(['image', 'unlimited_stock']);
+        $data['shop_id'] = $shop->id;
+        $data['is_active'] = $request->get('is_active', true);
+        
+        // Set pricing based on role
+        if ($user->isAdmin()) {
+            // Admin can set both prices
+            $data['price'] = $request->get('price', 0);
+            $data['cash_price'] = $request->get('cash_price', 0);
+            
+            // Validate that at least one price is set
+            if (($data['price'] <= 0) && ($data['cash_price'] <= 0)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'At least one price (points or cash) must be greater than 0'
+                ], 422);
+            }
+        } else {
+            // Shop owner can only set cash price
+            $data['price'] = 0; // No points price for shop owners
+            $data['cash_price'] = $request->get('cash_price');
+        }
+        
+        // Handle stock
+        $unlimitedStock = filter_var($request->get('unlimited_stock', false), FILTER_VALIDATE_BOOLEAN);
+        $data['stock'] = $unlimitedStock ? null : (int) $request->get('stock', 0);
+        
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')->store('shop-items', 'public');
+            $data['image'] = $imagePath;
+        }
+
+        // Create the item
+        $item = ShopItem::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item created successfully',
+            'item' => $item->fresh()
+        ], 201);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create item',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Shop Owner: Update shop item
      */
-    public function update(Request $request)
-    {
-        try {
-            // Get route parameters manually
-            $shopId = $request->route('shop');
-            $itemId = $request->route('shopItem');
-            
-            // Handle if they're objects (extract ID)
-            if (is_object($shopId)) {
-                $shopId = $shopId->id;
-            }
-            if (is_object($itemId)) {
-                $itemId = $itemId->id;
-            }
-            
-            // Find the shop first
-            $shop = Shop::findOrFail($shopId);
-            
-            // Find the item that belongs to this shop
-            $item = $shop->items()->findOrFail($itemId);
-            
-            // Check authorization
-            if (!$shop->canBeEditedBy(Auth::user())) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            $request->validate([
-                'name' => 'string|max:255',
-                'description' => 'nullable|string|max:1000',
-                'price' => 'integer|min:1',
-                'stock' => 'nullable|integer|min:0',
-                'unlimited_stock' => 'boolean',
-                'is_active' => 'boolean',
-                'image' => 'nullable|image|max:2048',
-                'properties' => 'nullable|array'
-            ]);
-
-            // Prepare update data
-            $data = $request->except(['image', '_method', 'unlimited_stock']);
-            
-            // Handle stock based on unlimited_stock flag if provided
-            if ($request->has('unlimited_stock')) {
-                $unlimitedStock = filter_var($request->get('unlimited_stock'), FILTER_VALIDATE_BOOLEAN);
-                
-                if ($unlimitedStock) {
-                    $data['stock'] = null; // Unlimited stock
-                } else {
-                    // Limited stock - use provided value or keep current
-                    if ($request->has('stock')) {
-                        $data['stock'] = (int) $request->get('stock', 0);
-                    } else {
-                        // If switching from unlimited to limited but no stock specified, set to 0
-                        $data['stock'] = $item->stock === null ? 0 : $item->stock;
-                    }
-                }
-            }
-            
-            // Handle image upload
-            if ($request->hasFile('image')) {
-                // Delete old image if exists
-                if ($item->image) {
-                    Storage::disk('public')->delete($item->image);
-                }
-                
-                $imagePath = $request->file('image')->store('shop-items', 'public');
-                $data['image'] = $imagePath;
-            }
-
-            // Update the item
-            $item->update($data);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Item updated successfully',
-                'item' => $item->fresh() // Return fresh instance
-            ]);
-
-        } catch (\Exception $e) {
+   public function update(Request $request)
+{
+    try {
+        // Get route parameters
+        $shopId = $request->route('shop');
+        $itemId = $request->route('shopItem');
+        
+        if (is_object($shopId)) {
+            $shopId = $shopId->id;
+        }
+        if (is_object($itemId)) {
+            $itemId = $itemId->id;
+        }
+        
+        $shop = Shop::findOrFail($shopId);
+        $item = $shop->items()->findOrFail($itemId);
+        $user = Auth::user();
+        
+        // Check authorization
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update item',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'Unauthorized'
+            ], 403);
         }
+
+        // Validate based on user role
+        $rules = [
+            'name' => 'sometimes|required|string|max:255',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean',
+            'stock' => 'nullable|integer|min:0',
+            'unlimited_stock' => 'boolean',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ];
+
+        // Role-based price validation
+        if ($user->isAdmin()) {
+            // Admins can update both prices
+            $rules['price'] = 'nullable|integer|min:0';
+            $rules['cash_price'] = 'nullable|numeric|min:0';
+        } else {
+            // Shop owners can only update cash price
+            $rules['cash_price'] = 'sometimes|required|numeric|min:0.01';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+        
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Prepare update data based on role
+        $data = $request->except(['image', 'unlimited_stock']);
+        
+        // Handle pricing updates based on role
+        if ($user->isAdmin()) {
+            // Admin can update both prices
+            if ($request->has('price')) {
+                $data['price'] = $request->get('price', 0);
+            }
+            if ($request->has('cash_price')) {
+                $data['cash_price'] = $request->get('cash_price', 0);
+            }
+            
+            // If both prices are being set to 0, prevent it
+            $newPrice = $request->has('price') ? $data['price'] : $item->price;
+            $newCashPrice = $request->has('cash_price') ? $data['cash_price'] : $item->cash_price;
+            
+            if ($newPrice <= 0 && $newCashPrice <= 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'At least one price (points or cash) must be greater than 0'
+                ], 422);
+            }
+        } else {
+            // Shop owner can only update cash price
+            if ($request->has('cash_price')) {
+                $data['cash_price'] = $request->get('cash_price');
+            }
+            
+            // Remove any attempts to modify points price
+            unset($data['price']);
+        }
+        
+        // Handle stock
+        if ($request->has('unlimited_stock')) {
+            $unlimitedStock = filter_var($request->get('unlimited_stock'), FILTER_VALIDATE_BOOLEAN);
+            $data['stock'] = $unlimitedStock ? null : (int) $request->get('stock', $item->stock ?? 0);
+        }
+        
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image
+            if ($item->image) {
+                Storage::disk('public')->delete($item->image);
+            }
+            
+            $imagePath = $request->file('image')->store('shop-items', 'public');
+            $data['image'] = $imagePath;
+        }
+
+        // Update the item
+        $item->update($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item updated successfully',
+            'item' => $item->fresh()
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to update item',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Shop Owner: Delete shop item

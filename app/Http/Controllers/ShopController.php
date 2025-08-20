@@ -385,9 +385,21 @@ class ShopController extends Controller
      * Shop Owner: Get own shop dashboard
      */
     public function dashboard()
-    {
-        $user = Auth::user();
+{
+    $user = Auth::user();
+    
+    // Handle admins differently - they can have their own shops
+    if ($user->isAdmin()) {
+        $shop = Shop::where('owner_id', $user->id)->first();
         
+        if (!$shop) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No shop found'
+            ], 404);
+        }
+    } else {
+        // For regular shop owners, use the existing logic
         if (!$user->hasShop()) {
             return response()->json([
                 'success' => false,
@@ -395,40 +407,42 @@ class ShopController extends Controller
             ], 404);
         }
         
-        try {
-            $shop = $user->ownedShop;
-            $statistics = $shop->getStatistics();
-            
-            // Get recent orders
-            $recentOrders = $shop->purchases()
-                ->with(['user:id,name', 'shopItem:id,name'])
-                ->orderByDesc('created_at')
-                ->limit(10)
-                ->get();
-            
-            // Get pending orders
-            $pendingOrders = $shop->purchases()
-                ->pending()
-                ->with(['user:id,name', 'shopItem:id,name'])
-                ->orderBy('created_at')
-                ->get();
-            
-            return response()->json([
-                'success' => true,
-                'shop' => $shop,
-                'statistics' => $statistics,
-                'recent_orders' => $recentOrders,
-                'pending_orders' => $pendingOrders
-            ]);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load dashboard',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $shop = $user->ownedShop;
     }
+    
+    try {
+        $statistics = $shop->getStatistics();
+        
+        // Get recent orders
+        $recentOrders = $shop->purchases()
+            ->with(['user:id,name', 'shopItem:id,name'])
+            ->orderByDesc('created_at')
+            ->limit(10)
+            ->get();
+        
+        // Get pending orders
+        $pendingOrders = $shop->purchases()
+            ->pending()
+            ->with(['user:id,name', 'shopItem:id,name'])
+            ->orderBy('created_at')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'shop' => $shop,
+            'statistics' => $statistics,
+            'recent_orders' => $recentOrders,
+            'pending_orders' => $pendingOrders
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to load dashboard',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
     /**
      * Admin: Get all shops (including inactive/unverified)

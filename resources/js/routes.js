@@ -7,7 +7,8 @@ import LoginNew from "./pages/LoginNew.vue";
 import Bet from "./pages/Bet.vue";
 import ShopsIndex from "./pages/ShopsIndex.vue"; // Lists all shops
 import ShopView from "./pages/ShopView.vue"; // Individual shop with items
-import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard (optional)
+import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard
+import AdminPointPricing from "./pages/AdminPointPricing.vue"; // Admin point pricing management
 
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
@@ -26,6 +27,26 @@ const requiresShopOwner = (to, from, next) => {
     }
 
     // User is shop owner or admin, allow access
+    next();
+};
+
+const requiresAdmin = (to, from, next) => {
+    // Get user from localStorage or your auth store
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+
+    if (!user) {
+        // Not logged in, redirect to login
+        next("/");
+        return;
+    }
+
+    if (user.role !== "admin") {
+        // Not an admin, redirect to dashboard
+        next("/dashboard");
+        return;
+    }
+
+    // User is admin, allow access
     next();
 };
 
@@ -79,18 +100,19 @@ export const routes = [
         props: true, // Pass route params as props
     },
 
-    // Optional: Shop owner dashboard
-    {
-        path: "/my-shop",
-        name: "my-shop",
-        component: MyShop, // Shop owner management dashboard
-        meta: { requiresAuth: true, role: "shop_owner" },
-    },
-
+    // Shop owner dashboard
     {
         path: "/my-shop",
         name: "my-shop",
         component: MyShop,
         beforeEnter: requiresShopOwner, // Route protection
+    },
+
+    // Admin point pricing management
+    {
+        path: "/admin/point-pricing",
+        name: "admin-point-pricing",
+        component: AdminPointPricing,
+        beforeEnter: requiresAdmin, // Admin only access
     },
 ];

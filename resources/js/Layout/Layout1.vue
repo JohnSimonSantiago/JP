@@ -162,6 +162,25 @@
                             </span>
                         </router-link>
 
+                        <!-- Admin Point Pricing (Admins Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-orange-50 text-orange-700 border-r-2 border-orange-600"
+                            to="/admin/point-pricing"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-orange-50 hover:text-orange-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-tags text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Point Pricing</span>
+                            <!-- Admin Badge -->
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full"
+                            >
+                                Admin
+                            </span>
+                        </router-link>
+
                         <!-- Divider -->
                         <div class="border-t border-gray-200 my-4"></div>
 
@@ -212,6 +231,11 @@ export default {
             return (
                 this.user.role === "shop_owner" || this.user.role === "admin"
             );
+        },
+
+        // Check if user is admin only
+        isAdmin() {
+            return this.user.role === "admin";
         },
     },
     methods: {

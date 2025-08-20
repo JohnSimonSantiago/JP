@@ -9,6 +9,7 @@ use App\Http\Controllers\BetController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\AdminPricingController; // Add this import
 
 /*
 |--------------------------------------------------------------------------
@@ -128,5 +129,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
         Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
         Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+        
+        // NEW: Admin Point Pricing Management
+        Route::get('/shop-items', [AdminPricingController::class, 'getAllShopItems']); // Get all items for pricing
+        Route::get('/shops/dropdown', [AdminPricingController::class, 'getAllShops']); // Get all shops for filter dropdown  
+        Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
+        Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
     });
 });

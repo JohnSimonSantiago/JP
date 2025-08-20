@@ -195,16 +195,48 @@
                                                 <div
                                                     class="flex items-center space-x-4 mt-1"
                                                 >
-                                                    <span
-                                                        class="text-sm font-medium text-blue-600"
+                                                    <!-- Show both prices -->
+                                                    <div
+                                                        class="flex items-center space-x-2"
                                                     >
-                                                        {{
-                                                            formatPoints(
-                                                                item.price
-                                                            )
-                                                        }}
-                                                        points
-                                                    </span>
+                                                        <span
+                                                            v-if="
+                                                                item.price > 0
+                                                            "
+                                                            class="text-sm font-medium text-blue-600"
+                                                        >
+                                                            {{
+                                                                formatPoints(
+                                                                    item.price
+                                                                )
+                                                            }}
+                                                            points
+                                                        </span>
+                                                        <span
+                                                            v-if="
+                                                                item.cash_price >
+                                                                0
+                                                            "
+                                                            class="text-sm font-medium text-green-600"
+                                                        >
+                                                            ${{
+                                                                parseFloat(
+                                                                    item.cash_price
+                                                                ).toFixed(2)
+                                                            }}
+                                                        </span>
+                                                        <span
+                                                            v-if="
+                                                                item.price <=
+                                                                    0 &&
+                                                                item.cash_price <=
+                                                                    0
+                                                            "
+                                                            class="text-sm text-red-500"
+                                                        >
+                                                            No price set
+                                                        </span>
+                                                    </div>
                                                     <span
                                                         :class="[
                                                             'text-xs px-2 py-1 rounded-full',
@@ -638,13 +670,13 @@
                     </div>
                 </div>
 
-                <!-- Create/Edit Item Dialog -->
+                <!-- Create/Edit Item Dialog with Dual Pricing -->
                 <div
                     v-if="showCreateItem || showEditItem"
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
                 >
                     <div
-                        class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6"
+                        class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto"
                     >
                         <h3 class="text-xl font-bold text-gray-800 mb-4">
                             {{ showEditItem ? "Edit Item" : "Add New Item" }}
@@ -680,20 +712,77 @@
                                     ></textarea>
                                 </div>
 
-                                <div>
-                                    <label
-                                        class="block text-sm font-medium text-gray-700 mb-1"
+                                <!-- Pricing Section -->
+                                <div class="space-y-4 border-t pt-4">
+                                    <h4
+                                        class="text-md font-semibold text-gray-800"
                                     >
-                                        Price (Points) *
-                                    </label>
-                                    <input
-                                        v-model.number="itemForm.price"
-                                        type="number"
-                                        min="1"
-                                        required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        placeholder="100"
-                                    />
+                                        Pricing
+                                    </h4>
+
+                                    <div class="grid grid-cols-1 gap-4">
+                                        <!-- Cash Price (Always visible) -->
+                                        <div>
+                                            <label
+                                                class="block text-sm font-medium text-gray-700 mb-1"
+                                            >
+                                                Cash Price
+                                                {{ !isAdmin ? "*" : "" }}
+                                            </label>
+                                            <div class="relative">
+                                                <span
+                                                    class="absolute left-3 top-2 text-gray-500"
+                                                    >$</span
+                                                >
+                                                <input
+                                                    v-model.number="
+                                                        itemForm.cash_price
+                                                    "
+                                                    type="number"
+                                                    step="0.01"
+                                                    min="0"
+                                                    :required="!isAdmin"
+                                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    placeholder="0.00"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <!-- Points Price (Admin only) -->
+                                        <div v-if="isAdmin">
+                                            <label
+                                                class="block text-sm font-medium text-gray-700 mb-1"
+                                            >
+                                                Points Price
+                                            </label>
+                                            <div class="relative">
+                                                <input
+                                                    v-model.number="
+                                                        itemForm.price
+                                                    "
+                                                    type="number"
+                                                    min="0"
+                                                    class="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                    placeholder="0"
+                                                />
+                                                <span
+                                                    class="absolute right-3 top-2 text-gray-500"
+                                                    >points</span
+                                                >
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pricing validation message -->
+                                    <div
+                                        v-if="showPricingValidation"
+                                        class="text-sm text-amber-600 bg-amber-50 p-2 rounded"
+                                    >
+                                        <i
+                                            class="pi pi-exclamation-triangle mr-1"
+                                        ></i>
+                                        {{ getPricingValidationMessage() }}
+                                    </div>
                                 </div>
 
                                 <!-- Stock Management Section with Unlimited Toggle -->
@@ -835,16 +924,14 @@
                                 </button>
                                 <button
                                     type="submit"
-                                    :disabled="savingItem"
+                                    :disabled="savingItem || !isFormValid"
                                     class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     <i
                                         v-if="savingItem"
                                         class="pi pi-spin pi-spinner mr-2"
                                     ></i>
-                                    {{
-                                        showEditItem ? "Update" : "Create"
-                                    }}
+                                    {{ showEditItem ? "Update" : "Create" }}
                                     Item
                                 </button>
                             </div>
@@ -866,6 +953,9 @@ export default {
             items: [],
             recentOrders: [],
             pendingOrders: [],
+
+            // User data
+            user: null,
 
             // UI State
             activeTab: "items",
@@ -900,13 +990,36 @@ export default {
             itemForm: {
                 name: "",
                 description: "",
-                price: null,
+                price: 0,
+                cash_price: 0,
                 stock: 0,
                 unlimited_stock: false,
                 is_active: true,
                 image: null,
             },
         };
+    },
+
+    computed: {
+        isAdmin() {
+            return this.user && this.user.role === "admin";
+        },
+
+        showPricingValidation() {
+            if (!this.isAdmin) {
+                return this.itemForm.cash_price <= 0;
+            }
+            return this.itemForm.price <= 0 && this.itemForm.cash_price <= 0;
+        },
+
+        isFormValid() {
+            if (!this.isAdmin) {
+                // Shop owners must set cash price
+                return this.itemForm.cash_price > 0;
+            }
+            // Admins must set at least one price
+            return this.itemForm.price > 0 || this.itemForm.cash_price > 0;
+        },
     },
 
     watch: {
@@ -926,9 +1039,25 @@ export default {
         async fetchShopData() {
             try {
                 this.loading = true;
-                const response = await axios.get(
-                    "/api/shops/dashboard/my-shop"
-                );
+
+                // Try to get the admin's own shop first
+                let response;
+                try {
+                    response = await axios.get("/api/shops/dashboard/my-shop");
+                } catch (error) {
+                    // If admin doesn't have a shop or API doesn't find it, try alternative approach
+                    if (this.isAdmin && error.response?.status === 404) {
+                        console.log(
+                            "Admin shop not found via my-shop endpoint, trying alternative..."
+                        );
+                        // You might need to implement this endpoint or modify the existing one
+                        // For now, we'll handle the 404 gracefully
+                        this.shop = null;
+                        this.loading = false;
+                        return;
+                    }
+                    throw error;
+                }
 
                 if (response.data.success) {
                     this.shop = response.data.shop;
@@ -976,6 +1105,22 @@ export default {
             } catch (error) {
                 console.error("Error fetching items:", error);
             }
+        },
+
+        async fetchUserData() {
+            try {
+                const user = JSON.parse(localStorage.getItem("user") || "null");
+                this.user = user;
+            } catch (error) {
+                console.error("Error getting user data:", error);
+            }
+        },
+
+        getPricingValidationMessage() {
+            if (!this.isAdmin) {
+                return "Shop owners must set a cash price for their items.";
+            }
+            return "At least one price (points or cash) must be set for this item.";
         },
 
         async createShop() {
@@ -1062,13 +1207,26 @@ export default {
         },
 
         async saveItem() {
+            if (!this.isFormValid) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Validation Error",
+                    detail: this.getPricingValidationMessage(),
+                });
+                return;
+            }
+
             try {
                 this.savingItem = true;
                 const formData = new FormData();
 
                 formData.append("name", this.itemForm.name);
                 formData.append("description", this.itemForm.description || "");
-                formData.append("price", this.itemForm.price);
+
+                // Always send both prices
+                formData.append("price", this.itemForm.price || 0);
+                formData.append("cash_price", this.itemForm.cash_price || 0);
+
                 formData.append(
                     "is_active",
                     this.itemForm.is_active ? "1" : "0"
@@ -1136,7 +1294,8 @@ export default {
             this.itemForm = {
                 name: item.name,
                 description: item.description || "",
-                price: item.price,
+                price: item.price || 0,
+                cash_price: item.cash_price || 0,
                 stock: item.stock || 0,
                 unlimited_stock: item.stock === null, // null stock means unlimited
                 is_active: item.is_active,
@@ -1180,7 +1339,8 @@ export default {
             this.itemForm = {
                 name: "",
                 description: "",
-                price: null,
+                price: 0,
+                cash_price: 0,
                 stock: 0,
                 unlimited_stock: false,
                 is_active: true,
@@ -1305,6 +1465,7 @@ export default {
     },
 
     async mounted() {
+        await this.fetchUserData();
         await this.fetchShopData();
     },
 };

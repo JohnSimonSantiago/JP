@@ -14,7 +14,8 @@ class ShopItem extends Model
         'shop_id',
         'name',
         'description',
-        'price',
+        'price',           // Points price
+        'cash_price',      // Cash price
         'image',
         'is_active',
         'stock',
@@ -23,13 +24,17 @@ class ShopItem extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'properties' => 'array'
+        'properties' => 'array',
+        'price' => 'integer',
+        'cash_price' => 'decimal:2'
     ];
 
     protected $appends = [
         'image_url',
         'total_sold',
-        'is_in_stock'
+        'is_in_stock',
+        'available_payment_methods',
+        'formatted_prices'
     ];
 
     /**
@@ -65,12 +70,6 @@ class ShopItem extends Model
         });
     }
 
-    public function scopeByCategory($query, $category)
-    {
-        // Since we don't have categories anymore, this scope does nothing
-        return $query;
-    }
-
     public function scopeByShop($query, $shopId)
     {
         return $query->where('shop_id', $shopId);
@@ -84,7 +83,7 @@ class ShopItem extends Model
     public function scopeAvailable($query)
     {
         return $query->active()->inStock()->whereHas('shop', function ($q) {
-            $q->active()->verified();
+            $q->where('is_active', true)->where('is_verified', true);
         });
     }
 
@@ -106,8 +105,62 @@ class ShopItem extends Model
         return $this->stock === null || $this->stock > 0;
     }
 
+    public function getAvailablePaymentMethodsAttribute()
+    {
+        $methods = [];
+        
+        if ($this->price > 0) {
+            $methods[] = 'points';
+        }
+        
+        if ($this->cash_price > 0) {
+            $methods[] = 'cash';
+        }
+        
+        return $methods;
+    }
+
+    public function getFormattedPricesAttribute()
+    {
+        $prices = [];
+        
+        if ($this->price > 0) {
+            $prices['points'] = [
+                'amount' => $this->price,
+                'formatted' => number_format($this->price) . ' points'
+            ];
+        }
+        
+        if ($this->cash_price > 0) {
+            $prices['cash'] = [
+                'amount' => $this->cash_price,
+                'formatted' => '$' . number_format($this->cash_price, 2)
+            ];
+        }
+        
+        return $prices;
+    }
+
     /**
-     * Methods
+     * Payment Methods
+     */
+    public function acceptsPoints()
+    {
+        return $this->price > 0;
+    }
+
+    public function acceptsCash()
+    {
+        return $this->cash_price > 0;
+    }
+
+    public function acceptsBothPayments()
+    {
+        return $this->acceptsPoints() && $this->acceptsCash();
+    }
+
+    /**
+     * Stock and Purchase Methods
      */
     public function isInStock($quantity = 1)
     {
@@ -121,7 +174,7 @@ class ShopItem extends Model
         }
     }
 
-    public function canBePurchasedBy(User $user, $quantity = 1)
+    public function canBePurchasedBy(User $user, $quantity = 1, $paymentMethod = 'points')
     {
         // Check if item is active and in stock
         if (!$this->is_active || !$this->isInStock($quantity)) {
@@ -133,12 +186,22 @@ class ShopItem extends Model
             return false;
         }
 
-        // Check if user has enough points
-        $totalCost = $this->price * $quantity;
-        return $user->points >= $totalCost;
+        // Check if payment method is accepted
+        if (!in_array($paymentMethod, $this->available_payment_methods)) {
+            return false;
+        }
+
+        // Check if user can afford it
+        if ($paymentMethod === 'points') {
+            $totalCost = $this->price * $quantity;
+            return $user->points >= $totalCost;
+        }
+
+        // For cash payments, we'll assume they can pay (you might want to add wallet system)
+        return true;
     }
 
-    public function getPurchaseBlockReason(User $user, $quantity = 1)
+    public function getPurchaseBlockReason(User $user, $quantity = 1, $paymentMethod = 'points')
     {
         if (!$this->is_active) {
             return 'This item is no longer available';
@@ -156,23 +219,39 @@ class ShopItem extends Model
             return $this->stock === 0 ? 'Out of stock' : "Only {$this->stock} items available";
         }
 
-        $totalCost = $this->price * $quantity;
-        if ($user->points < $totalCost) {
-            return "Insufficient points. You need " . number_format($totalCost) . " points.";
+        if (!in_array($paymentMethod, $this->available_payment_methods)) {
+            return "This item doesn't accept {$paymentMethod} payments";
+        }
+
+        if ($paymentMethod === 'points') {
+            $totalCost = $this->price * $quantity;
+            if ($user->points < $totalCost) {
+                return "Insufficient points. You need " . number_format($totalCost) . " points.";
+            }
         }
 
         return null;
     }
 
     /**
-     * Get default icon for items (since no categories)
+     * Admin/Owner Permission Methods
+     */
+    public function canSetPointsPrice(User $user)
+    {
+        return $user->isAdmin();
+    }
+
+    public function canSetCashPrice(User $user)
+    {
+        return $user->isAdmin() || 
+               ($user->isShopOwner() && $this->shop && $this->shop->isOwnedBy($user));
+    }
+
+    /**
+     * Get default icon for items
      */
     public static function getDefaultIcon()
     {
         return 'pi pi-box';
     }
-
-    /**
-     * Remove category-based methods since we don't use categories
-     */
 }

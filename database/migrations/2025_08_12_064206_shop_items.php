@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-Schema::create('shop_items', function (Blueprint $table) {
+        Schema::create('shop_items', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->text('description')->nullable();
-            $table->integer('price'); // points required to buy
+            $table->integer('price')->default(0); // points required to buy
+            $table->decimal('cash_price', 10, 2)->default(0.00); // cash price
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('stock')->nullable(); // null = unlimited stock
@@ -29,6 +30,6 @@ Schema::create('shop_items', function (Blueprint $table) {
      */
     public function down(): void
     {
-       Schema::dropIfExists('shop_items');
+        Schema::dropIfExists('shop_items');
     }
 };
