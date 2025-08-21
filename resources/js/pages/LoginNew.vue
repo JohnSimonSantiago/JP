@@ -137,7 +137,7 @@ export default {
                 if (response.status === 200 && response.data.token) {
                     const { token, user, message } = response.data;
 
-                    // Store the token in localStorage
+                    // Store the token with the original key that all other components use
                     localStorage.setItem("auth-token", token);
 
                     // Store user data (optional, for offline access)
@@ -148,7 +148,11 @@ export default {
                         "Authorization"
                     ] = `Bearer ${token}`;
 
-                    console.log("Token stored successfully:", token);
+                    console.log(
+                        "✅ Token stored successfully with key 'auth-token':",
+                        token
+                    );
+                    console.log("✅ User role:", user.role);
 
                     // Redirect to dashboard
                     this.$router.push("/dashboard");
@@ -179,7 +183,7 @@ export default {
     },
 
     mounted() {
-        // Check if user is already logged in
+        // Check for token with the key that all components use
         const token = localStorage.getItem("auth-token");
         if (token) {
             // Set the authorization header

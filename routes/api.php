@@ -10,6 +10,7 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\AdminPricingController; // Add this import
+use App\Http\Controllers\GalleryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,9 @@ Route::prefix('shops')->group(function () {
 // AUTHENTICATED ROUTES
 Route::middleware('auth:sanctum')->group(function () {
     
+
+Route::get('/user/profile', [UserController::class, 'profile']);
+
     // User routes
     Route::get('/user', [UserController::class, 'getCurrentUser']);
     Route::prefix('user')->group(function () {
@@ -136,4 +140,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
         Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
     });
+});
+
+Route::get('/gallery', [GalleryController::class, 'index']); // Public access
+Route::get('/gallery/{id}', [GalleryController::class, 'show']); // Get specific image
+
+// Admin-only gallery routes (authentication required)
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::post('/gallery', [GalleryController::class, 'store']);
+    Route::put('/gallery/{id}', [GalleryController::class, 'update']);
+    Route::patch('/gallery/{id}', [GalleryController::class, 'update']);
+    Route::delete('/gallery/{id}', [GalleryController::class, 'destroy']);
+    Route::post('/gallery/upload', [GalleryController::class, 'uploadImage']);
+    Route::post('/gallery/reorder', [GalleryController::class, 'reorder']);
 });

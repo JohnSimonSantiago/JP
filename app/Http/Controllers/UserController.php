@@ -13,6 +13,46 @@ use Carbon\Carbon;
 
 class UserController extends Controller
 {
+
+     public function profile(Request $request)
+    {
+        try {
+            // Get the currently authenticated user (based on the bearer token)
+            $user = Auth::guard('sanctum')->user();
+            
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User not authenticated'
+                ], 401);
+            }
+
+            // Get membership if it exists
+            $membership = $user->memberships()->latest()->first();
+
+            return response()->json([
+                'success' => true,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'level' => $user->level,
+                    'stars' => $user->stars,
+                    'points' => $user->points,
+                    'is_premium' => $user->is_premium,
+                    'profile_image' => $user->profile_image,
+                    'role' => $user->role
+                ],
+                'membership' => $membership
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch profile',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
     /**
      * Get current authenticated user data - NEW METHOD FOR LEADERBOARD
      */
