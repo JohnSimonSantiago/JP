@@ -2,46 +2,66 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens; // Keep this if you're using Sanctum for API auth
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, Notifiable;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
         'name',
-        'email', // Add this if you need email authentication
+        'email',
         'password',
+        'role',
         'level',
         'points',
-         'stars',
+        'stars',
         'is_premium',
-        'role',
         'profile_image',
+        'gender',          // NEW
+        'birthday',        // NEW
+        'address',         // NEW
+        'privacy_settings', // NEW
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
     protected $casts = [
-        'password' => 'hashed',
+        'email_verified_at' => 'datetime',
+        'birthday' => 'date',           // NEW: Cast birthday as date
         'is_premium' => 'boolean',
-        'points' => 'integer',
-        'stars' => 'integer',  // Add this for consistency
-        'level' => 'integer', // Add this for consistency
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'privacy_settings' => 'array',  // NEW: Cast privacy settings as array
     ];
 
     /**
-     * Existing relationships (Trading/Betting system)
+     * Relationships
      */
-    public function sentTrades()
+    public function memberships()
+    {
+        return $this->hasMany(Membership::class);
+    }
+
+    public function trades()
     {
         return $this->hasMany(Trade::class, 'sender_id');
     }
@@ -51,29 +71,20 @@ class User extends Authenticatable
         return $this->hasMany(Trade::class, 'receiver_id');
     }
 
-    public function createdBets()
+    public function bets()
     {
         return $this->hasMany(Bet::class, 'creator_id');
     }
 
-    public function opponentBets()
-    {
-        return $this->hasMany(Bet::class, 'opponent_id');
-    }
-
-    public function refereeBets()
-    {
-        return $this->hasMany(Bet::class, 'referee_id');
-    }
-
-    public function wonBets()
-    {
-        return $this->hasMany(Bet::class, 'winner_id');
-    }
-
     /**
-     * Shop-related relationships
+     * MISSING SHOP-RELATED RELATIONSHIPS
      */
+    public function shops()
+    {
+        return $this->hasMany(Shop::class, 'owner_id');
+    }
+
+    // This is the key missing relationship that ShopController uses
     public function ownedShop()
     {
         return $this->hasOne(Shop::class, 'owner_id');
@@ -95,50 +106,38 @@ class User extends Authenticatable
     }
 
     /**
-     * Existing helper methods (keep your current logic)
+     * Accessor for calculating age from birthday
+     */
+    public function getAgeAttribute()
+    {
+        if (!$this->birthday) {
+            return null;
+        }
+        
+        return \Carbon\Carbon::parse($this->birthday)->age;
+    }
+
+    /**
+     * Check if user is admin
      */
     public function isAdmin()
     {
         return $this->role === 'admin';
     }
 
-    public function canAfford($amount)
-    {
-        return $this->points >= $amount;
-    }
-
-    public function spendPoints($amount)
-    {
-        if (!$this->canAfford($amount)) {
-            throw new \Exception('Insufficient points');
-        }
-        
-        $this->decrement('points', $amount);
-        return $this;
-    }
-
-    public function earnPoints($amount)
-    {
-        $this->increment('points', $amount);
-        return $this;
-    }
-
     /**
-     * New role checking methods for shop system
+     * Check if user is shop owner
      */
     public function isShopOwner()
     {
         return $this->role === 'shop_owner';
     }
 
-    public function isUser()
-    {
-        return $this->role === 'user';
-    }
-
     /**
-     * Shop owner specific methods
+     * MISSING SHOP-RELATED METHODS
      */
+    
+    // This is the key missing method that ShopController calls
     public function hasShop()
     {
         return $this->isShopOwner() && $this->ownedShop()->exists();
@@ -198,34 +197,38 @@ class User extends Authenticatable
     }
 
     /**
-     * Enhanced points management (builds on your existing methods)
+     * Points management methods
      */
+    public function canAfford($amount)
+    {
+        return $this->points >= $amount;
+    }
+
+    public function spendPoints($amount)
+    {
+        if (!$this->canAfford($amount)) {
+            throw new \Exception('Insufficient points');
+        }
+        
+        $this->decrement('points', $amount);
+        return $this;
+    }
+
+    public function earnPoints($amount)
+    {
+        $this->increment('points', $amount);
+        return $this;
+    }
+
     public function addPoints($amount, $reason = null)
     {
         $this->increment('points', $amount);
-        
-        // You could add point logging here if needed
-        // PointsLog::create([
-        //     'user_id' => $this->id,
-        //     'amount' => $amount,
-        //     'type' => 'earned',
-        //     'reason' => $reason
-        // ]);
     }
 
     public function deductPoints($amount, $reason = null)
     {
         if ($this->points >= $amount) {
             $this->decrement('points', $amount);
-            
-            // You could add point logging here if needed
-            // PointsLog::create([
-            //     'user_id' => $this->id,
-            //     'amount' => -$amount,
-            //     'type' => 'spent',
-            //     'reason' => $reason
-            // ]);
-            
             return true;
         }
         return false;
@@ -251,9 +254,88 @@ class User extends Authenticatable
         return $this->profile_image ? \Storage::url($this->profile_image) : null;
     }
 
-    // Add these methods to your User.php model
+    /**
+     * Get formatted gender
+     */
+    public function getFormattedGenderAttribute()
+    {
+        if (!$this->gender) {
+            return null;
+        }
 
-// Add these methods to your User.php model if they're missing
+        return match($this->gender) {
+            'male' => 'Male',
+            'female' => 'Female',
+            default => ucfirst($this->gender)
+        };
+    }
 
+    /**
+     * Get default privacy settings
+     */
+    public function getDefaultPrivacySettings()
+    {
+        return [
+            'gender' => 'public',     // public, private
+            'birthday' => 'public',   // public, private
+            'address' => 'private',   // public, private (default private for security)
+        ];
+    }
 
+    /**
+     * Get privacy settings with defaults
+     */
+    public function getPrivacySettingsAttribute($value)
+    {
+        $settings = $value ? json_decode($value, true) : [];
+        return array_merge($this->getDefaultPrivacySettings(), $settings);
+    }
+
+    /**
+     * Check if a field is private for other users
+     */
+    public function isFieldPrivate($field, $forUser = null)
+    {
+        // Owner can always see their own fields
+        if ($forUser && $forUser->id === $this->id) {
+            return false;
+        }
+
+        $privacySettings = $this->privacy_settings;
+        return ($privacySettings[$field] ?? 'public') === 'private';
+    }
+
+    /**
+     * Get public profile data (respecting privacy settings)
+     */
+    public function getPublicProfileData($forUser = null)
+    {
+        $data = [
+            'id' => $this->id,
+            'name' => $this->name,
+            'level' => $this->level,
+            'stars' => $this->stars,
+            'points' => $this->points,
+            'is_premium' => $this->is_premium,
+            'profile_image' => $this->profile_image,
+            'role' => $this->role,
+            'member_since' => $this->created_at,
+        ];
+
+        // Add fields based on privacy settings
+        if (!$this->isFieldPrivate('gender', $forUser)) {
+            $data['gender'] = $this->gender;
+        }
+        
+        if (!$this->isFieldPrivate('birthday', $forUser)) {
+            $data['birthday'] = $this->birthday;
+            $data['age'] = $this->age;
+        }
+        
+        if (!$this->isFieldPrivate('address', $forUser)) {
+            $data['address'] = $this->address;
+        }
+
+        return $data;
+    }
 }

@@ -9,7 +9,7 @@ use App\Http\Controllers\BetController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\LeaderboardController;
-use App\Http\Controllers\AdminPricingController; // Add this import
+use App\Http\Controllers\AdminPricingController;
 use App\Http\Controllers\GalleryController;
 
 /*
@@ -28,18 +28,22 @@ Route::prefix('shops')->group(function () {
     Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews
 });
 
+// Public gallery routes
+Route::get('/gallery', [GalleryController::class, 'index']); // Public access
+Route::get('/gallery/{id}', [GalleryController::class, 'show']); // Get specific image
+
 // AUTHENTICATED ROUTES
 Route::middleware('auth:sanctum')->group(function () {
     
-
-Route::get('/user/profile', [UserController::class, 'profile']);
-
-    // User routes
+    // Current user route (for getting basic user info)
     Route::get('/user', [UserController::class, 'getCurrentUser']);
+    
+    // User profile routes
     Route::prefix('user')->group(function () {
-        Route::get('/profile', [UserController::class, 'getProfile']);
-        Route::put('/profile', [UserController::class, 'updateProfile']);
+        Route::get('/profile', [UserController::class, 'getProfile']); // Get full profile with membership
+        Route::put('/profile', [UserController::class, 'updateProfile']); // Update profile (including new fields)
         Route::post('/upload-profile-image', [UserController::class, 'uploadProfileImage']);
+        Route::get('/stats', [UserController::class, 'getUserStats']); // Get user statistics with age
         Route::get('/memberships', [UserController::class, 'getMembershipHistory']);
         Route::post('/memberships', [UserController::class, 'createMembership']);
     });
@@ -47,17 +51,8 @@ Route::get('/user/profile', [UserController::class, 'profile']);
     // Users routes (for searching/listing)
     Route::prefix('users')->group(function () {
         Route::get('/search', [UserController::class, 'searchUsers']);
-        Route::get('/', function () {
-            $users = \App\Models\User::select('id', 'name', 'level', 'stars', 'points', 'is_premium', 'profile_image')
-                                    ->orderBy('stars', 'desc')
-                                    ->orderBy('points', 'desc')
-                                    ->get();
-            
-            return response()->json([
-                'success' => true,
-                'users' => $users
-            ]);
-        });
+        Route::get('/', [UserController::class, 'getLeaderboard']); // Use controller method instead of closure
+        Route::get('/{userId}/profile', [UserController::class, 'getPublicProfile']); // NEW: View other users' profiles
     });
 
     // Leaderboard routes
@@ -122,6 +117,16 @@ Route::get('/user/profile', [UserController::class, 'profile']);
     // User Purchase History
     Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']);
     
+    // Admin-only gallery routes
+    Route::prefix('gallery')->group(function () {
+        Route::post('/', [GalleryController::class, 'store']);
+        Route::put('/{id}', [GalleryController::class, 'update']);
+        Route::patch('/{id}', [GalleryController::class, 'update']);
+        Route::delete('/{id}', [GalleryController::class, 'destroy']);
+        Route::post('/upload', [GalleryController::class, 'uploadImage']);
+        Route::post('/reorder', [GalleryController::class, 'reorder']);
+    });
+    
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->group(function () {
         // Shop Management
@@ -134,23 +139,10 @@ Route::get('/user/profile', [UserController::class, 'profile']);
         Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
         Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
         
-        // NEW: Admin Point Pricing Management
+        // Admin Point Pricing Management
         Route::get('/shop-items', [AdminPricingController::class, 'getAllShopItems']); // Get all items for pricing
         Route::get('/shops/dropdown', [AdminPricingController::class, 'getAllShops']); // Get all shops for filter dropdown  
         Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
         Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
     });
-});
-
-Route::get('/gallery', [GalleryController::class, 'index']); // Public access
-Route::get('/gallery/{id}', [GalleryController::class, 'show']); // Get specific image
-
-// Admin-only gallery routes (authentication required)
-Route::middleware(['auth:sanctum'])->group(function () {
-    Route::post('/gallery', [GalleryController::class, 'store']);
-    Route::put('/gallery/{id}', [GalleryController::class, 'update']);
-    Route::patch('/gallery/{id}', [GalleryController::class, 'update']);
-    Route::delete('/gallery/{id}', [GalleryController::class, 'destroy']);
-    Route::post('/gallery/upload', [GalleryController::class, 'uploadImage']);
-    Route::post('/gallery/reorder', [GalleryController::class, 'reorder']);
 });

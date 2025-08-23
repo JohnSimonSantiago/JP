@@ -2,6 +2,7 @@ import Signup from "@/pages/Signup.vue";
 import Dashboard from "./pages/Dashboard.vue";
 import Leaderboards from "./pages/Leaderboards.vue";
 import Profile from "./pages/Profile.vue";
+import UserProfile from "./pages/UserProfile.vue"; // NEW: For viewing other users
 import Trade from "./pages/Trade.vue";
 import LoginNew from "./pages/LoginNew.vue";
 import Bet from "./pages/Bet.vue";
@@ -75,6 +76,12 @@ export const routes = [
         path: "/profile",
         name: "profile",
         component: Profile,
+    },
+    {
+        path: "/profile/:userId",
+        name: "user-profile",
+        component: UserProfile,
+        props: true, // Pass route params as props
     },
     {
         path: "/trade",

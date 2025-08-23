@@ -12,7 +12,10 @@
                             Season
                             {{ currentSeason.season_number }} Leaderboards
                         </h1>
-                        <p class="text-gray-600">Top players ranked by stars</p>
+                        <p class="text-gray-600">
+                            Top players ranked by stars • Click on any player to
+                            view their profile
+                        </p>
                         <div class="mt-4 flex justify-center gap-4">
                             <span
                                 class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
@@ -77,7 +80,8 @@
                                     class="order-2 md:order-1"
                                 >
                                     <div
-                                        class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-6 text-center relative overflow-hidden"
+                                        @click="viewUserProfile(topUsers[1].id)"
+                                        class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1"
                                     >
                                         <!-- Silver Badge -->
                                         <div class="absolute top-4 right-4">
@@ -138,6 +142,11 @@
                                         <p class="text-sm text-gray-500">
                                             Level {{ topUsers[1].level }}
                                         </p>
+                                        <p
+                                            class="text-xs text-blue-600 mt-2 font-medium"
+                                        >
+                                            Click to view profile
+                                        </p>
                                     </div>
                                 </div>
 
@@ -147,7 +156,8 @@
                                     class="order-1 md:order-2"
                                 >
                                     <div
-                                        class="bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl p-6 text-center relative overflow-hidden transform md:scale-105"
+                                        @click="viewUserProfile(topUsers[0].id)"
+                                        class="bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl p-6 text-center relative overflow-hidden transform md:scale-105 cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
                                     >
                                         <!-- Gold Crown -->
                                         <div class="absolute top-4 right-4">
@@ -214,13 +224,19 @@
                                                 🏆 Champion
                                             </span>
                                         </div>
+                                        <p
+                                            class="text-xs text-blue-600 mt-2 font-medium"
+                                        >
+                                            Click to view profile
+                                        </p>
                                     </div>
                                 </div>
 
                                 <!-- 3rd Place -->
                                 <div v-if="topUsers[2]" class="order-3">
                                     <div
-                                        class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-center relative overflow-hidden"
+                                        @click="viewUserProfile(topUsers[2].id)"
+                                        class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1"
                                     >
                                         <!-- Bronze Badge -->
                                         <div class="absolute top-4 right-4">
@@ -280,6 +296,11 @@
                                         </p>
                                         <p class="text-sm text-yellow-100">
                                             Level {{ topUsers[2].level }}
+                                        </p>
+                                        <p
+                                            class="text-xs text-yellow-200 mt-2 font-medium"
+                                        >
+                                            Click to view profile
                                         </p>
                                     </div>
                                 </div>
@@ -354,7 +375,10 @@
                                             <tr
                                                 v-for="(user, index) in users"
                                                 :key="user.id"
-                                                class="hover:bg-gray-50 transition-colors"
+                                                @click="
+                                                    viewUserProfile(user.id)
+                                                "
+                                                class="hover:bg-blue-50 transition-colors cursor-pointer"
                                                 :class="{
                                                     'bg-gradient-to-r from-yellow-50 to-yellow-100':
                                                         index === 0,
@@ -473,6 +497,12 @@
                                                             >
                                                                 Premium Member
                                                             </div>
+                                                            <div
+                                                                class="text-xs text-blue-600"
+                                                            >
+                                                                Click to view
+                                                                profile
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -561,7 +591,7 @@
                         </div>
                     </div>
 
-                    <!-- Past Seasons Tab -->
+                    <!-- Past Seasons Tab (Keep existing content but make past winners clickable too) -->
                     <div v-else-if="activeTab === 'seasons'" class="p-6">
                         <div
                             v-if="pastSeasons.length === 0"
@@ -596,7 +626,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Season Winners -->
+                                <!-- Season Winners (Make them clickable too) -->
                                 <div
                                     v-if="
                                         season.top_players &&
@@ -614,7 +644,10 @@
                                         <div
                                             v-for="player in season.top_players"
                                             :key="player.user_id"
-                                            class="bg-white rounded-lg p-4 shadow-sm border"
+                                            @click="
+                                                viewUserProfile(player.user_id)
+                                            "
+                                            class="bg-white rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all transform hover:-translate-y-1"
                                             :class="{
                                                 'border-yellow-300 bg-yellow-50':
                                                     player.rank === 1,
@@ -673,6 +706,11 @@
                                                         }}
                                                         stars
                                                     </div>
+                                                    <div
+                                                        class="text-xs text-blue-600"
+                                                    >
+                                                        Click to view profile
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -689,7 +727,7 @@
                     </div>
                 </div>
 
-                <!-- New Season Dialog - Only shows for admins -->
+                <!-- New Season Dialog - Keep existing dialog -->
                 <div
                     v-if="showNewSeasonDialog && isAdmin"
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -860,6 +898,11 @@ export default {
             } finally {
                 this.loading = false;
             }
+        },
+
+        // NEW METHOD: Navigate to user profile
+        viewUserProfile(userId) {
+            this.$router.push(`/profile/${userId}`);
         },
 
         async startNewSeason() {
