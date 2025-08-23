@@ -6,19 +6,13 @@
                 <i class="pi pi-spin pi-spinner text-blue-500 text-3xl"></i>
             </div>
 
-            <div v-else-if="shop" class="space-y-6">
-                <!-- Shop Header -->
+            <div v-else class="space-y-6">
+                <!-- Point Shop Header -->
                 <div class="relative">
                     <!-- Banner -->
                     <div
-                        class="h-64 bg-gradient-to-r from-blue-600 to-blue-600 relative overflow-hidden"
+                        class="h-64 bg-gradient-to-r from-purple-600 to-blue-600 relative overflow-hidden"
                     >
-                        <img
-                            v-if="shop.banner_url"
-                            :src="shop.banner_url"
-                            :alt="shop.name"
-                            class="w-full h-full object-cover"
-                        />
                         <div
                             class="absolute inset-0 bg-black bg-opacity-30"
                         ></div>
@@ -32,24 +26,13 @@
                             <div
                                 class="flex flex-col md:flex-row items-start gap-6"
                             >
-                                <!-- Shop Logo -->
+                                <!-- Point Shop Logo -->
                                 <div
-                                    class="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border-4 border-white shadow-lg"
+                                    class="w-24 h-24 rounded-xl bg-gradient-to-br from-purple-400 to-blue-500 overflow-hidden flex-shrink-0 border-4 border-white shadow-lg flex items-center justify-center"
                                 >
-                                    <img
-                                        v-if="shop.logo_url"
-                                        :src="shop.logo_url"
-                                        :alt="shop.name"
-                                        class="w-full h-full object-cover"
-                                    />
-                                    <div
-                                        v-else
-                                        class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
-                                    >
-                                        <i
-                                            class="pi pi-shop text-white text-2xl"
-                                        ></i>
-                                    </div>
+                                    <i
+                                        class="pi pi-star text-white text-3xl"
+                                    ></i>
                                 </div>
 
                                 <!-- Shop Details -->
@@ -61,117 +44,53 @@
                                             <h1
                                                 class="text-3xl font-bold text-gray-800 flex items-center gap-3"
                                             >
-                                                {{ shop.name }}
+                                                Point Shop
                                                 <i
-                                                    v-if="shop.is_verified"
                                                     class="pi pi-check-circle text-green-500 text-xl"
                                                 ></i>
                                             </h1>
                                             <p class="text-gray-600 mt-1">
-                                                by {{ shop.owner.name }}
+                                                Official Point Rewards Store
                                             </p>
-                                            <p
-                                                v-if="shop.description"
-                                                class="text-gray-700 mt-3"
-                                            >
-                                                {{ shop.description }}
+                                            <p class="text-gray-700 mt-3">
+                                                Redeem your earned points for
+                                                exclusive items and rewards
                                             </p>
-                                        </div>
-
-                                        <!-- Action Buttons -->
-                                        <div class="flex items-center gap-3">
-                                            <button
-                                                v-if="currentUser"
-                                                @click="toggleFollow"
-                                                :disabled="followLoading"
-                                                :class="
-                                                    isFollowing
-                                                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                                "
-                                                class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                            >
-                                                <i
-                                                    v-if="followLoading"
-                                                    class="pi pi-spin pi-spinner"
-                                                ></i>
-                                                <i
-                                                    v-else
-                                                    :class="
-                                                        isFollowing
-                                                            ? 'pi pi-check'
-                                                            : 'pi pi-plus'
-                                                    "
-                                                ></i>
-                                                {{
-                                                    isFollowing
-                                                        ? "Following"
-                                                        : "Follow"
-                                                }}
-                                            </button>
-
-                                            <button
-                                                v-if="canReview"
-                                                @click="showReviewDialog = true"
-                                                class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors flex items-center gap-2"
-                                            >
-                                                <i class="pi pi-star"></i>
-                                                Review
-                                            </button>
                                         </div>
                                     </div>
 
                                     <!-- Shop Stats -->
                                     <div
-                                        class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100"
+                                        class="grid grid-cols-2 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-100"
                                     >
                                         <div class="text-center">
                                             <div
-                                                class="text-2xl font-bold text-blue-600"
+                                                class="text-2xl font-bold text-purple-600"
                                             >
-                                                {{ shop.total_items }}
+                                                {{ totalItems }}
                                             </div>
                                             <div class="text-sm text-gray-500">
-                                                Items
-                                            </div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-blue-600"
-                                            >
-                                                {{ shop.follower_count }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Followers
-                                            </div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-yellow-600 flex items-center justify-center gap-1"
-                                            >
-                                                {{
-                                                    shop.average_rating
-                                                        ? shop.average_rating.toFixed(
-                                                              1
-                                                          )
-                                                        : "New"
-                                                }}
-                                                <i
-                                                    class="pi pi-star-fill text-sm"
-                                                ></i>
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Rating
+                                                Items Available
                                             </div>
                                         </div>
                                         <div class="text-center">
                                             <div
                                                 class="text-2xl font-bold text-green-600"
                                             >
-                                                {{ shop.total_reviews }}
+                                                {{ totalPurchases }}
                                             </div>
                                             <div class="text-sm text-gray-500">
-                                                Reviews
+                                                Total Purchases
+                                            </div>
+                                        </div>
+                                        <div class="text-center">
+                                            <div
+                                                class="text-2xl font-bold text-blue-600"
+                                            >
+                                                Official
+                                            </div>
+                                            <div class="text-sm text-gray-500">
+                                                Status
                                             </div>
                                         </div>
                                     </div>
@@ -184,10 +103,10 @@
                 <!-- User Points Display -->
                 <div class="max-w-6xl mx-auto px-6">
                     <div
-                        class="bg-blue-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
+                        class="bg-purple-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
                     >
-                        <i class="pi pi-wallet text-blue-600"></i>
-                        <span class="text-lg font-bold text-blue-700">
+                        <i class="pi pi-wallet text-purple-600"></i>
+                        <span class="text-lg font-bold text-purple-700">
                             {{ formatPoints(currentUser.points || 0) }} Points
                         </span>
                     </div>
@@ -203,19 +122,19 @@
                                     @click="activeTab = 'shop'"
                                     :class="
                                         activeTab === 'shop'
-                                            ? 'border-blue-500 text-blue-600'
+                                            ? 'border-purple-500 text-purple-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     "
                                     class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
                                 >
-                                    <i class="pi pi-shop"></i>
-                                    Shop Items
+                                    <i class="pi pi-shopping-bag"></i>
+                                    Point Shop
                                 </button>
                                 <button
                                     @click="activeTab = 'purchases'"
                                     :class="
                                         activeTab === 'purchases'
-                                            ? 'border-blue-500 text-blue-600'
+                                            ? 'border-purple-500 text-purple-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     "
                                     class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
@@ -238,7 +157,7 @@
                             <div v-if="activeTab === 'shop'" class="space-y-6">
                                 <!-- Filters -->
                                 <div
-                                    class="grid grid-cols-1 md:grid-cols-4 gap-4"
+                                    class="grid grid-cols-1 md:grid-cols-3 gap-4"
                                 >
                                     <!-- Search -->
                                     <div class="relative">
@@ -250,31 +169,15 @@
                                             @input="debounceSearch"
                                             type="text"
                                             placeholder="Search items..."
-                                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         />
                                     </div>
-
-                                    <!-- Category -->
-                                    <select
-                                        v-model="filters.category"
-                                        @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                    >
-                                        <option value="">All Categories</option>
-                                        <option
-                                            v-for="category in categories"
-                                            :key="category.value"
-                                            :value="category.value"
-                                        >
-                                            {{ category.label }}
-                                        </option>
-                                    </select>
 
                                     <!-- Sort -->
                                     <select
                                         v-model="filters.sort"
                                         @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     >
                                         <option value="name">Name (A-Z)</option>
                                         <option value="price_low">
@@ -289,13 +192,13 @@
                                         </option>
                                     </select>
 
-                                    <!-- Back to Shops -->
+                                    <!-- Refresh -->
                                     <button
-                                        @click="$router.push('/shops')"
-                                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                        @click="fetchItems()"
+                                        class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                                     >
-                                        <i class="pi pi-arrow-left"></i>
-                                        Back to Shops
+                                        <i class="pi pi-refresh"></i>
+                                        Refresh
                                     </button>
                                 </div>
 
@@ -305,7 +208,7 @@
                                     class="flex justify-center py-12"
                                 >
                                     <i
-                                        class="pi pi-spin pi-spinner text-blue-500 text-2xl"
+                                        class="pi pi-spin pi-spinner text-purple-500 text-2xl"
                                     ></i>
                                 </div>
 
@@ -318,7 +221,7 @@
                                     <div
                                         v-for="item in items.data"
                                         :key="item.id"
-                                        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
+                                        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow border-2 border-gray-100"
                                     >
                                         <!-- Item Image -->
                                         <div
@@ -332,7 +235,7 @@
                                             />
                                             <div v-else class="text-gray-400">
                                                 <i
-                                                    class="pi pi-box text-5xl"
+                                                    class="pi pi-gift text-5xl"
                                                 ></i>
                                             </div>
                                         </div>
@@ -396,7 +299,7 @@
                                                 class="flex items-center justify-between"
                                             >
                                                 <div
-                                                    class="text-xl font-bold text-blue-600"
+                                                    class="text-xl font-bold text-purple-600"
                                                 >
                                                     {{
                                                         formatPoints(item.price)
@@ -415,7 +318,7 @@
                                                     "
                                                     :class="
                                                         canBuyItem(item)
-                                                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                            ? 'bg-purple-500 hover:bg-purple-600 text-white'
                                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                     "
                                                     class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
@@ -441,7 +344,7 @@
                                 <!-- Empty Items State -->
                                 <div v-else class="text-center py-12">
                                     <i
-                                        class="pi pi-box text-gray-300 text-5xl mb-4"
+                                        class="pi pi-gift text-gray-300 text-5xl mb-4"
                                     ></i>
                                     <h3
                                         class="text-lg font-medium text-gray-600 mb-2"
@@ -451,8 +354,8 @@
                                     <p class="text-gray-500">
                                         {{
                                             filters.search
-                                                ? "Try adjusting your filters"
-                                                : "This shop has no items yet"
+                                                ? "Try adjusting your search"
+                                                : "No items available in the point shop"
                                         }}
                                     </p>
                                 </div>
@@ -510,7 +413,7 @@
                                     <select
                                         v-model="purchaseFilters.status"
                                         @change="fetchPurchases"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     >
                                         <option value="">All Purchases</option>
                                         <option value="pending">Pending</option>
@@ -529,7 +432,7 @@
                                     class="flex justify-center py-12"
                                 >
                                     <i
-                                        class="pi pi-spin pi-spinner text-blue-500 text-2xl"
+                                        class="pi pi-spin pi-spinner text-purple-500 text-2xl"
                                     ></i>
                                 </div>
 
@@ -571,14 +474,7 @@
                                                         <p
                                                             class="text-sm text-gray-600"
                                                         >
-                                                            from
-                                                            {{
-                                                                purchase.shop
-                                                                    ? purchase
-                                                                          .shop
-                                                                          .name
-                                                                    : shop.name
-                                                            }}
+                                                            from Point Shop
                                                         </p>
                                                     </div>
                                                     <div class="text-right">
@@ -680,8 +576,7 @@
                                         No Purchases Found
                                     </h3>
                                     <p class="text-gray-500">
-                                        You haven't made any purchases from this
-                                        shop yet
+                                        You haven't made any purchases yet
                                     </p>
                                 </div>
 
@@ -735,7 +630,7 @@
             </div>
         </div>
 
-        <!-- Purchase Confirmation Dialog -->
+        <!-- Purchase Confirmation Dialog (Same as ShopView) -->
         <div
             v-if="showPurchaseDialog"
             class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -743,10 +638,10 @@
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
                 <div class="text-center">
                     <div
-                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center"
+                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-purple-100 flex items-center justify-center"
                     >
                         <i
-                            class="pi pi-shopping-cart text-blue-500 text-2xl"
+                            class="pi pi-shopping-cart text-purple-500 text-2xl"
                         ></i>
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mb-2">
@@ -765,11 +660,11 @@
                                     {{ selectedItem?.name }}
                                 </p>
                                 <p class="text-sm text-gray-600">
-                                    from {{ shop.name }}
+                                    from Point Shop
                                 </p>
                             </div>
                             <div class="text-right">
-                                <p class="text-lg font-bold text-blue-600">
+                                <p class="text-lg font-bold text-purple-600">
                                     {{ formatPoints(selectedItem?.price) }}
                                 </p>
                                 <p class="text-sm text-gray-500">per item</p>
@@ -797,7 +692,7 @@
                                         type="number"
                                         :min="1"
                                         :max="getMaxQuantity(selectedItem)"
-                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                         @input="validateQuantity"
                                     />
                                     <button
@@ -825,16 +720,16 @@
 
                             <!-- Total cost -->
                             <div
-                                class="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400"
+                                class="bg-purple-50 rounded-lg p-3 border-l-4 border-purple-400"
                             >
                                 <div class="flex justify-between items-center">
                                     <span
-                                        class="text-sm font-medium text-blue-700"
+                                        class="text-sm font-medium text-purple-700"
                                     >
                                         Total Cost:
                                     </span>
                                     <span
-                                        class="text-lg font-bold text-blue-600"
+                                        class="text-lg font-bold text-purple-600"
                                     >
                                         {{ formatPoints(getTotalCost()) }}
                                         points
@@ -882,7 +777,7 @@
                             :disabled="
                                 processingPurchase || !canAffordPurchase()
                             "
-                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                         >
                             <i
                                 v-if="processingPurchase"
@@ -898,83 +793,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Review Dialog -->
-        <div
-            v-if="showReviewDialog"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        >
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">
-                    Review {{ shop.name }}
-                </h3>
-
-                <form @submit.prevent="submitReview">
-                    <div class="space-y-4">
-                        <!-- Rating -->
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-gray-700 mb-2"
-                            >
-                                Rating *
-                            </label>
-                            <div class="flex items-center gap-1">
-                                <button
-                                    v-for="star in 5"
-                                    :key="star"
-                                    type="button"
-                                    @click="newReview.rating = star"
-                                    :class="
-                                        star <= newReview.rating
-                                            ? 'text-yellow-500'
-                                            : 'text-gray-300'
-                                    "
-                                    class="text-2xl hover:text-yellow-500 transition-colors"
-                                >
-                                    <i class="pi pi-star-fill"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Comment -->
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-gray-700 mb-1"
-                            >
-                                Comment (Optional)
-                            </label>
-                            <textarea
-                                v-model="newReview.comment"
-                                rows="4"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                placeholder="Share your experience..."
-                            ></textarea>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 mt-6">
-                        <button
-                            type="button"
-                            @click="showReviewDialog = false"
-                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="!newReview.rating || submittingReview"
-                            class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            <i
-                                v-if="submittingReview"
-                                class="pi pi-spin pi-spinner mr-2"
-                            ></i>
-                            Submit Review
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
     </Layout>
 </template>
 
@@ -985,18 +803,13 @@ export default {
             loading: true,
             itemsLoading: false,
             purchasesLoading: false,
-            shop: null,
             items: { data: [] },
             purchases: { data: [] },
-            categories: [],
             currentUser: {},
+            totalItems: 0,
+            totalPurchases: 0,
             activeTab: "shop",
             pendingPurchasesCount: 0,
-
-            // Following
-            isFollowing: false,
-            followLoading: false,
-            canReview: false,
 
             // Filters
             filters: {
@@ -1016,101 +829,54 @@ export default {
             purchasingItem: null,
             purchaseQuantity: 1,
 
-            // Review dialog
-            showReviewDialog: false,
-            submittingReview: false,
-            newReview: {
-                rating: 0,
-                comment: "",
-            },
-
             // Debounce
             searchTimeout: null,
         };
     },
 
     methods: {
-        async fetchShop() {
+        async fetchPointShop() {
             try {
                 this.loading = true;
-                const shopId = this.$route.params.id;
 
-                // Fetch shop data and user data separately
-                const [shopResponse, userResponse] = await Promise.all([
-                    axios.get(`/api/shops/${shopId}`),
-                    axios.get("/api/user/profile"), // Get fresh user data
+                const [itemsResponse, userResponse] = await Promise.all([
+                    axios.get("/api/point-shop"),
+                    axios.get("/api/user/profile"),
                 ]);
 
-                if (shopResponse.data.success) {
-                    this.shop = shopResponse.data.shop;
-                    this.items = shopResponse.data.items;
-                    this.isFollowing = shopResponse.data.is_following;
-                    this.canReview = shopResponse.data.can_review;
+                if (itemsResponse.data.success) {
+                    this.items = itemsResponse.data.items;
+                    this.totalItems = itemsResponse.data.total_items;
+                    this.totalPurchases = itemsResponse.data.total_purchases;
+                }
 
-                    // Use fresh user data from profile endpoint
-                    if (userResponse.data.success) {
-                        this.currentUser = userResponse.data.user;
-                    } else {
-                        this.currentUser = {};
-                    }
-                } else {
-                    this.$router.push("/shops");
+                if (userResponse.data.success) {
+                    this.currentUser = userResponse.data.user;
                 }
 
                 // Fetch purchases to get pending count
                 await this.fetchPurchases();
             } catch (error) {
-                console.error("Error fetching shop:", error);
+                console.error("Error fetching point shop:", error);
                 this.$toast?.add({
                     severity: "error",
                     summary: "Error",
-                    detail: "Failed to load shop",
+                    detail: "Failed to load point shop",
                 });
-                this.$router.push("/shops");
             } finally {
                 this.loading = false;
-            }
-        },
-
-        async fetchPurchases(page = 1) {
-            try {
-                this.purchasesLoading = true;
-                const params = new URLSearchParams({
-                    page: page,
-                    shop_id: this.shop?.id, // Filter by current shop
-                    ...this.purchaseFilters,
-                });
-
-                const response = await axios.get(`/api/my-purchases?${params}`);
-
-                if (response.data.success) {
-                    this.purchases = response.data.purchases;
-                    // Count pending purchases for this shop
-                    this.pendingPurchasesCount = this.purchases.data.filter(
-                        (p) =>
-                            p.status === "pending" &&
-                            p.shop_id === this.shop?.id
-                    ).length;
-                }
-            } catch (error) {
-                console.error("Error fetching purchases:", error);
-            } finally {
-                this.purchasesLoading = false;
             }
         },
 
         async fetchItems(page = 1) {
             try {
                 this.itemsLoading = true;
-                const shopId = this.$route.params.id;
                 const params = new URLSearchParams({
                     page: page,
                     ...this.filters,
                 });
 
-                const response = await axios.get(
-                    `/api/shops/${shopId}?${params}`
-                );
+                const response = await axios.get(`/api/point-shop?${params}`);
 
                 if (response.data.success) {
                     this.items = response.data.items;
@@ -1122,70 +888,27 @@ export default {
             }
         },
 
-        async toggleFollow() {
-            if (!this.currentUser) {
-                this.$router.push("/login");
-                return;
-            }
-
+        async fetchPurchases(page = 1) {
             try {
-                this.followLoading = true;
-                const response = await axios.post(
-                    `/api/shops/${this.shop.id}/follow`
-                );
+                this.purchasesLoading = true;
+                const params = new URLSearchParams({
+                    page: page,
+                    ...this.purchaseFilters,
+                });
+
+                const response = await axios.get(`/api/my-purchases?${params}`);
 
                 if (response.data.success) {
-                    this.isFollowing = response.data.following;
-                    this.shop.follower_count = response.data.follower_count;
-
-                    this.$toast?.add({
-                        severity: "success",
-                        summary: "Success",
-                        detail: response.data.message,
-                    });
+                    this.purchases = response.data.purchases;
+                    // Count pending purchases
+                    this.pendingPurchasesCount = this.purchases.data.filter(
+                        (p) => p.status === "pending"
+                    ).length;
                 }
             } catch (error) {
-                this.$toast?.add({
-                    severity: "error",
-                    summary: "Error",
-                    detail: "Failed to update follow status",
-                });
+                console.error("Error fetching purchases:", error);
             } finally {
-                this.followLoading = false;
-            }
-        },
-
-        async submitReview() {
-            try {
-                this.submittingReview = true;
-                const response = await axios.post(
-                    `/api/shops/${this.shop.id}/reviews`,
-                    this.newReview
-                );
-
-                if (response.data.success) {
-                    this.$toast?.add({
-                        severity: "success",
-                        summary: "Success",
-                        detail: response.data.message,
-                    });
-
-                    this.showReviewDialog = false;
-                    this.newReview = { rating: 0, comment: "" };
-                    this.canReview = false;
-                    this.shop.average_rating = response.data.shop_rating;
-                    this.shop.total_reviews++;
-                }
-            } catch (error) {
-                this.$toast?.add({
-                    severity: "error",
-                    summary: "Error",
-                    detail:
-                        error.response?.data?.message ||
-                        "Failed to submit review",
-                });
-            } finally {
-                this.submittingReview = false;
+                this.purchasesLoading = false;
             }
         },
 
@@ -1206,7 +929,7 @@ export default {
             try {
                 this.processingPurchase = true;
                 const response = await axios.post(
-                    `/api/shop-items/${this.selectedItem.id}/purchase`,
+                    `/api/point-shop/${this.selectedItem.id}/purchase`,
                     {
                         quantity: this.purchaseQuantity,
                     }
@@ -1219,13 +942,12 @@ export default {
                         detail: response.data.message,
                     });
 
-                    // Update user balance
                     this.currentUser.points = response.data.new_balance;
                     this.cancelPurchase();
 
-                    // Refresh shop data to update stock counts and fetch purchases
+                    // Refresh data
                     await Promise.all([
-                        this.fetchShop(),
+                        this.fetchPointShop(),
                         this.fetchPurchases(),
                     ]);
 
@@ -1330,6 +1052,7 @@ export default {
 
             return (
                 item.is_active &&
+                item.is_active_in_point_shop &&
                 (item.stock === null || item.stock > 0) &&
                 this.currentUser.points >= item.price
             );
@@ -1337,7 +1060,8 @@ export default {
 
         getButtonText(item) {
             if (!this.currentUser) return "Login to Buy";
-            if (!item.is_active) return "Unavailable";
+            if (!item.is_active || !item.is_active_in_point_shop)
+                return "Unavailable";
             if (item.stock !== null && item.stock <= 0) return "Out of Stock";
             if (this.currentUser.points < item.price)
                 return "Not Enough Points";
@@ -1370,30 +1094,20 @@ export default {
             }
         },
 
-        formatDate(dateString) {
-            return new Date(dateString).toLocaleDateString();
-        },
-
-        getCategoryIcon(category) {
-            return "pi pi-box";
-        },
-
         formatPoints(points) {
             return (points || 0).toLocaleString();
+        },
+
+        formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString();
         },
     },
 
     async mounted() {
-        await this.fetchShop();
+        await this.fetchPointShop();
     },
 
     watch: {
-        $route() {
-            if (this.$route.params.id) {
-                this.fetchShop();
-            }
-        },
-
         activeTab(newTab) {
             if (newTab === "purchases") {
                 this.fetchPurchases();

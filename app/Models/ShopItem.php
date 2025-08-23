@@ -2,256 +2,122 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class ShopItem extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'shop_id',
         'name',
         'description',
-        'price',           // Points price
-        'cash_price',      // Cash price
+        'price',
+        'cash_price',
         'image',
         'is_active',
-        'stock',
-        'properties'
+        'is_active_in_point_shop', // NEW FIELD
+        'stock'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'properties' => 'array',
         'price' => 'integer',
-        'cash_price' => 'decimal:2'
+        'cash_price' => 'decimal:2',
+        'is_active' => 'boolean',
+        'is_active_in_point_shop' => 'boolean', // NEW CAST
+        'stock' => 'integer'
     ];
 
-    protected $appends = [
-        'image_url',
-        'total_sold',
-        'is_in_stock',
-        'available_payment_methods',
-        'formatted_prices'
-    ];
+    protected $appends = ['image_url'];
 
     /**
-     * Relationships
+     * Get the shop that owns the item
      */
-    public function shop()
+    public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
     }
 
-    public function purchases()
+    /**
+     * Get all purchases for this item
+     */
+    public function purchases(): HasMany
     {
         return $this->hasMany(Purchase::class);
     }
 
-    public function completedPurchases()
-    {
-        return $this->hasMany(Purchase::class)->where('status', 'completed');
-    }
-
     /**
-     * Scopes
+     * Get the image URL attribute
      */
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true);
-    }
-
-    public function scopeInStock($query)
-    {
-        return $query->where(function ($q) {
-            $q->whereNull('stock')->orWhere('stock', '>', 0);
-        });
-    }
-
-    public function scopeByShop($query, $shopId)
-    {
-        return $query->where('shop_id', $shopId);
-    }
-
-    public function scopeForShop($query, Shop $shop)
-    {
-        return $query->where('shop_id', $shop->id);
-    }
-
-    public function scopeAvailable($query)
-    {
-        return $query->active()->inStock()->whereHas('shop', function ($q) {
-            $q->where('is_active', true)->where('is_verified', true);
-        });
-    }
-
-    /**
-     * Accessors
-     */
-    public function getImageUrlAttribute()
+    public function getImageUrlAttribute(): ?string
     {
         return $this->image ? Storage::url($this->image) : null;
     }
 
-    public function getTotalSoldAttribute()
-    {
-        return $this->completedPurchases()->sum('quantity');
-    }
-
-    public function getIsInStockAttribute()
-    {
-        return $this->stock === null || $this->stock > 0;
-    }
-
-    public function getAvailablePaymentMethodsAttribute()
-    {
-        $methods = [];
-        
-        if ($this->price > 0) {
-            $methods[] = 'points';
-        }
-        
-        if ($this->cash_price > 0) {
-            $methods[] = 'cash';
-        }
-        
-        return $methods;
-    }
-
-    public function getFormattedPricesAttribute()
-    {
-        $prices = [];
-        
-        if ($this->price > 0) {
-            $prices['points'] = [
-                'amount' => $this->price,
-                'formatted' => number_format($this->price) . ' points'
-            ];
-        }
-        
-        if ($this->cash_price > 0) {
-            $prices['cash'] = [
-                'amount' => $this->cash_price,
-                'formatted' => '$' . number_format($this->cash_price, 2)
-            ];
-        }
-        
-        return $prices;
-    }
-
     /**
-     * Payment Methods
+     * Check if user can purchase this item
      */
-    public function acceptsPoints()
+    public function getPurchaseBlockReason($user, $quantity = 1): ?string
     {
-        return $this->price > 0;
-    }
-
-    public function acceptsCash()
-    {
-        return $this->cash_price > 0;
-    }
-
-    public function acceptsBothPayments()
-    {
-        return $this->acceptsPoints() && $this->acceptsCash();
-    }
-
-    /**
-     * Stock and Purchase Methods
-     */
-    public function isInStock($quantity = 1)
-    {
-        return $this->stock === null || $this->stock >= $quantity;
-    }
-
-    public function decrementStock($quantity = 1)
-    {
-        if ($this->stock !== null) {
-            $this->decrement('stock', $quantity);
-        }
-    }
-
-    public function canBePurchasedBy(User $user, $quantity = 1, $paymentMethod = 'points')
-    {
-        // Check if item is active and in stock
-        if (!$this->is_active || !$this->isInStock($quantity)) {
-            return false;
+        if (!$user) {
+            return 'User must be logged in';
         }
 
-        // Check if shop is active and verified
-        if (!$this->shop || !$this->shop->is_active || !$this->shop->is_verified) {
-            return false;
-        }
-
-        // Check if payment method is accepted
-        if (!in_array($paymentMethod, $this->available_payment_methods)) {
-            return false;
-        }
-
-        // Check if user can afford it
-        if ($paymentMethod === 'points') {
-            $totalCost = $this->price * $quantity;
-            return $user->points >= $totalCost;
-        }
-
-        // For cash payments, we'll assume they can pay (you might want to add wallet system)
-        return true;
-    }
-
-    public function getPurchaseBlockReason(User $user, $quantity = 1, $paymentMethod = 'points')
-    {
         if (!$this->is_active) {
-            return 'This item is no longer available';
+            return 'This item is not available';
         }
 
-        if (!$this->shop || !$this->shop->is_active) {
-            return 'The shop is currently unavailable';
+        // For point shop items, check if active in point shop
+        if ($this->shop_id === null && !$this->is_active_in_point_shop) {
+            return 'This item is not available in the point shop';
         }
 
-        if (!$this->shop->is_verified) {
-            return 'The shop is not yet verified';
+        if ($this->stock !== null && $this->stock < $quantity) {
+            return 'Not enough stock available';
         }
 
-        if (!$this->isInStock($quantity)) {
-            return $this->stock === 0 ? 'Out of stock' : "Only {$this->stock} items available";
-        }
-
-        if (!in_array($paymentMethod, $this->available_payment_methods)) {
-            return "This item doesn't accept {$paymentMethod} payments";
-        }
-
-        if ($paymentMethod === 'points') {
-            $totalCost = $this->price * $quantity;
-            if ($user->points < $totalCost) {
-                return "Insufficient points. You need " . number_format($totalCost) . " points.";
-            }
+        $totalCost = $this->price * $quantity;
+        if ($user->points < $totalCost) {
+            return 'Insufficient points';
         }
 
         return null;
     }
 
     /**
-     * Admin/Owner Permission Methods
+     * Scope for point shop items only
      */
-    public function canSetPointsPrice(User $user)
+    public function scopePointShopOnly($query)
     {
-        return $user->isAdmin();
-    }
-
-    public function canSetCashPrice(User $user)
-    {
-        return $user->isAdmin() || 
-               ($user->isShopOwner() && $this->shop && $this->shop->isOwnedBy($user));
+        return $query->where('shop_id', null)
+                    ->where('is_active', true)
+                    ->where('is_active_in_point_shop', true)
+                    ->where('price', '>', 0);
     }
 
     /**
-     * Get default icon for items
+     * Scope for regular shop items only
      */
-    public static function getDefaultIcon()
+    public function scopeShopItemsOnly($query)
     {
-        return 'pi pi-box';
+        return $query->whereNotNull('shop_id')
+                    ->where('is_active', true);
+    }
+
+    /**
+     * Check if this is a point shop item
+     */
+    public function isPointShopItem(): bool
+    {
+        return $this->shop_id === null && $this->price > 0;
+    }
+
+    /**
+     * Check if this is a regular shop item
+     */
+    public function isShopItem(): bool
+    {
+        return $this->shop_id !== null;
     }
 }

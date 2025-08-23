@@ -10,6 +10,7 @@ import ShopsIndex from "./pages/ShopsIndex.vue"; // Lists all shops
 import ShopView from "./pages/ShopView.vue"; // Individual shop with items
 import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard
 import AdminPointPricing from "./pages/AdminPointPricing.vue"; // Admin point pricing management
+import PointShop from "./pages/PointShop.vue";
 
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
@@ -121,5 +122,11 @@ export const routes = [
         name: "admin-point-pricing",
         component: AdminPointPricing,
         beforeEnter: requiresAdmin, // Admin only access
+    },
+
+    {
+        path: "/point-shop",
+        name: "PointShop",
+        component: PointShop,
     },
 ];

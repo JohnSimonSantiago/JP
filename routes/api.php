@@ -11,6 +11,7 @@ use App\Http\Controllers\ShopItemController;
 use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\AdminPricingController;
 use App\Http\Controllers\GalleryController;
+use App\Http\Controllers\PointShopController;
 
 /*
 |--------------------------------------------------------------------------
@@ -134,6 +135,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);
         Route::post('/shops/{shop}/toggle-active', [ShopController::class, 'toggleActive']);
         
+        // Admin Point Shop Management Routes
+        Route::put('/shop-items/{item}/point-shop-status', [AdminPricingController::class, 'updatePointShopStatus']); // Update single item point shop status
+        Route::put('/shop-items/bulk-point-shop', [AdminPricingController::class, 'bulkUpdatePointShopStatus']); // Bulk update point shop status
+        
         // Global Purchase Management
         Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
         Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
@@ -144,5 +149,32 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/shops/dropdown', [AdminPricingController::class, 'getAllShops']); // Get all shops for filter dropdown  
         Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
         Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
+    });
+});
+
+Route::prefix('point-shop')->group(function () {
+    Route::get('/', [PointShopController::class, 'index']); // List all point shop items
+});
+
+// Point Shop Purchase Routes (Authenticated users)
+Route::middleware('auth:sanctum')->group(function () {
+    // Point Shop Purchases
+    Route::prefix('point-shop')->group(function () {
+        Route::post('/{item}/purchase', [PointShopController::class, 'purchase']); // Purchase point shop item
+    });
+    
+    // Update existing purchases route to support shop filtering
+    Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']); // This route already exists, just needs updating
+
+    // Admin Routes for Point Shop Management
+    Route::middleware(['admin'])->prefix('admin/point-shop')->group(function () {
+        Route::get('/items', [PointShopController::class, 'adminIndex']); // Admin view all items
+        Route::post('/items', [PointShopController::class, 'store']); // Create point shop item
+        Route::put('/items/{item}', [PointShopController::class, 'update']); // Update point shop item
+        Route::delete('/items/{item}', [PointShopController::class, 'destroy']); // Delete point shop item
+        Route::post('/items/{item}/toggle-active', [PointShopController::class, 'toggleActive']); // Toggle point shop availability
+        
+        // Bulk operations
+        Route::put('/items/bulk-toggle', [PointShopController::class, 'bulkTogglePointShop']); // Bulk toggle point shop availability
     });
 });

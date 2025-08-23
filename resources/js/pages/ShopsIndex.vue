@@ -12,7 +12,7 @@
                                 class="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3"
                             >
                                 <i class="pi pi-shop text-purple-500"></i>
-                                Point Shops
+                                Shops
                             </h1>
                             <p class="text-gray-600">
                                 Discover amazing shops and spend your points on

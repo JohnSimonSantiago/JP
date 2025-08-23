@@ -19,6 +19,7 @@ return new class extends Migration
             $table->decimal('cash_price', 10, 2)->default(0.00); // cash price
             $table->string('image')->nullable();
             $table->boolean('is_active')->default(true);
+            $table->boolean('is_active_in_point_shop')->default(true);
             $table->integer('stock')->nullable(); // null = unlimited stock
             $table->timestamps();
             $table->index('is_active');

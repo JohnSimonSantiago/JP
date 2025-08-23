@@ -5,16 +5,17 @@
                 <!-- Header -->
                 <div class="mb-8">
                     <h1 class="text-3xl font-bold text-gray-900">
-                        Point Pricing Management
+                        Point Shop & Pricing Management
                     </h1>
                     <p class="text-gray-600 mt-2">
-                        Manage point prices across all shops
+                        Manage point prices and point shop availability across
+                        all shops
                     </p>
                 </div>
 
                 <!-- Search and Filters -->
                 <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -65,9 +66,29 @@
                                 <option value="has_points">
                                     Has Point Price
                                 </option>
+                                <option value="in_point_shop">
+                                    In Point Shop
+                                </option>
+                                <option value="not_in_point_shop">
+                                    Not in Point Shop
+                                </option>
                                 <option value="active">Active Only</option>
                                 <option value="inactive">Inactive Only</option>
                             </select>
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                Actions
+                            </label>
+                            <button
+                                @click="refreshData"
+                                class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                            >
+                                <i class="pi pi-refresh mr-2"></i>
+                                Refresh
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -97,11 +118,12 @@
                                     Bulk Price ({{ selectedItems.length }})
                                 </button>
                                 <button
-                                    @click="refreshData"
-                                    class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                                    @click="showBulkPointShop = true"
+                                    :disabled="selectedItems.length === 0"
+                                    class="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <i class="pi pi-refresh mr-2"></i>
-                                    Refresh
+                                    <i class="pi pi-star mr-2"></i>
+                                    Bulk Point Shop ({{ selectedItems.length }})
                                 </button>
                             </div>
                         </div>
@@ -145,6 +167,11 @@
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                     >
                                         New Points Price
+                                    </th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    >
+                                        Point Shop Status
                                     </th>
                                     <th
                                         class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -204,17 +231,22 @@
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm text-gray-900">
-                                            {{ item.shop?.name }}
+                                            {{
+                                                item.shop?.name || "Point Shop"
+                                            }}
                                         </div>
                                         <div class="text-sm text-gray-500">
-                                            {{ item.shop?.owner?.name }}
+                                            {{
+                                                item.shop?.owner?.name ||
+                                                "Admin"
+                                            }}
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div
                                             class="text-sm font-medium text-green-600"
                                         >
-                                            ${{
+                                            ₱{{
                                                 parseFloat(
                                                     item.cash_price || 0
                                                 ).toFixed(2)
@@ -255,6 +287,68 @@
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex flex-col space-y-1">
+                                            <span
+                                                :class="[
+                                                    'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
+                                                    item.is_active_in_point_shop
+                                                        ? 'bg-purple-100 text-purple-800'
+                                                        : 'bg-gray-100 text-gray-800',
+                                                ]"
+                                            >
+                                                {{
+                                                    item.is_active_in_point_shop
+                                                        ? "In Point Shop"
+                                                        : "Not in Point Shop"
+                                                }}
+                                            </span>
+                                            <button
+                                                @click="
+                                                    togglePointShopStatus(item)
+                                                "
+                                                :disabled="
+                                                    updatingPointShop.includes(
+                                                        item.id
+                                                    )
+                                                "
+                                                :class="[
+                                                    'text-xs px-2 py-1 rounded transition-colors',
+                                                    item.is_active_in_point_shop
+                                                        ? 'text-red-600 hover:bg-red-50'
+                                                        : 'text-purple-600 hover:bg-purple-50',
+                                                    updatingPointShop.includes(
+                                                        item.id
+                                                    )
+                                                        ? 'opacity-50 cursor-not-allowed'
+                                                        : '',
+                                                ]"
+                                            >
+                                                <i
+                                                    v-if="
+                                                        updatingPointShop.includes(
+                                                            item.id
+                                                        )
+                                                    "
+                                                    class="pi pi-spin pi-spinner mr-1"
+                                                ></i>
+                                                <i
+                                                    v-else
+                                                    :class="
+                                                        item.is_active_in_point_shop
+                                                            ? 'pi pi-eye-slash'
+                                                            : 'pi pi-plus'
+                                                    "
+                                                    class="mr-1"
+                                                ></i>
+                                                {{
+                                                    item.is_active_in_point_shop
+                                                        ? "Remove"
+                                                        : "Add"
+                                                }}
+                                            </button>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
                                         <span
                                             :class="[
                                                 'inline-flex px-2 py-1 text-xs font-semibold rounded-full',
@@ -280,7 +374,7 @@
                                                 item.newPrice <= 0 ||
                                                 updatingPrices.includes(item.id)
                                             "
-                                            class="text-blue-600 hover:text-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                            class="text-blue-600 hover:text-blue-900 disabled:text-gray-400 disabled:cursor-not-allowed mr-3"
                                         >
                                             <i
                                                 v-if="
@@ -291,7 +385,7 @@
                                                 class="pi pi-spin pi-spinner"
                                             ></i>
                                             <i v-else class="pi pi-check"></i>
-                                            Update
+                                            Update Price
                                         </button>
                                     </td>
                                 </tr>
@@ -395,6 +489,76 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Bulk Point Shop Modal -->
+                <div
+                    v-if="showBulkPointShop"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                >
+                    <div
+                        class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+                    >
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                            Bulk Point Shop Management
+                        </h3>
+                        <p class="text-gray-600 mb-4">
+                            Update point shop status for
+                            {{ selectedItems.length }} selected items
+                        </p>
+                        <div class="space-y-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-2"
+                                >
+                                    Point Shop Status *
+                                </label>
+                                <div class="space-y-2">
+                                    <label class="flex items-center">
+                                        <input
+                                            v-model="bulkPointShopStatus"
+                                            type="radio"
+                                            value="true"
+                                            class="mr-2"
+                                        />
+                                        <span>Add to Point Shop</span>
+                                    </label>
+                                    <label class="flex items-center">
+                                        <input
+                                            v-model="bulkPointShopStatus"
+                                            type="radio"
+                                            value="false"
+                                            class="mr-2"
+                                        />
+                                        <span>Remove from Point Shop</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-3 mt-6">
+                            <button
+                                type="button"
+                                @click="showBulkPointShop = false"
+                                class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="updateBulkPointShop"
+                                :disabled="
+                                    !bulkPointShopStatus ||
+                                    bulkPointShopUpdating
+                                "
+                                class="flex-1 bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            >
+                                <i
+                                    v-if="bulkPointShopUpdating"
+                                    class="pi pi-spin pi-spinner mr-2"
+                                ></i>
+                                Update Point Shop Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </Layout>
@@ -426,8 +590,14 @@ export default {
             bulkPrice: null,
             bulkUpdating: false,
 
+            // Bulk Point Shop operations
+            showBulkPointShop: false,
+            bulkPointShopStatus: "",
+            bulkPointShopUpdating: false,
+
             // Individual updates
             updatingPrices: [],
+            updatingPointShop: [],
         };
     },
 
@@ -461,6 +631,16 @@ export default {
                         break;
                     case "has_points":
                         filtered = filtered.filter((item) => item.price > 0);
+                        break;
+                    case "in_point_shop":
+                        filtered = filtered.filter(
+                            (item) => item.is_active_in_point_shop
+                        );
+                        break;
+                    case "not_in_point_shop":
+                        filtered = filtered.filter(
+                            (item) => !item.is_active_in_point_shop
+                        );
                         break;
                     case "active":
                         filtered = filtered.filter((item) => item.is_active);
@@ -613,6 +793,84 @@ export default {
                 });
             } finally {
                 this.bulkUpdating = false;
+            }
+        },
+
+        async togglePointShopStatus(item) {
+            this.updatingPointShop.push(item.id);
+
+            try {
+                const response = await axios.put(
+                    `/api/admin/shop-items/${item.id}/point-shop-status`,
+                    {
+                        is_active_in_point_shop: !item.is_active_in_point_shop,
+                    }
+                );
+
+                if (response.data.success) {
+                    item.is_active_in_point_shop =
+                        response.data.is_active_in_point_shop;
+                    this.$toast?.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: response.data.message,
+                    });
+                }
+            } catch (error) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to update point shop status",
+                });
+            } finally {
+                this.updatingPointShop = this.updatingPointShop.filter(
+                    (id) => id !== item.id
+                );
+            }
+        },
+
+        async updateBulkPointShop() {
+            if (!this.bulkPointShopStatus || this.selectedItems.length === 0)
+                return;
+
+            this.bulkPointShopUpdating = true;
+            const isActive = this.bulkPointShopStatus === "true";
+
+            try {
+                const response = await axios.put(
+                    "/api/admin/shop-items/bulk-point-shop",
+                    {
+                        item_ids: this.selectedItems,
+                        is_active_in_point_shop: isActive,
+                    }
+                );
+
+                if (response.data.success) {
+                    // Update local data
+                    this.items.forEach((item) => {
+                        if (this.selectedItems.includes(item.id)) {
+                            item.is_active_in_point_shop = isActive;
+                        }
+                    });
+
+                    this.$toast?.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: response.data.message,
+                    });
+
+                    this.showBulkPointShop = false;
+                    this.selectedItems = [];
+                    this.bulkPointShopStatus = "";
+                }
+            } catch (error) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to update point shop status",
+                });
+            } finally {
+                this.bulkPointShopUpdating = false;
             }
         },
 

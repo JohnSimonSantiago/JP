@@ -138,9 +138,20 @@
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
-                                class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
+                                class="pi pi-money-bill text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Shops</span>
+                        </router-link>
+
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/point-shop"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-prime text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Point Shop</span>
                         </router-link>
 
                         <!-- My Shop (Shop Owners & Admins Only) -->

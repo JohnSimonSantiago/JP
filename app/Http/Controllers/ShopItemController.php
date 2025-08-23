@@ -72,27 +72,50 @@ class ShopItemController extends Controller
     /**
      * Get user's purchase history
      */
-    public function getPurchases()
-    {
-        try {
-            $purchases = Purchase::forUser(Auth::id())
-                ->with(['shopItem', 'shop:id,name'])
-                ->orderBy('created_at', 'desc')
-                ->paginate(20);
+  public function getPurchases(Request $request)
+{
+    try {
+        $perPage = min($request->get('per_page', 20), 100);
+        $shopId = $request->get('shop_id'); // Optional shop filter
+        $status = $request->get('status'); // Optional status filter
 
-            return response()->json([
-                'success' => true,
-                'purchases' => $purchases
-            ]);
+        $query = Purchase::forUser(Auth::id())
+            ->with(['shopItem:id,name,description,image', 'shop:id,name'])
+            ->orderBy('created_at', 'desc');
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to load purchase history',
-                'error' => $e->getMessage()
-            ], 500);
+        // Apply shop filter if provided
+        if ($shopId) {
+            $query->where('shop_id', $shopId);
         }
+
+        // Apply status filter if provided
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        $purchases = $query->paginate($perPage);
+
+        // Add image URLs to shop items
+        $purchases->getCollection()->transform(function ($purchase) {
+            if ($purchase->shopItem && $purchase->shopItem->image) {
+                $purchase->shopItem->image_url = Storage::url($purchase->shopItem->image);
+            }
+            return $purchase;
+        });
+
+        return response()->json([
+            'success' => true,
+            'purchases' => $purchases
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to load purchase history',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Shop Owner: Create new shop item
