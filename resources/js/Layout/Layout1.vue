@@ -13,7 +13,7 @@
                 <span class="text-xl font-bold text-gray-800">JP Gaming</span>
             </div>
 
-            <!-- User info section with level and points -->
+            <!-- User info section with expanded stats -->
             <div class="flex items-center gap-4">
                 <div class="text-sm text-gray-600">
                     Welcome back
@@ -22,6 +22,50 @@
                     }}</span
                     >!
                 </div>
+
+                <!-- User Stats Cards -->
+                <div class="flex items-center gap-3">
+                    <!-- Cash Display -->
+                    <div
+                        class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-200"
+                    >
+                        <span class="text-xs font-semibold text-green-700">
+                            ₱{{ formatCash(user.cash || 0) }}
+                        </span>
+                    </div>
+
+                    <!-- Stars Display -->
+                    <div
+                        class="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg border border-yellow-200"
+                    >
+                        <i class="pi pi-star text-yellow-600 text-xs"></i>
+                        <span class="text-xs font-semibold text-yellow-700">
+                            {{ formatPoints(user.stars || 0) }}
+                        </span>
+                    </div>
+
+                    <!-- Points Display -->
+                    <div
+                        class="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200"
+                    >
+                        <i class="pi pi-prime text-blue-600 text-xs"></i>
+                        <span class="text-xs font-semibold text-blue-700">
+                            {{ formatPoints(user.points || 0) }}
+                        </span>
+                    </div>
+
+                    <!-- Rank Display -->
+                    <div
+                        class="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-lg border border-purple-200"
+                    >
+                        <i class="pi pi-trophy text-purple-600 text-xs"></i>
+                        <span class="text-xs font-semibold text-purple-700">
+                            {{ userRank || "Loading..." }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Profile Section -->
                 <div class="flex items-center gap-3">
                     <!-- Profile Image or Default Avatar -->
                     <div class="relative">
@@ -57,7 +101,13 @@
                             </span>
                         </div>
                         <div class="text-xs text-gray-500">
-                            {{ formatPoints(user.points || 0) }} Points
+                            {{
+                                user.role === "admin"
+                                    ? "Administrator"
+                                    : user.role === "shop_owner"
+                                    ? "Shop Owner"
+                                    : "Member"
+                            }}
                         </div>
                     </div>
                 </div>
@@ -162,7 +212,7 @@
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 group"
                         >
                             <i
-                                class="pi pi-shop text-lg group-hover:scale-110 transition-transform"
+                                class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">My Shop</span>
                             <!-- Shop Owner Badge -->
@@ -229,11 +279,14 @@ export default {
             user: {
                 level: 1,
                 points: 0,
+                stars: 0,
+                cash: 0.0,
                 name: "",
                 profile_image: null,
                 is_premium: false,
                 role: "user", // Default role
             },
+            userRank: null,
         };
     },
     computed: {
@@ -252,7 +305,12 @@ export default {
     methods: {
         // Format points with comma separators
         formatPoints(points) {
-            return points.toLocaleString();
+            return (points || 0).toLocaleString();
+        },
+
+        // Format cash with 2 decimal places
+        formatCash(cash) {
+            return parseFloat(cash || 0).toFixed(2);
         },
 
         // Set up axios with token
@@ -285,6 +343,9 @@ export default {
                     };
 
                     console.log("Layout: User data loaded:", this.user);
+
+                    // Fetch user rank after getting user data
+                    await this.fetchUserRank();
                 } else {
                     throw new Error("Failed to fetch user data");
                 }
@@ -295,6 +356,30 @@ export default {
                 localStorage.removeItem("auth-token");
                 localStorage.removeItem("user");
                 this.$router.push("/");
+            }
+        },
+
+        // Fetch user's rank based on stars
+        async fetchUserRank() {
+            try {
+                const response = await axios.get("/api/leaderboard");
+                if (response.data.success) {
+                    const users = response.data.users;
+                    const userIndex = users.findIndex(
+                        (user) => user.id === this.user.id
+                    );
+
+                    if (userIndex !== -1) {
+                        this.userRank = `#${userIndex + 1}`;
+                    } else {
+                        this.userRank = "Unranked";
+                    }
+                } else {
+                    this.userRank = "N/A";
+                }
+            } catch (error) {
+                console.error("Failed to fetch user rank:", error);
+                this.userRank = "Error";
             }
         },
 
@@ -341,12 +426,33 @@ export default {
     background: #a8a8a8;
 }
 
-/* Smooth transitions for profile images */
+/* Smooth transitions for profile images and stat cards */
 img {
     transition: all 0.2s ease-in-out;
 }
 
 img:hover {
     transform: scale(1.05);
+}
+
+/* Hover effects for stat cards */
+.bg-green-50:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bg-yellow-50:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bg-blue-50:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.bg-purple-50:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 </style>

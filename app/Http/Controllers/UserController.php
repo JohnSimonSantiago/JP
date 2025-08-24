@@ -14,7 +14,7 @@ use Carbon\Carbon;
 class UserController extends Controller
 {
 
-     public function profile(Request $request)
+    public function profile(Request $request)
     {
         try {
             // Get the currently authenticated user (based on the bearer token)
@@ -35,6 +35,7 @@ class UserController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'bio' => $user->bio, // ADDED: Include bio
                     'level' => $user->level,
                     'stars' => $user->stars,
                     'points' => $user->points,
@@ -79,11 +80,12 @@ class UserController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'bio' => $user->bio, // ADDED: Include bio
                     'email' => $user->email ?? null,
-                    'role' => $user->role ?? 'user', // Default to 'user' if no role field
+                    'role' => $user->role ?? 'user',
                     'level' => $user->level ?? 1,
-                    'stars' => $user->stars ?? $user->points ?? 100, // Use stars if exists, fallback to points
-                    'points' => $user->points ?? $user->stars ?? 100, // Keep both for compatibility
+                    'stars' => $user->stars ?? $user->points ?? 100,
+                    'points' => $user->points ?? $user->stars ?? 100,
                     'is_premium' => $user->is_premium ?? false,
                     'profile_image' => $user->profile_image,
                     'gender' => $user->gender,
@@ -174,69 +176,71 @@ class UserController extends Controller
     /**
      * Get user profile with membership data - UPDATED
      */
-    public function getProfile()
-    {
-        try {
-            $user = Auth::user();
+public function getProfile()
+{
+    try {
+        $user = Auth::user();
+        
+        // Get the most recent active membership
+        $membership = Membership::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        // Update is_premium status based on membership
+        $isPremium = false;
+        if ($membership && $membership->status === 'approved') {
+            $now = Carbon::now();
+            $endDate = Carbon::parse($membership->end_date);
             
-            // Get the most recent active membership
-            $membership = Membership::where('user_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->first();
-
-            // Update is_premium status based on membership
-            $isPremium = false;
-            if ($membership && $membership->status === 'approved') {
-                $now = Carbon::now();
-                $endDate = Carbon::parse($membership->end_date);
-                
-                if ($endDate->isAfter($now)) {
-                    $isPremium = true;
-                } else {
-                    // Membership expired, update status
-                    $membership->update(['status' => 'expired']);
-                }
+            if ($endDate->isAfter($now)) {
+                $isPremium = true;
+            } else {
+                // Membership expired, update status
+                $membership->update(['status' => 'expired']);
             }
-
-            // Update user's is_premium status
-            if ($user->is_premium !== $isPremium) {
-                $user->update(['is_premium' => $isPremium]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'level' => $user->level,
-                    'stars' => $user->stars ?? $user->points ?? 100, // FIXED: Include stars
-                    'points' => $user->points ?? $user->stars ?? 100, // Keep both
-                    'is_premium' => $isPremium,
-                    'profile_image' => $user->profile_image,
-                    'gender' => $user->gender,
-                    'birthday' => $user->birthday,
-                    'address' => $user->address,
-                    'privacy_settings' => $user->privacy_settings,
-                    'role' => $user->role ?? 'user', // ADDED: Include role
-                ],
-                'membership' => $membership ? [
-                    'id' => $membership->id,
-                    'type' => $membership->type,
-                    'status' => $membership->status,
-                    'start_date' => $membership->start_date,
-                    'end_date' => $membership->end_date,
-                    'created_at' => $membership->created_at,
-                ] : null
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to fetch profile data',
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        // Update user's is_premium status
+        if ($user->is_premium !== $isPremium) {
+            $user->update(['is_premium' => $isPremium]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'bio' => $user->bio, // ADDED: Include bio
+                'level' => $user->level,
+                'stars' => $user->stars ?? $user->points ?? 100,
+                'points' => $user->points ?? $user->stars ?? 100,
+                'cash' => $user->cash ?? 0.00,
+                'is_premium' => $isPremium,
+                'profile_image' => $user->profile_image,
+                'gender' => $user->gender,
+                'birthday' => $user->birthday,
+                'address' => $user->address,
+                'privacy_settings' => $user->privacy_settings,
+                'role' => $user->role ?? 'user',
+            ],
+            'membership' => $membership ? [
+                'id' => $membership->id,
+                'type' => $membership->type,
+                'status' => $membership->status,
+                'start_date' => $membership->start_date,
+                'end_date' => $membership->end_date,
+                'created_at' => $membership->created_at,
+            ] : null
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch profile data',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Upload profile image - FIXED VERSION
@@ -305,6 +309,7 @@ class UserController extends Controller
             
             // Build validation rules
             $rules = [
+                'bio' => 'sometimes|nullable|string|max:500', // ADDED: Bio validation
                 'level' => 'sometimes|integer|min:1',
                 'stars' => 'sometimes|integer|min:0',
                 'points' => 'sometimes|integer|min:0',
@@ -312,12 +317,13 @@ class UserController extends Controller
                 'birthday' => 'sometimes|nullable|date|before:today',
                 'address' => 'sometimes|nullable|string|max:1000',
                 'privacy_settings' => 'sometimes|array',
+                'privacy_settings.bio' => 'sometimes|in:public,private', // ADDED: Bio privacy
                 'privacy_settings.gender' => 'sometimes|in:public,private',
                 'privacy_settings.birthday' => 'sometimes|in:public,private', 
                 'privacy_settings.address' => 'sometimes|in:public,private',
             ];
 
-            // Add name validation with unique check (excluding current user) and better error message
+            // Add name validation with unique check (excluding current user)
             if ($request->has('name')) {
                 $rules['name'] = 'required|string|max:255|unique:users,name,' . $user->id;
             }
@@ -326,6 +332,7 @@ class UserController extends Controller
                 'name.unique' => 'This username is already taken by another user. Please choose a different one.',
                 'name.required' => 'Username is required.',
                 'name.max' => 'Username cannot be longer than 255 characters.',
+                'bio.max' => 'Bio cannot be longer than 500 characters.', // ADDED: Bio error message
                 'birthday.before' => 'Birthday must be in the past.',
                 'gender.in' => 'Please select a valid gender option.',
             ]);
@@ -341,11 +348,11 @@ class UserController extends Controller
             // Log the data being updated (for debugging)
             \Log::info('Updating user profile', [
                 'user_id' => $user->id,
-                'data' => $request->only(['name', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings'])
+                'data' => $request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings'])
             ]);
 
-            // Update the user
-            $user->update($request->only(['name', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
+            // Update the user - ADDED bio to the fillable fields
+            $user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
 
             // Refresh the user from database to get updated values
             $user->refresh();
@@ -356,6 +363,7 @@ class UserController extends Controller
                 'user' => [
                     'id' => $user->id,
                     'name' => $user->name,
+                    'bio' => $user->bio, // ADDED: Include bio in response
                     'level' => $user->level,
                     'stars' => $user->stars,
                     'points' => $user->points,
@@ -477,14 +485,14 @@ class UserController extends Controller
     /**
      * Get leaderboard - UPDATED for consistency
      */
-    public function getLeaderboard()
+     public function getLeaderboard()
     {
         try {
             // Get all users ordered by stars (descending), then by level (descending)
             $users = User::orderBy('stars', 'desc')
                         ->orderBy('level', 'desc')
                         ->orderBy('created_at', 'asc') // Earlier users win ties
-                        ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday'])
+                        ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday']) // ADDED bio
                         ->get();
 
             return response()->json([
@@ -505,7 +513,7 @@ class UserController extends Controller
     /**
      * Search users by name - UPDATED
      */
-    public function searchUsers(Request $request)
+     public function searchUsers(Request $request)
     {
         try {
             $query = $request->get('q', '');
@@ -518,7 +526,7 @@ class UserController extends Controller
             }
 
             $users = User::where('name', 'LIKE', '%' . $query . '%')
-                        ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday'])
+                        ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday']) // ADDED bio
                         ->limit(10)
                         ->get();
 
@@ -550,7 +558,7 @@ class UserController extends Controller
     /**
      * Get user statistics with age calculation - NEW METHOD
      */
-    public function getUserStats(Request $request)
+      public function getUserStats(Request $request)
     {
         try {
             $user = Auth::user();
@@ -558,6 +566,7 @@ class UserController extends Controller
             $stats = [
                 'id' => $user->id,
                 'name' => $user->name,
+                'bio' => $user->bio, // ADDED: Include bio
                 'level' => $user->level,
                 'stars' => $user->stars,
                 'points' => $user->points,
@@ -586,10 +595,11 @@ class UserController extends Controller
         }
     }
 
+
     /**
      * Get public profile of any user by ID - UPDATED WITH PRIVACY SETTINGS
      */
-    public function getPublicProfile($userId)
+     public function getPublicProfile($userId)
     {
         try {
             $user = User::find($userId);
@@ -609,11 +619,48 @@ class UserController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->first();
 
-            // Use the model's public profile method that respects privacy
-            $publicProfile = $user->getPublicProfileData($currentUser);
-            
-            // Add premium status
-            $publicProfile['is_premium'] = $membership ? true : false;
+            // Get privacy settings with defaults
+            $privacySettings = $user->privacy_settings ?? [
+                'bio' => 'public',
+                'gender' => 'public',
+                'birthday' => 'public', 
+                'address' => 'private'
+            ];
+
+            // Build public profile respecting privacy settings
+            $publicProfile = [
+                'id' => $user->id,
+                'name' => $user->name,
+                'level' => $user->level,
+                'stars' => $user->stars,
+                'is_premium' => $membership ? true : false,
+                'profile_image' => $user->profile_image,
+                'role' => $user->role,
+                'member_since' => $user->created_at,
+            ];
+
+            // Add bio if public or if viewing own profile
+            if (($privacySettings['bio'] ?? 'public') === 'public' || ($currentUser && $currentUser->id === $user->id)) {
+                $publicProfile['bio'] = $user->bio;
+            }
+
+            // Add gender if public or if viewing own profile
+            if (($privacySettings['gender'] ?? 'public') === 'public' || ($currentUser && $currentUser->id === $user->id)) {
+                $publicProfile['gender'] = $user->gender;
+            }
+
+            // Add birthday/age if public or if viewing own profile
+            if (($privacySettings['birthday'] ?? 'public') === 'public' || ($currentUser && $currentUser->id === $user->id)) {
+                $publicProfile['birthday'] = $user->birthday;
+                if ($user->birthday) {
+                    $publicProfile['age'] = $this->calculateAge($user->birthday);
+                }
+            }
+
+            // Add address if public or if viewing own profile
+            if (($privacySettings['address'] ?? 'private') === 'public' || ($currentUser && $currentUser->id === $user->id)) {
+                $publicProfile['address'] = $user->address;
+            }
 
             return response()->json([
                 'success' => true,

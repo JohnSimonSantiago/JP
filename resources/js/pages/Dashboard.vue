@@ -139,16 +139,57 @@
                     >
                         <!-- Main carousel image -->
                         <div class="relative h-96 overflow-hidden">
-                            <img
-                                :src="images[currentImageIndex].image_url"
-                                :alt="images[currentImageIndex].title"
-                                class="w-full h-full object-cover transition-all duration-500"
-                            />
+                            <div
+                                :class="{
+                                    'cursor-pointer':
+                                        images[currentImageIndex].link_url,
+                                    'cursor-default':
+                                        !images[currentImageIndex].link_url,
+                                }"
+                                @click="
+                                    handleImageClick(
+                                        images[currentImageIndex],
+                                        $event
+                                    )
+                                "
+                                class="w-full h-full relative group"
+                            >
+                                <img
+                                    :src="images[currentImageIndex].image_url"
+                                    :alt="images[currentImageIndex].title"
+                                    class="w-full h-full object-cover transition-all duration-500"
+                                />
+
+                                <!-- Link indicator overlay -->
+                                <div
+                                    v-if="images[currentImageIndex].link_url"
+                                    class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center"
+                                >
+                                    <div
+                                        class="opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-70 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+                                    >
+                                        <svg
+                                            class="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                            ></path>
+                                        </svg>
+                                        <span>Click to visit</span>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Admin controls overlay -->
                             <div
                                 v-if="isAdmin"
-                                class="absolute top-4 right-4 flex gap-2"
+                                class="absolute top-4 right-4 flex gap-2 z-20"
                             >
                                 <button
                                     @click="
@@ -201,7 +242,7 @@
                             <!-- Carousel controls -->
                             <button
                                 @click="prevImage"
-                                class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                                class="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10"
                             >
                                 <svg
                                     class="w-6 h-6"
@@ -219,7 +260,7 @@
                             </button>
                             <button
                                 @click="nextImage"
-                                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all"
+                                class="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-all z-10"
                             >
                                 <svg
                                     class="w-6 h-6"
@@ -240,8 +281,28 @@
                             <div
                                 class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent text-white p-6"
                             >
-                                <h3 class="text-xl font-semibold mb-1">
+                                <h3
+                                    class="text-xl font-semibold mb-1 flex items-center gap-2"
+                                >
                                     {{ images[currentImageIndex].title }}
+                                    <!-- Link indicator next to title -->
+                                    <svg
+                                        v-if="
+                                            images[currentImageIndex].link_url
+                                        "
+                                        class="w-4 h-4 text-blue-300"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                        title="This image has a link"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            stroke-width="2"
+                                            d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                        ></path>
+                                    </svg>
                                 </h3>
                                 <p class="text-sm opacity-90">
                                     {{ images[currentImageIndex].description }}
@@ -277,33 +338,78 @@
                         <div
                             v-for="(image, index) in images"
                             :key="image.id"
-                            @click="goToImage(index)"
                             :class="{
                                 'ring-2 ring-blue-500':
                                     index === currentImageIndex,
                             }"
-                            class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+                            class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                         >
                             <div class="flex">
-                                <!-- Small image -->
-                                <div class="w-48 h-32 flex-shrink-0">
+                                <!-- Small image - now clickable -->
+                                <div
+                                    class="w-48 h-32 flex-shrink-0 relative group cursor-pointer"
+                                    @click="handleImageClick(image, $event)"
+                                >
                                     <img
                                         :src="image.image_url"
                                         :alt="image.title"
                                         class="w-full h-full object-cover"
                                     />
+
+                                    <!-- Link indicator -->
+                                    <div
+                                        v-if="image.link_url"
+                                        class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-300 flex items-center justify-center"
+                                    >
+                                        <div
+                                            class="opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                                        >
+                                            <svg
+                                                class="w-8 h-8 text-white"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                ></path>
+                                            </svg>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <!-- Description -->
-                                <div class="flex-1 p-6">
+                                <div
+                                    class="flex-1 p-6"
+                                    @click="goToImage(index)"
+                                >
                                     <div
-                                        class="flex items-start justify-between"
+                                        class="flex items-start justify-between cursor-pointer"
                                     >
                                         <div class="flex-1">
                                             <h3
-                                                class="text-lg font-semibold text-gray-800 mb-2"
+                                                class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2"
                                             >
                                                 {{ image.title }}
+                                                <!-- Link indicator next to title -->
+                                                <svg
+                                                    v-if="image.link_url"
+                                                    class="w-4 h-4 text-blue-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                    title="This image has a link"
+                                                >
+                                                    <path
+                                                        stroke-linecap="round"
+                                                        stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                                    ></path>
+                                                </svg>
                                             </h3>
                                             <p
                                                 class="text-gray-600 leading-relaxed"
@@ -311,13 +417,19 @@
                                                 {{ image.description }}
                                             </p>
                                             <div
-                                                class="mt-3 flex items-center text-sm text-gray-500"
+                                                class="mt-3 flex items-center text-sm text-gray-500 gap-4"
                                             >
                                                 <span
                                                     class="bg-gray-100 px-2 py-1 rounded-md"
                                                 >
                                                     Image {{ index + 1 }} of
                                                     {{ images.length }}
+                                                </span>
+                                                <span
+                                                    v-if="image.link_url"
+                                                    class="text-blue-600 flex items-center gap-1"
+                                                >
+                                                    🔗 Clickable
                                                 </span>
                                             </div>
                                         </div>
@@ -465,6 +577,39 @@
                             </div>
                         </div>
 
+                        <!-- NEW: Link URL Field -->
+                        <div class="mb-4">
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                            >
+                                Link URL (Optional)
+                            </label>
+                            <input
+                                v-model="formData.link_url"
+                                type="url"
+                                placeholder="https://example.com"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            />
+                            <p class="text-xs text-gray-500 mt-1">
+                                If provided, clicking the image will navigate to
+                                this URL
+                            </p>
+                        </div>
+
+                        <!-- NEW: Open in New Tab Checkbox -->
+                        <div class="mb-4" v-if="formData.link_url">
+                            <label class="flex items-center">
+                                <input
+                                    v-model="formData.open_in_new_tab"
+                                    type="checkbox"
+                                    class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50"
+                                />
+                                <span class="ml-2 text-sm text-gray-700"
+                                    >Open link in new tab</span
+                                >
+                            </label>
+                        </div>
+
                         <div class="mb-6">
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -531,6 +676,8 @@ export default {
                 description: "",
                 display_order: 0,
                 imageFile: null,
+                link_url: "", // NEW
+                open_in_new_tab: true, // NEW
             },
         };
     },
@@ -586,6 +733,26 @@ export default {
                 this.loading = false;
                 console.log("Loading set to false");
             }
+        },
+
+        // NEW: Handle image clicks for navigation
+        handleImageClick(image, event) {
+            // If there's a link URL, navigate to it
+            if (image.link_url) {
+                if (image.open_in_new_tab) {
+                    window.open(
+                        image.link_url,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+                } else {
+                    window.location.href = image.link_url;
+                }
+                // Prevent the default carousel behavior
+                event.stopPropagation();
+                return;
+            }
+            // If no link URL, proceed with normal carousel behavior (do nothing, let the parent handle it)
         },
 
         handleImageUpload(event) {
@@ -652,6 +819,8 @@ export default {
                     title: this.formData.title,
                     description: this.formData.description,
                     display_order: this.formData.display_order || 0,
+                    link_url: this.formData.link_url || null, // NEW
+                    open_in_new_tab: this.formData.open_in_new_tab, // NEW
                 };
 
                 // Include image URL if we uploaded a new image, or keep existing for edits
@@ -727,6 +896,8 @@ export default {
                 description: "",
                 display_order: 0,
                 imageFile: null,
+                link_url: "", // NEW
+                open_in_new_tab: true, // NEW
             };
             this.editingImage = null;
             this.showImageForm = false;
@@ -744,6 +915,8 @@ export default {
                 description: image.description,
                 display_order: image.display_order,
                 imageFile: null, // No file selected initially
+                link_url: image.link_url || "", // NEW
+                open_in_new_tab: image.open_in_new_tab ?? true, // NEW
             };
             this.editingImage = image;
             this.showImageForm = true;

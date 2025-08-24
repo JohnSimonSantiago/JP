@@ -12,16 +12,18 @@ class Purchase extends Model
     protected $fillable = [
         'user_id',
         'shop_item_id',
-        'shop_id',
+        'shop_id', // Now nullable for point shop purchases
         'price_paid',
+        'currency_type', // NEW: Track if paid with points or cash
         'quantity',
         'status',
         'rejection_reason'
     ];
 
     protected $casts = [
-        'price_paid' => 'integer',
-        'quantity' => 'integer'
+        'price_paid' => 'decimal:2', // Changed to decimal to handle cash
+        'quantity' => 'integer',
+        'currency_type' => 'string'
     ];
 
     /**
@@ -55,6 +57,11 @@ class Purchase extends Model
         return $query->where('shop_id', $shopId);
     }
 
+    public function scopeForPointShop($query)
+    {
+        return $query->whereNull('shop_id');
+    }
+
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
@@ -70,6 +77,16 @@ class Purchase extends Model
         return $query->where('status', 'rejected');
     }
 
+    public function scopePaidWithPoints($query)
+    {
+        return $query->where('currency_type', 'points');
+    }
+
+    public function scopePaidWithCash($query)
+    {
+        return $query->where('currency_type', 'cash');
+    }
+
     /**
      * Accessors
      */
@@ -79,123 +96,59 @@ class Purchase extends Model
     }
 
     /**
-     * Status checking methods
+     * Check if this is a point shop purchase
      */
-    public function isPending()
+    public function isPointShopPurchase(): bool
     {
-        return $this->status === 'pending';
-    }
-
-    public function isCompleted()
-    {
-        return $this->status === 'completed';
-    }
-
-    public function isRejected()
-    {
-        return $this->status === 'rejected';
+        return $this->shop_id === null;
     }
 
     /**
-     * Methods
+     * Check if this purchase was paid with points
      */
-    public function canBeApproved()
+    public function isPaidWithPoints(): bool
     {
-        return $this->isPending() && $this->shopItem && $this->shopItem->isInStock($this->quantity);
-    }
-
-    public function canBeRejected()
-    {
-        return $this->isPending();
-    }
-
-    public function approve()
-    {
-        if (!$this->canBeApproved()) {
-            throw new \Exception('Purchase cannot be approved');
-        }
-
-        \DB::transaction(function () {
-            // Decrement stock if limited
-            $this->shopItem->decrementStock($this->quantity);
-            
-            // Update status
-            $this->update(['status' => 'completed']);
-            
-            // Apply any item effects (if applicable)
-            $this->applyItemEffects();
-        });
-    }
-
-    public function reject($reason = null)
-    {
-        if (!$this->canBeRejected()) {
-            throw new \Exception('Purchase cannot be rejected');
-        }
-
-        \DB::transaction(function () use ($reason) {
-            // Refund points to user
-            $this->user->increment('points', $this->total_amount);
-            
-            // Update status
-            $this->update([
-                'status' => 'rejected',
-                'rejection_reason' => $reason
-            ]);
-        });
+        return $this->currency_type === 'points';
     }
 
     /**
-     * Apply special item effects
+     * Check if this purchase was paid with cash
      */
-    private function applyItemEffects()
+    public function isPaidWithCash(): bool
     {
-        $item = $this->shopItem;
-        
-        if (!$item || !$item->properties) {
-            return;
-        }
+        return $this->currency_type === 'cash';
+    }
 
-        switch ($item->category) {
-            case 'boost':
-                if (isset($item->properties['point_boost'])) {
-                    $pointBoost = $item->properties['point_boost'] * $this->quantity;
-                    $this->user->increment('points', $pointBoost);
-                }
-                break;
-                
-            case 'premium':
-                if (isset($item->properties['premium_days'])) {
-                    $this->user->update(['is_premium' => true]);
-                    // You might want to add premium_expires_at field
-                }
-                break;
+    /**
+     * Get the source name (shop name or "Point Shop")
+     */
+    public function getSourceNameAttribute(): string
+    {
+        return $this->shop ? $this->shop->name : 'Point Shop';
+    }
+
+    /**
+     * Get formatted price with currency symbol
+     */
+    public function getFormattedPriceAttribute(): string
+    {
+        if ($this->currency_type === 'cash') {
+            return '$' . number_format($this->price_paid, 2);
+        } else {
+            return number_format($this->price_paid, 0) . ' points';
         }
     }
 
     /**
-     * Get status color for UI
+     * Get formatted total amount with currency symbol
      */
-    public function getStatusColor()
+    public function getFormattedTotalAttribute(): string
     {
-        return match($this->status) {
-            'pending' => 'yellow',
-            'completed' => 'green',
-            'rejected' => 'red',
-            default => 'gray'
-        };
-    }
-
-    /**
-     * Get status icon for UI
-     */
-    public function getStatusIcon()
-    {
-        return match($this->status) {
-            'pending' => 'pi pi-clock',
-            'completed' => 'pi pi-check-circle',
-            'rejected' => 'pi pi-times-circle',
-            default => 'pi pi-question-circle'
-        };
+        $total = $this->total_amount;
+        if ($this->currency_type === 'cash') {
+            return '$' . number_format($total, 2);
+        } else {
+            return number_format($total, 0) . ' points';
+        }
     }
 }

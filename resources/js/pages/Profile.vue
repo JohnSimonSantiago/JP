@@ -63,7 +63,15 @@
                                 </span>
                             </div>
 
-                            <!-- REMOVED AGE FROM TOP STATS -->
+                            <!-- Bio Preview (if exists and not editing) -->
+                            <div v-if="user.bio && !isEditing" class="mb-4">
+                                <p
+                                    class="text-gray-600 italic text-sm leading-relaxed max-w-md"
+                                >
+                                    "{{ user.bio }}"
+                                </p>
+                            </div>
+
                             <div class="flex flex-col md:flex-row gap-4 mb-4">
                                 <div class="bg-blue-50 px-4 py-2 rounded-lg">
                                     <div
@@ -159,7 +167,28 @@
                         v-if="!isEditing"
                         class="grid grid-cols-1 md:grid-cols-2 gap-6"
                     >
-                        <!-- REMOVED USERNAME FROM VIEW MODE -->
+                        <!-- Bio -->
+                        <div class="p-4 bg-gray-50 rounded-lg md:col-span-2">
+                            <div class="flex items-center justify-between mb-1">
+                                <label
+                                    class="block text-sm font-medium text-gray-600"
+                                    >Bio</label
+                                >
+                                <i
+                                    v-if="privacySettings.bio === 'private'"
+                                    class="pi pi-eye-slash text-gray-400 text-sm"
+                                    title="Private - only you can see this"
+                                ></i>
+                                <i
+                                    v-else
+                                    class="pi pi-eye text-gray-400 text-sm"
+                                    title="Public - others can see this"
+                                ></i>
+                            </div>
+                            <div class="text-lg font-medium text-gray-800">
+                                {{ user.bio || "No bio provided" }}
+                            </div>
+                        </div>
 
                         <!-- User ID -->
                         <div class="p-4 bg-gray-50 rounded-lg">
@@ -312,8 +341,73 @@
                         @submit.prevent="saveProfile"
                         class="space-y-6"
                     >
+                        <!-- Bio Section -->
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-2"
+                                >Bio</label
+                            >
+                            <textarea
+                                v-model="profileForm.bio"
+                                rows="4"
+                                maxlength="500"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 resize-none"
+                                placeholder="Tell others about yourself... (max 500 characters)"
+                            ></textarea>
+                            <div
+                                class="flex items-center justify-between text-sm"
+                            >
+                                <!-- Character Count -->
+                                <span class="text-gray-500">
+                                    {{ (profileForm.bio || "").length }}/500
+                                    characters
+                                </span>
+
+                                <!-- Privacy Toggle -->
+                                <div class="flex items-center gap-2">
+                                    <span class="text-gray-600"
+                                        >Visibility:</span
+                                    >
+                                    <label
+                                        class="flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <input
+                                            type="radio"
+                                            :value="'public'"
+                                            v-model="
+                                                profileForm.privacy_settings.bio
+                                            "
+                                            class="text-blue-600"
+                                        />
+                                        <i class="pi pi-eye text-green-600"></i>
+                                        <span class="text-green-600"
+                                            >Public</span
+                                        >
+                                    </label>
+                                    <label
+                                        class="flex items-center gap-1 cursor-pointer"
+                                    >
+                                        <input
+                                            type="radio"
+                                            :value="'private'"
+                                            v-model="
+                                                profileForm.privacy_settings.bio
+                                            "
+                                            class="text-blue-600"
+                                        />
+                                        <i
+                                            class="pi pi-eye-slash text-red-600"
+                                        ></i>
+                                        <span class="text-red-600"
+                                            >Private</span
+                                        >
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Username - KEPT IN EDIT MODE -->
+                            <!-- Username -->
                             <div>
                                 <label
                                     class="block text-sm font-medium text-gray-700 mb-2"
@@ -697,6 +791,7 @@ export default {
             user: {
                 id: null,
                 name: "",
+                bio: "",
                 level: 1,
                 stars: 0,
                 points: 0,
@@ -711,10 +806,12 @@ export default {
             },
             profileForm: {
                 name: "",
+                bio: "",
                 gender: "",
                 birthday: "",
                 address: "",
                 privacy_settings: {
+                    bio: "public",
                     gender: "public",
                     birthday: "public",
                     address: "private",
@@ -731,6 +828,7 @@ export default {
         privacySettings() {
             return (
                 this.user.privacy_settings || {
+                    bio: "public",
                     gender: "public",
                     birthday: "public",
                     address: "private",
@@ -834,10 +932,12 @@ export default {
                 // Initialize form with user data and privacy settings
                 this.profileForm = {
                     name: this.user.name || "",
+                    bio: this.user.bio || "",
                     gender: this.user.gender || "",
                     birthday: this.user.birthday || "",
                     address: this.user.address || "",
                     privacy_settings: this.user.privacy_settings || {
+                        bio: "public",
                         gender: "public",
                         birthday: "public",
                         address: "private",
@@ -860,10 +960,12 @@ export default {
             // Reset form with current user data
             this.profileForm = {
                 name: this.user.name || "",
+                bio: this.user.bio || "",
                 gender: this.user.gender || "",
                 birthday: this.user.birthday || "",
                 address: this.user.address || "",
                 privacy_settings: this.user.privacy_settings || {
+                    bio: "public",
                     gender: "public",
                     birthday: "public",
                     address: "private",
@@ -876,10 +978,12 @@ export default {
             // Reset form to original values
             this.profileForm = {
                 name: this.user.name || "",
+                bio: this.user.bio || "",
                 gender: this.user.gender || "",
                 birthday: this.user.birthday || "",
                 address: this.user.address || "",
                 privacy_settings: this.user.privacy_settings || {
+                    bio: "public",
                     gender: "public",
                     birthday: "public",
                     address: "private",

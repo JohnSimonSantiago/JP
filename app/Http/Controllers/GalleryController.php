@@ -67,6 +67,9 @@ class GalleryController extends Controller
     /**
      * Store a new gallery image (admin only)
      */
+   /**
+     * Store a new gallery image (admin only) - UPDATED
+     */
     public function store(Request $request)
     {
         // Check admin privileges
@@ -78,6 +81,8 @@ class GalleryController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'required|string',
                 'image_url' => 'required|url',
+                'link_url' => 'nullable|url',              // NEW: Optional URL validation
+                'open_in_new_tab' => 'sometimes|boolean',   // NEW: Optional boolean
                 'display_order' => 'sometimes|integer|min:0',
                 'is_active' => 'sometimes|boolean'
             ]);
@@ -94,6 +99,8 @@ class GalleryController extends Controller
                 'title' => $request->title,
                 'description' => $request->description,
                 'image_url' => $request->image_url,
+                'link_url' => $request->link_url,                    // NEW
+                'open_in_new_tab' => $request->open_in_new_tab ?? true, // NEW: Default true
                 'display_order' => $request->display_order ?? 0,
                 'is_active' => $request->is_active ?? true,
                 'created_by' => Auth::id(),
@@ -110,6 +117,64 @@ class GalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create image',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a gallery image (admin only) - UPDATED
+     */
+    public function update(Request $request, $id)
+    {
+        // Check admin privileges
+        $adminCheck = $this->checkAdmin();
+        if ($adminCheck) return $adminCheck;
+
+        try {
+            $image = GalleryImage::findOrFail($id);
+
+            $validator = Validator::make($request->all(), [
+                'title' => 'sometimes|string|max:255',
+                'description' => 'sometimes|string',
+                'image_url' => 'sometimes|url',
+                'link_url' => 'nullable|url',              // NEW: Optional URL validation
+                'open_in_new_tab' => 'sometimes|boolean',   // NEW: Optional boolean
+                'display_order' => 'sometimes|integer|min:0',
+                'is_active' => 'sometimes|boolean'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $updateData = $request->only([
+                'title', 
+                'description', 
+                'image_url', 
+                'link_url',          // NEW
+                'open_in_new_tab',   // NEW
+                'display_order', 
+                'is_active'
+            ]);
+            $updateData['updated_by'] = Auth::id();
+
+            $image->update($updateData);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image updated successfully',
+                'image' => $image->fresh(['creator', 'updater'])
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update image',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -137,54 +202,7 @@ class GalleryController extends Controller
         }
     }
 
-    /**
-     * Update a gallery image (admin only)
-     */
-    public function update(Request $request, $id)
-    {
-        // Check admin privileges
-        $adminCheck = $this->checkAdmin();
-        if ($adminCheck) return $adminCheck;
-
-        try {
-            $image = GalleryImage::findOrFail($id);
-
-            $validator = Validator::make($request->all(), [
-                'title' => 'sometimes|string|max:255',
-                'description' => 'sometimes|string',
-                'image_url' => 'sometimes|url',
-                'display_order' => 'sometimes|integer|min:0',
-                'is_active' => 'sometimes|boolean'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $updateData = $request->only(['title', 'description', 'image_url', 'display_order', 'is_active']);
-            $updateData['updated_by'] = Auth::id();
-
-            $image->update($updateData);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Image updated successfully',
-                'image' => $image->fresh(['creator', 'updater'])
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update image',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
+   
     /**
      * Remove a gallery image (admin only)
      */

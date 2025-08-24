@@ -8,7 +8,6 @@
                         <h1
                             class="text-4xl font-bold text-gray-800 mb-2 flex items-center justify-center gap-3"
                         >
-                            <i class="pi pi-trophy text-yellow-500"></i>
                             Season
                             {{ currentSeason.season_number }} Leaderboards
                         </h1>
@@ -74,22 +73,22 @@
                             <div
                                 class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
                             >
-                                <!-- 2nd Place -->
+                                <!-- 2nd Place - IMPROVED SILVER -->
                                 <div
                                     v-if="topUsers[1]"
                                     class="order-2 md:order-1"
                                 >
                                     <div
                                         @click="viewUserProfile(topUsers[1].id)"
-                                        class="bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1"
+                                        class="bg-gradient-to-br from-slate-50 via-gray-50 to-slate-300 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1 border border-slate-200"
                                     >
-                                        <!-- Silver Badge -->
+                                        <!-- Silver Badge - IMPROVED -->
                                         <div class="absolute top-4 right-4">
                                             <div
-                                                class="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-lg"
+                                                class="w-12 h-12 bg-gradient-to-br from-slate-300 via-gray-300 to-slate-500 rounded-full flex items-center justify-center shadow-lg border-2 border-slate-400"
                                             >
                                                 <span
-                                                    class="text-white font-bold text-lg"
+                                                    class="text-white font-bold text-lg drop-shadow-sm"
                                                     >2</span
                                                 >
                                             </div>
@@ -98,7 +97,7 @@
                                         <!-- Profile Image -->
                                         <div class="relative mb-4">
                                             <div
-                                                class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-gray-400 shadow-lg"
+                                                class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-slate-400 shadow-lg"
                                             >
                                                 <img
                                                     v-if="
@@ -135,7 +134,7 @@
                                             {{ topUsers[1].name }}
                                         </h3>
                                         <p
-                                            class="text-2xl font-bold text-gray-600"
+                                            class="text-2xl font-bold text-slate-600"
                                         >
                                             {{ formatStars(topUsers[1].stars) }}
                                         </p>
@@ -150,23 +149,24 @@
                                     </div>
                                 </div>
 
-                                <!-- 1st Place -->
+                                <!-- 1st Place - IMPROVED GOLD -->
                                 <div
                                     v-if="topUsers[0]"
                                     class="order-1 md:order-2"
                                 >
                                     <div
                                         @click="viewUserProfile(topUsers[0].id)"
-                                        class="bg-gradient-to-br from-yellow-100 to-yellow-200 rounded-xl p-6 text-center relative overflow-hidden transform md:scale-105 cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1"
+                                        class="bg-gradient-to-br from-yellow-50 via-amber-100 to-yellow-200 rounded-xl p-6 text-center relative overflow-hidden transform md:scale-105 cursor-pointer hover:shadow-lg transition-all hover:-translate-y-1 border-2 border-yellow-300"
                                     >
-                                        <!-- Gold Crown -->
+                                        <!-- Gold Crown - IMPROVED -->
                                         <div class="absolute top-4 right-4">
                                             <div
-                                                class="w-14 h-14 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-lg"
+                                                class="w-14 h-14 bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-300 rounded-full flex items-center justify-center shadow-lg border-2 border-yellow-500"
                                             >
-                                                <i
-                                                    class="pi pi-crown text-white text-xl"
-                                                ></i>
+                                                <span
+                                                    class="text-white font-bold text-lg drop-shadow-sm"
+                                                    >🏆</span
+                                                >
                                             </div>
                                         </div>
 
@@ -210,7 +210,7 @@
                                             {{ topUsers[0].name }}
                                         </h3>
                                         <p
-                                            class="text-3xl font-bold text-yellow-700"
+                                            class="text-3xl font-bold text-amber-700"
                                         >
                                             {{ formatStars(topUsers[0].stars) }}
                                         </p>
@@ -219,9 +219,9 @@
                                         </p>
                                         <div class="mt-2">
                                             <span
-                                                class="bg-yellow-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+                                                class="bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 px-3 py-1 rounded-full text-sm font-medium shadow-sm"
                                             >
-                                                🏆 Champion
+                                                🌟 Champion 🌟
                                             </span>
                                         </div>
                                         <p
@@ -232,19 +232,19 @@
                                     </div>
                                 </div>
 
-                                <!-- 3rd Place -->
+                                <!-- 3rd Place - IMPROVED BRONZE -->
                                 <div v-if="topUsers[2]" class="order-3">
                                     <div
                                         @click="viewUserProfile(topUsers[2].id)"
-                                        class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1"
+                                        class="bg-gradient-to-br from-amber-600 via-orange-200 to-amber-600 rounded-xl p-6 text-center relative overflow-hidden cursor-pointer hover:shadow-lg transition-all transform hover:-translate-y-1 border border-amber-700"
                                     >
-                                        <!-- Bronze Badge -->
+                                        <!-- Bronze Badge - IMPROVED -->
                                         <div class="absolute top-4 right-4">
                                             <div
-                                                class="w-12 h-12 bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full flex items-center justify-center shadow-lg"
+                                                class="w-12 h-12 bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 rounded-full flex items-center justify-center shadow-lg border-2 border-amber-700"
                                             >
                                                 <span
-                                                    class="text-white font-bold text-lg"
+                                                    class="text-white font-bold text-lg drop-shadow-sm"
                                                     >3</span
                                                 >
                                             </div>
@@ -253,7 +253,7 @@
                                         <!-- Profile Image -->
                                         <div class="relative mb-4">
                                             <div
-                                                class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-yellow-600 shadow-lg"
+                                                class="w-20 h-20 mx-auto rounded-full overflow-hidden border-4 border-amber-600 shadow-lg"
                                             >
                                                 <img
                                                     v-if="
@@ -285,20 +285,20 @@
                                         </div>
 
                                         <h3
-                                            class="text-xl font-bold text-white mb-1"
+                                            class="text-xl font-bold text-amber-900 mb-1"
                                         >
                                             {{ topUsers[2].name }}
                                         </h3>
                                         <p
-                                            class="text-2xl font-bold text-yellow-200"
+                                            class="text-2xl font-bold text-amber-700"
                                         >
                                             {{ formatStars(topUsers[2].stars) }}
                                         </p>
-                                        <p class="text-sm text-yellow-100">
+                                        <p class="text-sm text-amber-800">
                                             Level {{ topUsers[2].level }}
                                         </p>
                                         <p
-                                            class="text-xs text-yellow-200 mt-2 font-medium"
+                                            class="text-xs text-blue-600 mt-2 font-medium"
                                         >
                                             Click to view profile
                                         </p>
@@ -380,15 +380,15 @@
                                                 "
                                                 class="hover:bg-blue-50 transition-colors cursor-pointer"
                                                 :class="{
-                                                    'bg-gradient-to-r from-yellow-50 to-yellow-100':
+                                                    'bg-gradient-to-r from-yellow-50 via-amber-50 to-yellow-300':
                                                         index === 0,
-                                                    'bg-gradient-to-r from-gray-50 to-gray-100':
+                                                    'bg-gradient-to-r from-slate-50 via-gray-50 to-slate-300':
                                                         index === 1,
-                                                    'bg-gradient-to-r from-yellow-100 to-orange-100':
+                                                    'bg-gradient-to-r from-amber-100 via-orange-100 to-amber-600':
                                                         index === 2,
                                                 }"
                                             >
-                                                <!-- Rank -->
+                                                <!-- Rank - IMPROVED COLORS -->
                                                 <td
                                                     class="px-6 py-4 whitespace-nowrap"
                                                 >
@@ -397,20 +397,21 @@
                                                     >
                                                         <div
                                                             v-if="index === 0"
-                                                            class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center shadow-md"
+                                                            class="w-8 h-8 bg-gradient-to-br from-yellow-400 via-amber-400 to-yellow-600 rounded-full flex items-center justify-center shadow-md border border-yellow-500"
                                                         >
-                                                            <i
-                                                                class="pi pi-crown text-white text-sm"
-                                                            ></i>
+                                                            <span
+                                                                class="text-white font-bold text-sm drop-shadow-sm"
+                                                                >🏆</span
+                                                            >
                                                         </div>
                                                         <div
                                                             v-else-if="
                                                                 index === 1
                                                             "
-                                                            class="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center shadow-md"
+                                                            class="w-8 h-8 bg-gradient-to-br from-slate-300 via-gray-300 to-slate-500 rounded-full flex items-center justify-center shadow-md border border-slate-400"
                                                         >
                                                             <span
-                                                                class="text-white font-bold text-sm"
+                                                                class="text-white font-bold text-sm drop-shadow-sm"
                                                                 >2</span
                                                             >
                                                         </div>
@@ -418,10 +419,10 @@
                                                             v-else-if="
                                                                 index === 2
                                                             "
-                                                            class="w-8 h-8 bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-full flex items-center justify-center shadow-md"
+                                                            class="w-8 h-8 bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 rounded-full flex items-center justify-center shadow-md border border-amber-700"
                                                         >
                                                             <span
-                                                                class="text-white font-bold text-sm"
+                                                                class="text-white font-bold text-sm drop-shadow-sm"
                                                                 >3</span
                                                             >
                                                         </div>
@@ -544,19 +545,19 @@
                                                 >
                                                     <span
                                                         v-if="index === 0"
-                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800"
                                                     >
-                                                        🏆 Champion
+                                                        🌟 Champion 🌟
                                                     </span>
                                                     <span
                                                         v-else-if="index === 1"
-                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800"
+                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-slate-100 text-slate-800"
                                                     >
                                                         🥈 Runner-up
                                                     </span>
                                                     <span
                                                         v-else-if="index === 2"
-                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800"
+                                                        class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-100 text-amber-800"
                                                     >
                                                         🥉 Third Place
                                                     </span>
@@ -591,7 +592,7 @@
                         </div>
                     </div>
 
-                    <!-- Past Seasons Tab (Keep existing content but make past winners clickable too) -->
+                    <!-- Past Seasons Tab -->
                     <div v-else-if="activeTab === 'seasons'" class="p-6">
                         <div
                             v-if="pastSeasons.length === 0"
@@ -626,7 +627,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Season Winners (Make them clickable too) -->
+                                <!-- Season Winners - IMPROVED COLORS -->
                                 <div
                                     v-if="
                                         season.top_players &&
@@ -649,36 +650,36 @@
                                             "
                                             class="bg-white rounded-lg p-4 shadow-sm border cursor-pointer hover:shadow-md transition-all transform hover:-translate-y-1"
                                             :class="{
-                                                'border-yellow-300 bg-yellow-50':
+                                                'border-yellow-300 bg-gradient-to-r from-yellow-50 to-amber-50':
                                                     player.rank === 1,
-                                                'border-gray-300 bg-gray-50':
+                                                'border-slate-300 bg-gradient-to-r from-slate-50 to-gray-50':
                                                     player.rank === 2,
-                                                'border-orange-300 bg-orange-50':
+                                                'border-amber-300 bg-gradient-to-r from-amber-50 to-orange-50':
                                                     player.rank === 3,
                                             }"
                                         >
                                             <div
                                                 class="flex items-center gap-3"
                                             >
-                                                <!-- Rank Badge -->
+                                                <!-- Rank Badge - IMPROVED COLORS -->
                                                 <div
                                                     class="w-10 h-10 rounded-full flex items-center justify-center"
                                                     :class="{
-                                                        'bg-gradient-to-br from-yellow-400 to-yellow-600':
+                                                        'bg-gradient-to-br from-yellow-400 via-amber-400 to-yellow-600 border border-yellow-500':
                                                             player.rank === 1,
-                                                        'bg-gradient-to-br from-gray-400 to-gray-600':
+                                                        'bg-gradient-to-br from-slate-300 via-gray-300 to-slate-500 border border-slate-400':
                                                             player.rank === 2,
-                                                        'bg-gradient-to-br from-orange-400 to-orange-600':
+                                                        'bg-gradient-to-br from-amber-600 via-orange-600 to-amber-700 border border-amber-700':
                                                             player.rank === 3,
                                                     }"
                                                 >
                                                     <i
                                                         v-if="player.rank === 1"
-                                                        class="pi pi-crown text-white"
+                                                        class="pi pi-crown text-white drop-shadow-sm"
                                                     ></i>
                                                     <span
                                                         v-else
-                                                        class="text-white font-bold"
+                                                        class="text-white font-bold drop-shadow-sm"
                                                         >{{ player.rank }}</span
                                                     >
                                                 </div>
@@ -727,7 +728,7 @@
                     </div>
                 </div>
 
-                <!-- New Season Dialog - Keep existing dialog -->
+                <!-- New Season Dialog -->
                 <div
                     v-if="showNewSeasonDialog && isAdmin"
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -900,7 +901,7 @@ export default {
             }
         },
 
-        // NEW METHOD: Navigate to user profile
+        // Navigate to user profile
         viewUserProfile(userId) {
             this.$router.push(`/profile/${userId}`);
         },

@@ -17,6 +17,8 @@ return new class extends Migration
             $table->text('description');
             $table->string('image_url');
             $table->string('image_path')->nullable(); // Local file path if stored locally
+            $table->string('link_url')->nullable(); // URL to navigate to when image is clicked
+            $table->boolean('open_in_new_tab')->default(true); // Whether to open link in new tab
             $table->integer('display_order')->default(0); // For ordering images
             $table->boolean('is_active')->default(true);
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade'); // Admin who created it
@@ -27,6 +29,7 @@ return new class extends Migration
             $table->index(['is_active', 'display_order']);
             $table->index('created_by');
             $table->index('display_order');
+            $table->index('link_url'); // Index for link URL queries if needed
         });
     }
 

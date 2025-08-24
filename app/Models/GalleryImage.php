@@ -14,6 +14,8 @@ class GalleryImage extends Model
         'description',
         'image_url',
         'image_path',
+        'link_url',             // NEW: URL to navigate to when clicked
+        'open_in_new_tab',      // NEW: Whether to open link in new tab
         'display_order',
         'is_active',
         'created_by',
@@ -22,6 +24,7 @@ class GalleryImage extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'open_in_new_tab' => 'boolean',  // NEW: Cast to boolean
         'display_order' => 'integer'
     ];
 

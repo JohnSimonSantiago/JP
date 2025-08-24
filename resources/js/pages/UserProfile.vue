@@ -98,6 +98,20 @@
                                     </span>
                                 </div>
 
+                                <!-- Bio Display (if exists and public) -->
+                                <div
+                                    v-if="
+                                        user.hasOwnProperty('bio') && user.bio
+                                    "
+                                    class="mb-4"
+                                >
+                                    <p
+                                        class="text-gray-600 italic text-sm leading-relaxed max-w-md"
+                                    >
+                                        "{{ user.bio }}"
+                                    </p>
+                                </div>
+
                                 <div
                                     class="flex flex-col md:flex-row gap-4 mb-4"
                                 >
@@ -179,6 +193,35 @@
                         </h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Bio (only if public and exists) -->
+                            <div
+                                v-if="user.hasOwnProperty('bio')"
+                                class="p-4 bg-gray-50 rounded-lg md:col-span-2"
+                            >
+                                <label
+                                    class="block text-sm font-medium text-gray-600 mb-1"
+                                    >Bio</label
+                                >
+                                <div class="text-lg font-medium text-gray-800">
+                                    {{ user.bio || "No bio provided" }}
+                                </div>
+                            </div>
+                            <div
+                                v-else
+                                class="p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 md:col-span-2"
+                            >
+                                <label
+                                    class="block text-sm font-medium text-gray-400 mb-1"
+                                    >Bio</label
+                                >
+                                <div
+                                    class="flex items-center gap-2 text-gray-500"
+                                >
+                                    <i class="pi pi-eye-slash"></i>
+                                    <span>Private information</span>
+                                </div>
+                            </div>
+
                             <!-- Username -->
                             <div class="p-4 bg-gray-50 rounded-lg">
                                 <label

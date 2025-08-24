@@ -16,59 +16,79 @@ class ShopItemController extends Controller
     /**
      * Purchase an item
      */
-    public function purchase(Request $request, ShopItem $item)
-    {
-        $request->validate([
-            'quantity' => 'integer|min:1|max:10'
-        ]);
+  public function purchase(Request $request, ShopItem $item)
+{
+    $request->validate([
+        'quantity' => 'integer|min:1|max:10'
+    ]);
 
-        $user = Auth::user();
-        $quantity = $request->get('quantity', 1);
+    $user = Auth::user();
+    $quantity = $request->get('quantity', 1);
 
-        // Check if user can purchase this item
-        $blockReason = $item->getPurchaseBlockReason($user, $quantity);
-        if ($blockReason) {
-            return response()->json([
-                'success' => false,
-                'message' => $blockReason
-            ], 400);
-        }
-
-        $totalCost = $item->price * $quantity;
-
-        try {
-            DB::transaction(function () use ($user, $item, $quantity, $totalCost) {
-                // Deduct points from user immediately
-                $user->decrement('points', $totalCost);
-                
-                // Create purchase record with pending status
-                Purchase::create([
-                    'user_id' => $user->id,
-                    'shop_item_id' => $item->id,
-                    'shop_id' => $item->shop_id,
-                    'price_paid' => $item->price,
-                    'quantity' => $quantity,
-                    'status' => 'pending'
-                ]);
-
-                // Note: Stock is NOT decremented until shop owner/admin approves
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Purchase submitted! Your order is pending approval from the shop owner.',
-                'new_balance' => $user->fresh()->points
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Purchase failed. Please try again.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+    // Check if user can purchase this item
+    $blockReason = $item->getPurchaseBlockReason($user, $quantity);
+    if ($blockReason) {
+        return response()->json([
+            'success' => false,
+            'message' => $blockReason
+        ], 400);
     }
 
+    // Determine currency and calculate cost based on item type
+    if ($item->isPointShopItem()) {
+        // Point Shop items use points
+        $totalCost = $item->price * $quantity;
+        $pricePerItem = $item->price;
+        $currencyType = 'points';
+        $balanceField = 'points';
+    } else {
+        // Regular Shop items use cash
+        $totalCost = $item->cash_price * $quantity;
+        $pricePerItem = $item->cash_price;
+        $currencyType = 'cash';
+        $balanceField = 'cash';
+    }
+
+    try {
+        DB::transaction(function () use ($user, $item, $quantity, $totalCost, $pricePerItem, $currencyType, $balanceField) {
+            // Deduct from appropriate user balance
+            $user->decrement($balanceField, $totalCost);
+            
+            // Create purchase record with pending status
+            Purchase::create([
+                'user_id' => $user->id,
+                'shop_item_id' => $item->id,
+                'shop_id' => $item->shop_id,
+                'price_paid' => $pricePerItem,
+                'currency_type' => $currencyType,
+                'quantity' => $quantity,
+                'status' => 'pending'
+            ]);
+
+            // Note: Stock is NOT decremented until shop owner/admin approves
+        });
+
+        // Get updated balance
+        $user->refresh();
+        $newBalance = $user->{$balanceField};
+
+        return response()->json([
+            'success' => true,
+            'message' => $item->isPointShopItem() 
+                ? 'Purchase submitted! Your order is pending approval.'
+                : 'Purchase submitted! Your order is pending approval from the shop owner.',
+            'new_balance' => $newBalance,
+            'currency_type' => $currencyType
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Purchase failed. Please try again.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Get user's purchase history
      */
@@ -576,57 +596,63 @@ class ShopItemController extends Controller
     /**
      * Shop Owner/Admin: Reject a purchase
      */
-    public function rejectPurchase($shopId, $purchaseId, Request $request)
-    {
-        try {
-            // Manually find the shop and purchase
-            $shop = Shop::findOrFail($shopId);
-            $purchase = $shop->purchases()->findOrFail($purchaseId);
-            
-            $user = Auth::user();
-            
-            // Check authorization
-            if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            if ($purchase->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This purchase has already been processed'
-                ], 400);
-            }
-
-            DB::transaction(function () use ($purchase, $request) {
-                // Refund points to user
-                $customer = $purchase->user;
-                $refundAmount = $purchase->price_paid * $purchase->quantity;
-                $customer->increment('points', $refundAmount);
-
-                // Update purchase status
-                $updateData = ['status' => 'rejected'];
-                if ($request->has('reason')) {
-                    $updateData['rejection_reason'] = $request->input('reason');
-                }
-                
-                $purchase->update($updateData);
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Purchase rejected and points refunded successfully'
-            ]);
-
-        } catch (\Exception $e) {
+   public function rejectPurchase($shopId, $purchaseId, Request $request)
+{
+    try {
+        // Manually find the shop and purchase
+        $shop = Shop::findOrFail($shopId);
+        $purchase = $shop->purchases()->with('shopItem')->findOrFail($purchaseId);
+        
+        $user = Auth::user();
+        
+        // Check authorization
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to reject purchase: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Unauthorized'
+            ], 403);
         }
+
+        if ($purchase->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This purchase has already been processed'
+            ], 400);
+        }
+
+        DB::transaction(function () use ($purchase, $request) {
+            // Refund to user's correct balance based on currency type
+            $customer = $purchase->user;
+            $refundAmount = $purchase->price_paid * $purchase->quantity;
+            
+            // Determine which balance to refund to
+            if ($purchase->currency_type === 'cash') {
+                $customer->increment('cash', $refundAmount);
+            } else {
+                $customer->increment('points', $refundAmount);
+            }
+
+            // Update purchase status
+            $updateData = ['status' => 'rejected'];
+            if ($request->has('reason')) {
+                $updateData['rejection_reason'] = $request->input('reason');
+            }
+            
+            $purchase->update($updateData);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Purchase rejected and amount refunded successfully'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to reject purchase: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Admin: Get all pending purchases from all shops

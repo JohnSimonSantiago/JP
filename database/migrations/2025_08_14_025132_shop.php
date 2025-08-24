@@ -30,7 +30,7 @@ return new class extends Migration
 
         // Add shop_id to shop_items table (NO CATEGORY)
         Schema::table('shop_items', function (Blueprint $table) {
-            $table->foreignId('shop_id')->after('id')->constrained()->onDelete('cascade');
+            $table->foreignId('shop_id')->nullable()->after('id')->constrained()->onDelete('cascade');
             
             // Add new indexes
             $table->index(['shop_id', 'is_active']);
@@ -75,7 +75,7 @@ return new class extends Migration
 
         // Update purchases table to include shop_id for easier tracking
         Schema::table('purchases', function (Blueprint $table) {
-            $table->foreignId('shop_id')->after('shop_item_id')->constrained()->onDelete('cascade');
+            $table->foreignId('shop_id')->nullable()->after('shop_item_id')->constrained()->onDelete('cascade');
             $table->string('rejection_reason')->nullable()->after('status');
             
             $table->index(['shop_id', 'status']);

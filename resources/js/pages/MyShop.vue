@@ -31,7 +31,7 @@
                     </p>
                     <button
                         @click="showCreateShop = true"
-                        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors"
+                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg transition-colors"
                     >
                         <i class="pi pi-plus mr-2"></i>
                         Create My Shop
@@ -100,17 +100,17 @@
 
                         <div class="bg-white p-6 rounded-xl shadow-lg">
                             <div class="flex items-center">
-                                <div class="p-2 bg-blue-100 rounded-lg">
+                                <div class="p-2 bg-green-100 rounded-lg">
                                     <i
-                                        class="pi pi-star text-blue-600 text-xl"
+                                        class="pi pi-dollar text-green-600 text-xl"
                                     ></i>
                                 </div>
                                 <div class="ml-4">
                                     <p class="text-sm text-gray-600">Revenue</p>
                                     <p class="text-2xl font-bold">
-                                        {{
-                                            formatPoints(
-                                                statistics?.total_revenue
+                                        ${{
+                                            formatCash(
+                                                statistics?.total_revenue || 0
                                             )
                                         }}
                                     </p>
@@ -130,7 +130,7 @@
                                     :class="[
                                         'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
                                         activeTab === tab.id
-                                            ? 'border-blue-500 text-blue-600'
+                                            ? 'border-green-500 text-green-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
                                     ]"
                                 >
@@ -152,7 +152,7 @@
                                     </h3>
                                     <button
                                         @click="showCreateItem = true"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
                                     >
                                         <i class="pi pi-plus mr-2"></i>
                                         Add Item
@@ -195,23 +195,10 @@
                                                 <div
                                                     class="flex items-center space-x-4 mt-1"
                                                 >
-                                                    <!-- Show both prices -->
+                                                    <!-- Show only cash price for shop owners -->
                                                     <div
                                                         class="flex items-center space-x-2"
                                                     >
-                                                        <span
-                                                            v-if="
-                                                                item.price > 0
-                                                            "
-                                                            class="text-sm font-medium text-blue-600"
-                                                        >
-                                                            {{
-                                                                formatPoints(
-                                                                    item.price
-                                                                )
-                                                            }}
-                                                            points
-                                                        </span>
                                                         <span
                                                             v-if="
                                                                 item.cash_price >
@@ -220,18 +207,13 @@
                                                             class="text-sm font-medium text-green-600"
                                                         >
                                                             ${{
-                                                                parseFloat(
+                                                                formatCash(
                                                                     item.cash_price
-                                                                ).toFixed(2)
+                                                                )
                                                             }}
                                                         </span>
                                                         <span
-                                                            v-if="
-                                                                item.price <=
-                                                                    0 &&
-                                                                item.cash_price <=
-                                                                    0
-                                                            "
+                                                            v-else
                                                             class="text-sm text-red-500"
                                                         >
                                                             No price set
@@ -307,7 +289,7 @@
                                     </p>
                                     <button
                                         @click="showCreateItem = true"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                        class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
                                     >
                                         <i class="pi pi-plus mr-2"></i>
                                         Add First Item
@@ -335,41 +317,138 @@
                                         <div
                                             v-for="order in pendingOrders"
                                             :key="order.id"
-                                            class="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg"
+                                            class="p-4 bg-orange-50 border border-orange-200 rounded-lg"
                                         >
-                                            <div>
-                                                <p class="font-medium">
-                                                    {{ order.shop_item?.name }}
-                                                </p>
-                                                <p
-                                                    class="text-sm text-gray-600"
+                                            <div
+                                                class="flex items-center justify-between"
+                                            >
+                                                <div class="flex-1">
+                                                    <div
+                                                        class="flex items-start justify-between mb-2"
+                                                    >
+                                                        <div class="flex-1">
+                                                            <p
+                                                                class="font-medium text-lg"
+                                                            >
+                                                                {{
+                                                                    order
+                                                                        .shop_item
+                                                                        ?.name
+                                                                }}
+                                                            </p>
+                                                            <p
+                                                                class="text-sm text-gray-600"
+                                                            >
+                                                                Customer:
+                                                                {{
+                                                                    order.user
+                                                                        ?.name
+                                                                }}
+                                                            </p>
+                                                            <p
+                                                                class="text-sm text-gray-500"
+                                                            >
+                                                                {{
+                                                                    new Date(
+                                                                        order.created_at
+                                                                    ).toLocaleDateString()
+                                                                }}
+                                                            </p>
+                                                        </div>
+
+                                                        <!-- Order Details - Made smaller -->
+                                                        <div
+                                                            class="text-right ml-4"
+                                                        >
+                                                            <div
+                                                                class="bg-white px-2 py-1 rounded border text-center min-w-[60px]"
+                                                            >
+                                                                <p
+                                                                    class="text-xs text-gray-600"
+                                                                >
+                                                                    Qty
+                                                                </p>
+                                                                <p
+                                                                    class="font-semibold text-sm"
+                                                                >
+                                                                    {{
+                                                                        order.quantity
+                                                                    }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Price Information -->
+                                                    <div
+                                                        class="flex items-center space-x-4 mt-3"
+                                                    >
+                                                        <div
+                                                            class="flex items-center space-x-2 text-sm"
+                                                        >
+                                                            <span
+                                                                class="text-gray-600"
+                                                                >Unit
+                                                                Price:</span
+                                                            >
+                                                            <span
+                                                                class="font-medium text-green-600"
+                                                            >
+                                                                ${{
+                                                                    formatCash(
+                                                                        order.price_paid
+                                                                    )
+                                                                }}
+                                                            </span>
+                                                        </div>
+                                                        <div
+                                                            class="flex items-center space-x-2 text-sm"
+                                                        >
+                                                            <span
+                                                                class="text-gray-600"
+                                                                >Total:</span
+                                                            >
+                                                            <span
+                                                                class="font-semibold text-green-600 text-base"
+                                                            >
+                                                                ${{
+                                                                    formatCash(
+                                                                        order.price_paid *
+                                                                            order.quantity
+                                                                    )
+                                                                }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Action Buttons -->
+                                                <div
+                                                    class="flex flex-col space-y-2 ml-6"
                                                 >
-                                                    Customer:
-                                                    {{ order.user?.name }}
-                                                </p>
-                                                <p
-                                                    class="text-sm text-gray-500"
-                                                >
-                                                    {{
-                                                        new Date(
-                                                            order.created_at
-                                                        ).toLocaleDateString()
-                                                    }}
-                                                </p>
-                                            </div>
-                                            <div class="flex space-x-2">
-                                                <button
-                                                    @click="approveOrder(order)"
-                                                    class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600 transition-colors"
-                                                >
-                                                    Approve
-                                                </button>
-                                                <button
-                                                    @click="rejectOrder(order)"
-                                                    class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600 transition-colors"
-                                                >
-                                                    Reject
-                                                </button>
+                                                    <button
+                                                        @click="
+                                                            approveOrder(order)
+                                                        "
+                                                        class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center"
+                                                    >
+                                                        <i
+                                                            class="pi pi-check mr-1"
+                                                        ></i>
+                                                        Approve
+                                                    </button>
+                                                    <button
+                                                        @click="
+                                                            rejectOrder(order)
+                                                        "
+                                                        class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex items-center"
+                                                    >
+                                                        <i
+                                                            class="pi pi-times mr-1"
+                                                        ></i>
+                                                        Reject
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -386,39 +465,59 @@
                                             :key="order.id"
                                             class="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                                         >
-                                            <div>
-                                                <p class="font-medium">
-                                                    {{ order.shop_item?.name }}
-                                                </p>
-                                                <p
-                                                    class="text-sm text-gray-600"
+                                            <div class="flex-1">
+                                                <div
+                                                    class="flex items-center justify-between"
                                                 >
-                                                    Customer:
-                                                    {{ order.user?.name }}
-                                                </p>
-                                                <p
-                                                    class="text-sm text-gray-500"
-                                                >
-                                                    {{
-                                                        new Date(
-                                                            order.created_at
-                                                        ).toLocaleDateString()
-                                                    }}
-                                                </p>
+                                                    <div>
+                                                        <p class="font-medium">
+                                                            {{
+                                                                order.shop_item
+                                                                    ?.name
+                                                            }}
+                                                        </p>
+                                                        <p
+                                                            class="text-sm text-gray-600"
+                                                        >
+                                                            Customer:
+                                                            {{
+                                                                order.user?.name
+                                                            }}
+                                                            • Qty:
+                                                            {{ order.quantity }}
+                                                        </p>
+                                                        <p
+                                                            class="text-sm text-gray-500"
+                                                        >
+                                                            {{
+                                                                new Date(
+                                                                    order.created_at
+                                                                ).toLocaleDateString()
+                                                            }}
+                                                            • Total: ${{
+                                                                formatCash(
+                                                                    order.price_paid *
+                                                                        order.quantity
+                                                                )
+                                                            }}
+                                                        </p>
+                                                    </div>
+                                                    <span
+                                                        :class="[
+                                                            'px-3 py-1 rounded-full text-sm ml-4',
+                                                            order.status ===
+                                                            'completed'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : order.status ===
+                                                                  'rejected'
+                                                                ? 'bg-red-100 text-red-800'
+                                                                : 'bg-yellow-100 text-yellow-800',
+                                                        ]"
+                                                    >
+                                                        {{ order.status }}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span
-                                                :class="[
-                                                    'px-3 py-1 rounded-full text-sm',
-                                                    order.status === 'completed'
-                                                        ? 'bg-green-100 text-green-800'
-                                                        : order.status ===
-                                                          'rejected'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : 'bg-yellow-100 text-yellow-800',
-                                                ]"
-                                            >
-                                                {{ order.status }}
-                                            </span>
                                         </div>
                                     </div>
                                 </div>
@@ -525,7 +624,7 @@
                                             v-model="shopForm.name"
                                             type="text"
                                             required
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         />
                                     </div>
 
@@ -538,7 +637,7 @@
                                         <textarea
                                             v-model="shopForm.description"
                                             rows="4"
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         ></textarea>
                                     </div>
 
@@ -557,7 +656,7 @@
                                                 type="file"
                                                 accept="image/*"
                                                 @change="handleLogoUpload"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                             />
                                             <p
                                                 class="text-xs text-gray-500 mt-1"
@@ -578,7 +677,7 @@
                                                 type="file"
                                                 accept="image/*"
                                                 @change="handleBannerUpload"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                             />
                                             <p
                                                 class="text-xs text-gray-500 mt-1"
@@ -591,7 +690,7 @@
                                     <button
                                         type="submit"
                                         :disabled="updatingShop"
-                                        class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                        class="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg transition-colors disabled:opacity-50"
                                     >
                                         <i
                                             v-if="updatingShop"
@@ -628,7 +727,7 @@
                                         v-model="newShop.name"
                                         type="text"
                                         required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         placeholder="Enter shop name"
                                     />
                                 </div>
@@ -641,7 +740,7 @@
                                     <textarea
                                         v-model="newShop.description"
                                         rows="3"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         placeholder="Describe your shop..."
                                     ></textarea>
                                 </div>
@@ -657,7 +756,7 @@
                                 <button
                                     type="submit"
                                     :disabled="creatingShop"
-                                    class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                    class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     <i
                                         v-if="creatingShop"
@@ -670,7 +769,7 @@
                     </div>
                 </div>
 
-                <!-- Create/Edit Item Dialog with Dual Pricing -->
+                <!-- Create/Edit Item Dialog -->
                 <div
                     v-if="showCreateItem || showEditItem"
                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
@@ -693,7 +792,7 @@
                                         v-model="itemForm.name"
                                         type="text"
                                         required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         placeholder="Enter item name"
                                     />
                                 </div>
@@ -707,7 +806,7 @@
                                     <textarea
                                         v-model="itemForm.description"
                                         rows="3"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         placeholder="Describe the item..."
                                     ></textarea>
                                 </div>
@@ -720,72 +819,34 @@
                                         Pricing
                                     </h4>
 
-                                    <div class="grid grid-cols-1 gap-4">
-                                        <!-- Cash Price (Always visible) -->
-                                        <div>
-                                            <label
-                                                class="block text-sm font-medium text-gray-700 mb-1"
+                                    <!-- Cash Price (Shop owners only see this) -->
+                                    <div>
+                                        <label
+                                            class="block text-sm font-medium text-gray-700 mb-1"
+                                        >
+                                            Cash Price *
+                                        </label>
+                                        <div class="relative">
+                                            <span
+                                                class="absolute left-3 top-2 text-gray-500"
+                                                >$</span
                                             >
-                                                Cash Price
-                                                {{ !isAdmin ? "*" : "" }}
-                                            </label>
-                                            <div class="relative">
-                                                <span
-                                                    class="absolute left-3 top-2 text-gray-500"
-                                                    >$</span
-                                                >
-                                                <input
-                                                    v-model.number="
-                                                        itemForm.cash_price
-                                                    "
-                                                    type="number"
-                                                    step="0.01"
-                                                    min="0"
-                                                    :required="!isAdmin"
-                                                    class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="0.00"
-                                                />
-                                            </div>
+                                            <input
+                                                v-model.number="
+                                                    itemForm.cash_price
+                                                "
+                                                type="number"
+                                                step="0.01"
+                                                min="0.01"
+                                                required
+                                                class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                                placeholder="0.00"
+                                            />
                                         </div>
-
-                                        <!-- Points Price (Admin only) -->
-                                        <div v-if="isAdmin">
-                                            <label
-                                                class="block text-sm font-medium text-gray-700 mb-1"
-                                            >
-                                                Points Price
-                                            </label>
-                                            <div class="relative">
-                                                <input
-                                                    v-model.number="
-                                                        itemForm.price
-                                                    "
-                                                    type="number"
-                                                    min="0"
-                                                    class="w-full px-3 py-2 pr-16 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                    placeholder="0"
-                                                />
-                                                <span
-                                                    class="absolute right-3 top-2 text-gray-500"
-                                                    >points</span
-                                                >
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Pricing validation message -->
-                                    <div
-                                        v-if="showPricingValidation"
-                                        class="text-sm text-amber-600 bg-amber-50 p-2 rounded"
-                                    >
-                                        <i
-                                            class="pi pi-exclamation-triangle mr-1"
-                                        ></i>
-                                        {{ getPricingValidationMessage() }}
                                     </div>
                                 </div>
 
-                                <!-- Stock Management Section with Unlimited Toggle -->
+                                <!-- Stock Management Section -->
                                 <div>
                                     <label
                                         class="block text-sm font-medium text-gray-700 mb-2"
@@ -828,7 +889,7 @@
                                         </span>
                                     </div>
 
-                                    <!-- Stock Input (only visible when limited stock is selected) -->
+                                    <!-- Stock Input -->
                                     <div
                                         v-if="!itemForm.unlimited_stock"
                                         class="flex items-center gap-3"
@@ -838,10 +899,8 @@
                                                 v-model.number="itemForm.stock"
                                                 type="number"
                                                 min="0"
-                                                :required="
-                                                    !itemForm.unlimited_stock
-                                                "
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                required
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                                 placeholder="Enter stock quantity"
                                             />
                                         </div>
@@ -894,7 +953,7 @@
                                         type="file"
                                         accept="image/*"
                                         @change="handleImageUpload"
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     />
                                 </div>
 
@@ -903,7 +962,7 @@
                                         v-model="itemForm.is_active"
                                         type="checkbox"
                                         id="is_active"
-                                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                        class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                                     />
                                     <label
                                         for="is_active"
@@ -924,8 +983,8 @@
                                 </button>
                                 <button
                                     type="submit"
-                                    :disabled="savingItem || !isFormValid"
-                                    class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                                    :disabled="savingItem"
+                                    class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                                 >
                                     <i
                                         v-if="savingItem"
@@ -1004,22 +1063,6 @@ export default {
         isAdmin() {
             return this.user && this.user.role === "admin";
         },
-
-        showPricingValidation() {
-            if (!this.isAdmin) {
-                return this.itemForm.cash_price <= 0;
-            }
-            return this.itemForm.price <= 0 && this.itemForm.cash_price <= 0;
-        },
-
-        isFormValid() {
-            if (!this.isAdmin) {
-                // Shop owners must set cash price
-                return this.itemForm.cash_price > 0;
-            }
-            // Admins must set at least one price
-            return this.itemForm.price > 0 || this.itemForm.cash_price > 0;
-        },
     },
 
     watch: {
@@ -1050,8 +1093,6 @@ export default {
                         console.log(
                             "Admin shop not found via my-shop endpoint, trying alternative..."
                         );
-                        // You might need to implement this endpoint or modify the existing one
-                        // For now, we'll handle the 404 gracefully
                         this.shop = null;
                         this.loading = false;
                         return;
@@ -1114,13 +1155,6 @@ export default {
             } catch (error) {
                 console.error("Error getting user data:", error);
             }
-        },
-
-        getPricingValidationMessage() {
-            if (!this.isAdmin) {
-                return "Shop owners must set a cash price for their items.";
-            }
-            return "At least one price (points or cash) must be set for this item.";
         },
 
         async createShop() {
@@ -1207,15 +1241,6 @@ export default {
         },
 
         async saveItem() {
-            if (!this.isFormValid) {
-                this.$toast?.add({
-                    severity: "error",
-                    summary: "Validation Error",
-                    detail: this.getPricingValidationMessage(),
-                });
-                return;
-            }
-
             try {
                 this.savingItem = true;
                 const formData = new FormData();
@@ -1223,8 +1248,7 @@ export default {
                 formData.append("name", this.itemForm.name);
                 formData.append("description", this.itemForm.description || "");
 
-                // Always send both prices
-                formData.append("price", this.itemForm.price || 0);
+                // For shop owners, only send cash_price
                 formData.append("cash_price", this.itemForm.cash_price || 0);
 
                 formData.append(
@@ -1297,7 +1321,7 @@ export default {
                 price: item.price || 0,
                 cash_price: item.cash_price || 0,
                 stock: item.stock || 0,
-                unlimited_stock: item.stock === null, // null stock means unlimited
+                unlimited_stock: item.stock === null,
                 is_active: item.is_active,
                 image: null,
             };
@@ -1354,7 +1378,6 @@ export default {
         toggleUnlimitedStock() {
             this.itemForm.unlimited_stock = !this.itemForm.unlimited_stock;
 
-            // If switching to limited stock and stock is 0, set a default value
             if (!this.itemForm.unlimited_stock && !this.itemForm.stock) {
                 this.itemForm.stock = 1;
             }
@@ -1378,7 +1401,6 @@ export default {
         handleImageUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                // Validate file size (2MB limit)
                 if (file.size > 2 * 1024 * 1024) {
                     this.$toast?.add({
                         severity: "error",
@@ -1457,6 +1479,10 @@ export default {
                     detail: "Failed to reject order",
                 });
             }
+        },
+
+        formatCash(amount) {
+            return parseFloat(amount || 0).toFixed(2);
         },
 
         formatPoints(points) {

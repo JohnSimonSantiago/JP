@@ -181,14 +181,14 @@
                     </div>
                 </div>
 
-                <!-- User Points Display -->
+                <!-- User Cash Balance Display -->
                 <div class="max-w-6xl mx-auto px-6">
                     <div
-                        class="bg-blue-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
+                        class="bg-green-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
                     >
-                        <i class="pi pi-wallet text-blue-600"></i>
-                        <span class="text-lg font-bold text-blue-700">
-                            {{ formatPoints(currentUser.points || 0) }} Points
+                        <i class="pi pi-dollar text-green-600"></i>
+                        <span class="text-lg font-bold text-green-700">
+                            ${{ formatCash(currentUser.cash || 0) }}
                         </span>
                     </div>
                 </div>
@@ -203,7 +203,7 @@
                                     @click="activeTab = 'shop'"
                                     :class="
                                         activeTab === 'shop'
-                                            ? 'border-blue-500 text-blue-600'
+                                            ? 'border-green-500 text-green-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     "
                                     class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
@@ -215,7 +215,7 @@
                                     @click="activeTab = 'purchases'"
                                     :class="
                                         activeTab === 'purchases'
-                                            ? 'border-blue-500 text-blue-600'
+                                            ? 'border-green-500 text-green-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     "
                                     class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
@@ -250,7 +250,7 @@
                                             @input="debounceSearch"
                                             type="text"
                                             placeholder="Search items..."
-                                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         />
                                     </div>
 
@@ -258,7 +258,7 @@
                                     <select
                                         v-model="filters.category"
                                         @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     >
                                         <option value="">All Categories</option>
                                         <option
@@ -274,7 +274,7 @@
                                     <select
                                         v-model="filters.sort"
                                         @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     >
                                         <option value="name">Name (A-Z)</option>
                                         <option value="price_low">
@@ -305,7 +305,7 @@
                                     class="flex justify-center py-12"
                                 >
                                     <i
-                                        class="pi pi-spin pi-spinner text-blue-500 text-2xl"
+                                        class="pi pi-spin pi-spinner text-green-500 text-2xl"
                                     ></i>
                                 </div>
 
@@ -396,15 +396,13 @@
                                                 class="flex items-center justify-between"
                                             >
                                                 <div
-                                                    class="text-xl font-bold text-blue-600"
+                                                    class="text-xl font-bold text-green-600"
                                                 >
-                                                    {{
-                                                        formatPoints(item.price)
+                                                    ${{
+                                                        formatCash(
+                                                            item.cash_price
+                                                        )
                                                     }}
-                                                    <span
-                                                        class="text-sm text-gray-500"
-                                                        >points</span
-                                                    >
                                                 </div>
                                                 <button
                                                     @click="buyItem(item)"
@@ -415,7 +413,7 @@
                                                     "
                                                     :class="
                                                         canBuyItem(item)
-                                                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                                            ? 'bg-green-500 hover:bg-green-600 text-white'
                                                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                                     "
                                                     class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
@@ -510,7 +508,7 @@
                                     <select
                                         v-model="purchaseFilters.status"
                                         @change="fetchPurchases"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                     >
                                         <option value="">All Purchases</option>
                                         <option value="pending">Pending</option>
@@ -529,7 +527,7 @@
                                     class="flex justify-center py-12"
                                 >
                                     <i
-                                        class="pi pi-spin pi-spinner text-blue-500 text-2xl"
+                                        class="pi pi-spin pi-spinner text-green-500 text-2xl"
                                     ></i>
                                 </div>
 
@@ -624,13 +622,12 @@
                                                         >
                                                         <span
                                                             class="font-medium ml-1"
-                                                            >{{
-                                                                formatPoints(
+                                                            >${{
+                                                                formatCash(
                                                                     purchase.price_paid *
                                                                         purchase.quantity
                                                                 )
-                                                            }}
-                                                            pts</span
+                                                            }}</span
                                                         >
                                                     </div>
                                                     <div>
@@ -743,10 +740,10 @@
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
                 <div class="text-center">
                     <div
-                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center"
+                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center"
                     >
                         <i
-                            class="pi pi-shopping-cart text-blue-500 text-2xl"
+                            class="pi pi-shopping-cart text-green-500 text-2xl"
                         ></i>
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mb-2">
@@ -769,8 +766,8 @@
                                 </p>
                             </div>
                             <div class="text-right">
-                                <p class="text-lg font-bold text-blue-600">
-                                    {{ formatPoints(selectedItem?.price) }}
+                                <p class="text-lg font-bold text-green-600">
+                                    ${{ formatCash(selectedItem?.cash_price) }}
                                 </p>
                                 <p class="text-sm text-gray-500">per item</p>
                             </div>
@@ -797,7 +794,7 @@
                                         type="number"
                                         :min="1"
                                         :max="getMaxQuantity(selectedItem)"
-                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                         @input="validateQuantity"
                                     />
                                     <button
@@ -825,19 +822,18 @@
 
                             <!-- Total cost -->
                             <div
-                                class="bg-blue-50 rounded-lg p-3 border-l-4 border-blue-400"
+                                class="bg-green-50 rounded-lg p-3 border-l-4 border-green-400"
                             >
                                 <div class="flex justify-between items-center">
                                     <span
-                                        class="text-sm font-medium text-blue-700"
+                                        class="text-sm font-medium text-green-700"
                                     >
                                         Total Cost:
                                     </span>
                                     <span
-                                        class="text-lg font-bold text-blue-600"
+                                        class="text-lg font-bold text-green-600"
                                     >
-                                        {{ formatPoints(getTotalCost()) }}
-                                        points
+                                        ${{ formatCash(getTotalCost()) }}
                                     </span>
                                 </div>
                             </div>
@@ -847,13 +843,8 @@
                     <!-- Balance info -->
                     <div class="text-sm text-gray-600 mb-6">
                         <div class="flex justify-between">
-                            <span>Current balance:</span>
-                            <span
-                                >{{
-                                    formatPoints(currentUser.points)
-                                }}
-                                points</span
-                            >
+                            <span>Current cash:</span>
+                            <span>${{ formatCash(currentUser.cash) }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span>After purchase:</span>
@@ -864,8 +855,7 @@
                                         : 'text-red-600'
                                 "
                             >
-                                {{ formatPoints(getBalanceAfterPurchase()) }}
-                                points
+                                ${{ formatCash(getBalanceAfterPurchase()) }}
                             </span>
                         </div>
                     </div>
@@ -882,7 +872,7 @@
                             :disabled="
                                 processingPurchase || !canAffordPurchase()
                             "
-                            class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                            class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
                         >
                             <i
                                 v-if="processingPurchase"
@@ -890,7 +880,7 @@
                             ></i>
                             {{
                                 !canAffordPurchase()
-                                    ? "Not Enough Points"
+                                    ? "Not Enough Cash"
                                     : "Confirm Purchase"
                             }}
                         </button>
@@ -946,7 +936,7 @@
                             <textarea
                                 v-model="newReview.comment"
                                 rows="4"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
                                 placeholder="Share your experience..."
                             ></textarea>
                         </div>
@@ -1219,8 +1209,8 @@ export default {
                         detail: response.data.message,
                     });
 
-                    // Update user balance
-                    this.currentUser.points = response.data.new_balance;
+                    // Update user cash balance
+                    this.currentUser.cash = response.data.new_balance;
                     this.cancelPurchase();
 
                     // Refresh shop data to update stock counts and fetch purchases
@@ -1278,24 +1268,24 @@ export default {
 
             if (item.stock === null) {
                 const affordableQuantity = Math.floor(
-                    this.currentUser.points / item.price
+                    this.currentUser.cash / item.cash_price
                 );
                 return Math.min(affordableQuantity, 10);
             }
 
             const affordableQuantity = Math.floor(
-                this.currentUser.points / item.price
+                this.currentUser.cash / item.cash_price
             );
             return Math.min(item.stock, affordableQuantity, 10);
         },
 
         getTotalCost() {
             if (!this.selectedItem) return 0;
-            return this.selectedItem.price * this.purchaseQuantity;
+            return this.selectedItem.cash_price * this.purchaseQuantity;
         },
 
         getBalanceAfterPurchase() {
-            return this.currentUser.points - this.getTotalCost();
+            return this.currentUser.cash - this.getTotalCost();
         },
 
         canAffordPurchase() {
@@ -1331,7 +1321,7 @@ export default {
             return (
                 item.is_active &&
                 (item.stock === null || item.stock > 0) &&
-                this.currentUser.points >= item.price
+                this.currentUser.cash >= item.cash_price
             );
         },
 
@@ -1339,8 +1329,8 @@ export default {
             if (!this.currentUser) return "Login to Buy";
             if (!item.is_active) return "Unavailable";
             if (item.stock !== null && item.stock <= 0) return "Out of Stock";
-            if (this.currentUser.points < item.price)
-                return "Not Enough Points";
+            if (this.currentUser.cash < item.cash_price)
+                return "Not Enough Cash";
             return "Buy Now";
         },
 
@@ -1374,12 +1364,8 @@ export default {
             return new Date(dateString).toLocaleDateString();
         },
 
-        getCategoryIcon(category) {
-            return "pi pi-box";
-        },
-
-        formatPoints(points) {
-            return (points || 0).toLocaleString();
+        formatCash(amount) {
+            return parseFloat(amount || 0).toFixed(2);
         },
     },
 
