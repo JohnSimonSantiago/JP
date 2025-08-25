@@ -108,7 +108,7 @@
                                 <div class="ml-4">
                                     <p class="text-sm text-gray-600">Revenue</p>
                                     <p class="text-2xl font-bold">
-                                        ${{
+                                        ₱{{
                                             formatCash(
                                                 statistics?.total_revenue || 0
                                             )
@@ -206,7 +206,7 @@
                                                             "
                                                             class="text-sm font-medium text-green-600"
                                                         >
-                                                            ${{
+                                                            ₱{{
                                                                 formatCash(
                                                                     item.cash_price
                                                                 )
@@ -394,7 +394,7 @@
                                                             <span
                                                                 class="font-medium text-green-600"
                                                             >
-                                                                ${{
+                                                                ₱{{
                                                                     formatCash(
                                                                         order.price_paid
                                                                     )
@@ -411,7 +411,7 @@
                                                             <span
                                                                 class="font-semibold text-green-600 text-base"
                                                             >
-                                                                ${{
+                                                                ₱{{
                                                                     formatCash(
                                                                         order.price_paid *
                                                                             order.quantity
@@ -494,7 +494,7 @@
                                                                     order.created_at
                                                                 ).toLocaleDateString()
                                                             }}
-                                                            • Total: ${{
+                                                            • Total: ₱{{
                                                                 formatCash(
                                                                     order.price_paid *
                                                                         order.quantity
@@ -829,7 +829,7 @@
                                         <div class="relative">
                                             <span
                                                 class="absolute left-3 top-2 text-gray-500"
-                                                >$</span
+                                                >₱</span
                                             >
                                             <input
                                                 v-model.number="

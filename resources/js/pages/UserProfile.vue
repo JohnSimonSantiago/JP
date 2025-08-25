@@ -183,7 +183,6 @@
                         </div>
                     </div>
 
-                    <!-- Public Profile Information -->
                     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
                         <h2
                             class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2"
@@ -193,52 +192,13 @@
                         </h2>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- Bio (only if public and exists) -->
-                            <div
-                                v-if="user.hasOwnProperty('bio')"
-                                class="p-4 bg-gray-50 rounded-lg md:col-span-2"
-                            >
-                                <label
-                                    class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Bio</label
-                                >
-                                <div class="text-lg font-medium text-gray-800">
-                                    {{ user.bio || "No bio provided" }}
-                                </div>
-                            </div>
-                            <div
-                                v-else
-                                class="p-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 md:col-span-2"
-                            >
-                                <label
-                                    class="block text-sm font-medium text-gray-400 mb-1"
-                                    >Bio</label
-                                >
-                                <div
-                                    class="flex items-center gap-2 text-gray-500"
-                                >
-                                    <i class="pi pi-eye-slash"></i>
-                                    <span>Private information</span>
-                                </div>
-                            </div>
-
-                            <!-- Username -->
-                            <div class="p-4 bg-gray-50 rounded-lg">
-                                <label
-                                    class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Username</label
-                                >
-                                <div class="text-lg font-medium text-gray-800">
-                                    {{ user.name }}
-                                </div>
-                            </div>
-
                             <!-- User ID -->
                             <div class="p-4 bg-gray-50 rounded-lg">
                                 <label
                                     class="block text-sm font-medium text-gray-600 mb-1"
-                                    >User ID</label
                                 >
+                                    User ID
+                                </label>
                                 <div class="flex items-center gap-2">
                                     <div
                                         class="text-lg font-medium text-gray-800 font-mono"
@@ -262,8 +222,9 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Gender</label
                                 >
+                                    Gender
+                                </label>
                                 <div class="text-lg font-medium text-gray-800">
                                     {{
                                         formatGender(user.gender) ||
@@ -277,8 +238,9 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-400 mb-1"
-                                    >Gender</label
                                 >
+                                    Gender
+                                </label>
                                 <div
                                     class="flex items-center gap-2 text-gray-500"
                                 >
@@ -294,8 +256,9 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Birthday</label
                                 >
+                                    Birthday
+                                </label>
                                 <div class="text-lg font-medium text-gray-800">
                                     {{
                                         formatBirthday(user.birthday) ||
@@ -309,8 +272,9 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-400 mb-1"
-                                    >Birthday</label
                                 >
+                                    Birthday
+                                </label>
                                 <div
                                     class="flex items-center gap-2 text-gray-500"
                                 >
@@ -326,44 +290,22 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Age</label
                                 >
+                                    Age
+                                </label>
                                 <div class="text-lg font-medium text-gray-800">
                                     {{ user.age }} years old
                                 </div>
                             </div>
-
-                            <!-- Account Level -->
-                            <div class="p-4 bg-gray-50 rounded-lg">
-                                <label
-                                    class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Account Level</label
-                                >
-                                <div class="text-lg font-medium text-gray-800">
-                                    Level {{ user.level }}
-                                </div>
-                            </div>
-
-                            <!-- Member Since -->
-                            <div class="p-4 bg-gray-50 rounded-lg">
-                                <label
-                                    class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Member Since</label
-                                >
-                                <div class="text-lg font-medium text-gray-800">
-                                    {{ formatDate(user.member_since) }}
-                                </div>
-                            </div>
-
-                            <!-- Address (only if public) - Show as full width if present -->
                             <div
                                 v-if="user.hasOwnProperty('address')"
                                 class="p-4 bg-gray-50 rounded-lg md:col-span-2"
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-600 mb-1"
-                                    >Address</label
                                 >
+                                    Address
+                                </label>
                                 <div class="text-lg font-medium text-gray-800">
                                     {{ user.address || "Not provided" }}
                                 </div>
@@ -374,8 +316,9 @@
                             >
                                 <label
                                     class="block text-sm font-medium text-gray-400 mb-1"
-                                    >Address</label
                                 >
+                                    Address
+                                </label>
                                 <div
                                     class="flex items-center gap-2 text-gray-500"
                                 >
@@ -383,6 +326,32 @@
                                     <span>Private information</span>
                                 </div>
                             </div>
+
+                            <!-- Account Level -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <label
+                                    class="block text-sm font-medium text-gray-600 mb-1"
+                                >
+                                    Account Level
+                                </label>
+                                <div class="text-lg font-medium text-gray-800">
+                                    Level {{ user.level }}
+                                </div>
+                            </div>
+
+                            <!-- Member Since -->
+                            <div class="p-4 bg-gray-50 rounded-lg">
+                                <label
+                                    class="block text-sm font-medium text-gray-600 mb-1"
+                                >
+                                    Member Since
+                                </label>
+                                <div class="text-lg font-medium text-gray-800">
+                                    {{ formatDate(user.member_since) }}
+                                </div>
+                            </div>
+
+                            <!-- Address (only if public) - Show as full width if present -->
                         </div>
                     </div>
 

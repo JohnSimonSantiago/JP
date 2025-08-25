@@ -167,28 +167,7 @@
                         v-if="!isEditing"
                         class="grid grid-cols-1 md:grid-cols-2 gap-6"
                     >
-                        <!-- Bio -->
-                        <div class="p-4 bg-gray-50 rounded-lg md:col-span-2">
-                            <div class="flex items-center justify-between mb-1">
-                                <label
-                                    class="block text-sm font-medium text-gray-600"
-                                    >Bio</label
-                                >
-                                <i
-                                    v-if="privacySettings.bio === 'private'"
-                                    class="pi pi-eye-slash text-gray-400 text-sm"
-                                    title="Private - only you can see this"
-                                ></i>
-                                <i
-                                    v-else
-                                    class="pi pi-eye text-gray-400 text-sm"
-                                    title="Public - others can see this"
-                                ></i>
-                            </div>
-                            <div class="text-lg font-medium text-gray-800">
-                                {{ user.bio || "No bio provided" }}
-                            </div>
-                        </div>
+                        <!-- Removed Bio Block Here -->
 
                         <!-- User ID -->
                         <div class="p-4 bg-gray-50 rounded-lg">
@@ -262,7 +241,7 @@
                             </div>
                         </div>
 
-                        <!-- Age (if birthday is set) -->
+                        <!-- Age -->
                         <div
                             v-if="calculatedAge"
                             class="p-4 bg-gray-50 rounded-lg"
@@ -330,7 +309,12 @@
                                 >Member Since</label
                             >
                             <div class="text-lg font-medium text-gray-800">
-                                {{ formatDate(user.created_at) }}
+                                {{
+                                    formatDate(
+                                        user.member_since || user.created_at
+                                    )
+                                }}
+                                <!-- Fixed -->
                             </div>
                         </div>
                     </div>
@@ -341,7 +325,7 @@
                         @submit.prevent="saveProfile"
                         class="space-y-6"
                     >
-                        <!-- Bio Section -->
+                        <!-- Bio Section (still editable) -->
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-2"

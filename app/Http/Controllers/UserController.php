@@ -15,49 +15,52 @@ class UserController extends Controller
 {
 
     public function profile(Request $request)
-    {
-        try {
-            // Get the currently authenticated user (based on the bearer token)
-            $user = Auth::guard('sanctum')->user();
-            
-            if (!$user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'User not authenticated'
-                ], 401);
-            }
-
-            // Get membership if it exists
-            $membership = $user->memberships()->latest()->first();
-
-            return response()->json([
-                'success' => true,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'bio' => $user->bio, // ADDED: Include bio
-                    'level' => $user->level,
-                    'stars' => $user->stars,
-                    'points' => $user->points,
-                    'is_premium' => $user->is_premium,
-                    'profile_image' => $user->profile_image,
-                    'gender' => $user->gender,
-                    'birthday' => $user->birthday,
-                    'address' => $user->address,
-                    'privacy_settings' => $user->privacy_settings,
-                    'role' => $user->role
-                ],
-                'membership' => $membership
-            ]);
-
-        } catch (\Exception $e) {
+{
+    try {
+        // Get the currently authenticated user (based on the bearer token)
+        $user = Auth::guard('sanctum')->user();
+        
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch profile',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'User not authenticated'
+            ], 401);
         }
+
+        // Get membership if it exists
+        $membership = $user->memberships()->latest()->first();
+
+        return response()->json([
+            'success' => true,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'bio' => $user->bio,
+                'level' => $user->level,
+                'stars' => $user->stars,
+                'points' => $user->points,
+                'cash' => $user->cash,
+                'is_premium' => $user->is_premium,
+                'profile_image' => $user->profile_image,
+                'gender' => $user->gender,
+                'birthday' => $user->birthday,
+                'address' => $user->address,
+                'privacy_settings' => $user->privacy_settings,
+                'role' => $user->role,
+                'created_at' => $user->created_at,  // Add this line
+                'member_since' => $user->created_at  // Add this line as alias
+            ],
+            'membership' => $membership
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch profile',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
     
     /**
      * Get current authenticated user data - NEW METHOD FOR LEADERBOARD
@@ -210,7 +213,7 @@ public function getProfile()
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
-                'bio' => $user->bio, // ADDED: Include bio
+                'bio' => $user->bio,
                 'level' => $user->level,
                 'stars' => $user->stars ?? $user->points ?? 100,
                 'points' => $user->points ?? $user->stars ?? 100,
@@ -222,6 +225,8 @@ public function getProfile()
                 'address' => $user->address,
                 'privacy_settings' => $user->privacy_settings,
                 'role' => $user->role ?? 'user',
+                'created_at' => $user->created_at,        // ADD THIS LINE
+                'member_since' => $user->created_at       // ADD THIS LINE
             ],
             'membership' => $membership ? [
                 'id' => $membership->id,

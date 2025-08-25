@@ -131,24 +131,32 @@ Route::middleware('auth:sanctum')->group(function () {
     // Admin Routes
     Route::middleware(['admin'])->prefix('admin')->group(function () {
         // Shop Management
-        Route::get('/shops', [ShopController::class, 'adminIndex']); // All shops (including inactive)
-        Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);
-        Route::post('/shops/{shop}/toggle-active', [ShopController::class, 'toggleActive']);
-        
-        // Admin Point Shop Management Routes
-        Route::put('/shop-items/{item}/point-shop-status', [AdminPricingController::class, 'updatePointShopStatus']); // Update single item point shop status
-        Route::put('/shop-items/bulk-point-shop', [AdminPricingController::class, 'bulkUpdatePointShopStatus']); // Bulk update point shop status
-        
-        // Global Purchase Management
-        Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
-        Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
-        Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
-        
-        // Admin Point Pricing Management
-        Route::get('/shop-items', [AdminPricingController::class, 'getAllShopItems']); // Get all items for pricing
-        Route::get('/shops/dropdown', [AdminPricingController::class, 'getAllShops']); // Get all shops for filter dropdown  
-        Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
-        Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
+  Route::get('/shops', [ShopController::class, 'adminIndex']); // All shops (including inactive)
+    Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);
+    Route::post('/shops/{shop}/toggle-active', [ShopController::class, 'toggleActive']);
+    
+    // Admin Point Shop Management Routes
+    Route::put('/shop-items/{item}/point-shop-status', [AdminPricingController::class, 'updatePointShopStatus']); // Update single item point shop status
+    Route::put('/shop-items/bulk-point-shop', [AdminPricingController::class, 'bulkUpdatePointShopStatus']); // Bulk update point shop status
+    
+    // Global Purchase Management
+    Route::get('/purchases/pending', [ShopItemController::class, 'getAllPendingPurchases']);
+    Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
+    Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+    
+    // Admin Point Pricing Management
+    Route::get('/shop-items', [AdminPricingController::class, 'getAllShopItems']); // Get all items for pricing
+    Route::get('/shops/dropdown', [AdminPricingController::class, 'getAllShops']); // Get all shops for filter dropdown  
+    Route::put('/shop-items/{item}/price', [AdminPricingController::class, 'updateItemPrice']); // Update single item price
+    Route::put('/shop-items/bulk-price', [AdminPricingController::class, 'bulkUpdatePrices']); // Bulk update prices
+
+    // *** ADD THESE MISSING ROUTES FOR POINT ORDERS ***
+    Route::get('/point-orders', [AdminPricingController::class, 'getPointOrders']); // Get all point orders
+    Route::post('/point-orders/{id}/approve', [AdminPricingController::class, 'approvePointOrder']); // Approve point order
+    Route::post('/point-orders/{id}/reject', [AdminPricingController::class, 'rejectPointOrder']); // Reject point order
+
+    // Point shop statistics
+    Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointShopStatistics']);
     });
 });
 

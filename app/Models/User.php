@@ -19,6 +19,7 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'bio',     
         'role',
         'level',
         'points',

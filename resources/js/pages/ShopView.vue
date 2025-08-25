@@ -186,9 +186,8 @@
                     <div
                         class="bg-green-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
                     >
-                        <i class="pi pi-dollar text-green-600"></i>
                         <span class="text-lg font-bold text-green-700">
-                            ${{ formatCash(currentUser.cash || 0) }}
+                            ₱{{ formatCash(currentUser.cash || 0) }}
                         </span>
                     </div>
                 </div>
@@ -398,7 +397,7 @@
                                                 <div
                                                     class="text-xl font-bold text-green-600"
                                                 >
-                                                    ${{
+                                                    ₱{{
                                                         formatCash(
                                                             item.cash_price
                                                         )
@@ -622,7 +621,7 @@
                                                         >
                                                         <span
                                                             class="font-medium ml-1"
-                                                            >${{
+                                                            >₱{{
                                                                 formatCash(
                                                                     purchase.price_paid *
                                                                         purchase.quantity
@@ -767,7 +766,7 @@
                             </div>
                             <div class="text-right">
                                 <p class="text-lg font-bold text-green-600">
-                                    ${{ formatCash(selectedItem?.cash_price) }}
+                                    ₱{{ formatCash(selectedItem?.cash_price) }}
                                 </p>
                                 <p class="text-sm text-gray-500">per item</p>
                             </div>
@@ -833,7 +832,7 @@
                                     <span
                                         class="text-lg font-bold text-green-600"
                                     >
-                                        ${{ formatCash(getTotalCost()) }}
+                                        ₱{{ formatCash(getTotalCost()) }}
                                     </span>
                                 </div>
                             </div>
@@ -844,7 +843,7 @@
                     <div class="text-sm text-gray-600 mb-6">
                         <div class="flex justify-between">
                             <span>Current cash:</span>
-                            <span>${{ formatCash(currentUser.cash) }}</span>
+                            <span>₱{{ formatCash(currentUser.cash) }}</span>
                         </div>
                         <div class="flex justify-between">
                             <span>After purchase:</span>
@@ -855,7 +854,7 @@
                                         : 'text-red-600'
                                 "
                             >
-                                ${{ formatCash(getBalanceAfterPurchase()) }}
+                                ₱{{ formatCash(getBalanceAfterPurchase()) }}
                             </span>
                         </div>
                     </div>
@@ -1315,13 +1314,20 @@ export default {
             }, 500);
         },
 
+        // Add these debugging methods to your ShopView.vue methods section
+
         canBuyItem(item) {
             if (!this.currentUser) return false;
+
+            // Convert to numbers safely
+            const userCash = parseFloat(this.currentUser.cash || 0);
+            const itemPrice = parseFloat(item.cash_price || 0);
 
             return (
                 item.is_active &&
                 (item.stock === null || item.stock > 0) &&
-                this.currentUser.cash >= item.cash_price
+                userCash >= itemPrice &&
+                itemPrice > 0 // Ensure item has a valid price
             );
         },
 
@@ -1329,8 +1335,11 @@ export default {
             if (!this.currentUser) return "Login to Buy";
             if (!item.is_active) return "Unavailable";
             if (item.stock !== null && item.stock <= 0) return "Out of Stock";
-            if (this.currentUser.cash < item.cash_price)
-                return "Not Enough Cash";
+
+            const userCash = parseFloat(this.currentUser.cash || 0);
+            const itemPrice = parseFloat(item.cash_price || 0);
+
+            if (userCash < itemPrice) return "Not Enough Cash";
             return "Buy Now";
         },
 

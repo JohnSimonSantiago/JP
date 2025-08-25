@@ -17,7 +17,7 @@ class ShopItem extends Model
         'cash_price',
         'image',
         'is_active',
-        'is_active_in_point_shop', // NEW FIELD
+        'is_active_in_point_shop',
         'stock'
     ];
 
@@ -25,7 +25,7 @@ class ShopItem extends Model
         'price' => 'integer',
         'cash_price' => 'decimal:2',
         'is_active' => 'boolean',
-        'is_active_in_point_shop' => 'boolean', // NEW CAST
+        'is_active_in_point_shop' => 'boolean',
         'stock' => 'integer'
     ];
 
@@ -56,7 +56,7 @@ class ShopItem extends Model
     }
 
     /**
-     * Check if user can purchase this item
+     * Check if user can purchase this item - FIXED VERSION
      */
     public function getPurchaseBlockReason($user, $quantity = 1): ?string
     {
@@ -77,9 +77,19 @@ class ShopItem extends Model
             return 'Not enough stock available';
         }
 
-        $totalCost = $this->price * $quantity;
-        if ($user->points < $totalCost) {
-            return 'Insufficient points';
+        // FIXED: Check the correct currency based on item type
+        if ($this->isPointShopItem()) {
+            // Point shop items use points
+            $totalCost = $this->price * $quantity;
+            if ($user->points < $totalCost) {
+                return 'Insufficient points';
+            }
+        } else {
+            // Regular shop items use cash
+            $totalCost = $this->cash_price * $quantity;
+            if ($user->cash < $totalCost) {
+                return 'Not enough cash';
+            }
         }
 
         return null;
