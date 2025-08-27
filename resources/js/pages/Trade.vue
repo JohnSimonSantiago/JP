@@ -716,7 +716,7 @@
                         </div>
 
                         <!-- You Receive -->
-                        <div>
+                        <!-- <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-2"
                             >
@@ -743,7 +743,7 @@
                                         : "∞"
                                 }}
                             </p>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- Trade Summary -->

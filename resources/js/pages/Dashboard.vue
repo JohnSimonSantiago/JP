@@ -305,7 +305,37 @@
                                     </svg>
                                 </h3>
                                 <p class="text-sm opacity-90">
-                                    {{ images[currentImageIndex].description }}
+                                    <span
+                                        v-if="
+                                            shouldTruncateDescription(
+                                                images[currentImageIndex]
+                                                    .description
+                                            )
+                                        "
+                                    >
+                                        {{
+                                            getTruncatedDescription(
+                                                images[currentImageIndex]
+                                                    .description
+                                            )
+                                        }}
+                                        <button
+                                            @click.stop="
+                                                openDescriptionModal(
+                                                    images[currentImageIndex]
+                                                )
+                                            "
+                                            class="text-blue-300 hover:text-blue-100 ml-1 font-medium underline"
+                                        >
+                                            Read more
+                                        </button>
+                                    </span>
+                                    <span v-else>
+                                        {{
+                                            images[currentImageIndex]
+                                                .description
+                                        }}
+                                    </span>
                                 </p>
                             </div>
                         </div>
@@ -344,10 +374,10 @@
                             }"
                             class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
                         >
-                            <div class="flex">
+                            <div class="flex h-48">
                                 <!-- Small image - now clickable -->
                                 <div
-                                    class="w-48 h-32 flex-shrink-0 relative group cursor-pointer"
+                                    class="w-48 h-48 flex-shrink-0 relative group cursor-pointer"
                                     @click="handleImageClick(image, $event)"
                                 >
                                     <img
@@ -381,17 +411,19 @@
                                     </div>
                                 </div>
 
-                                <!-- Description -->
+                                <!-- Description with fixed height -->
                                 <div
-                                    class="flex-1 p-6"
+                                    class="flex-1 p-6 h-48 flex flex-col"
                                     @click="goToImage(index)"
                                 >
                                     <div
-                                        class="flex items-start justify-between cursor-pointer"
+                                        class="flex items-start justify-between cursor-pointer h-full"
                                     >
-                                        <div class="flex-1">
+                                        <div
+                                            class="flex-1 flex flex-col h-full"
+                                        >
                                             <h3
-                                                class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2"
+                                                class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2 flex-shrink-0"
                                             >
                                                 {{ image.title }}
                                                 <!-- Link indicator next to title -->
@@ -411,13 +443,45 @@
                                                     ></path>
                                                 </svg>
                                             </h3>
-                                            <p
-                                                class="text-gray-600 leading-relaxed"
-                                            >
-                                                {{ image.description }}
-                                            </p>
+
+                                            <!-- Description with modal popup -->
                                             <div
-                                                class="mt-3 flex items-center text-sm text-gray-500 gap-4"
+                                                class="flex-1 mb-3 overflow-hidden"
+                                            >
+                                                <p
+                                                    class="text-gray-600 leading-relaxed"
+                                                >
+                                                    <span
+                                                        v-if="
+                                                            shouldTruncateDescription(
+                                                                image.description
+                                                            )
+                                                        "
+                                                    >
+                                                        {{
+                                                            getTruncatedDescription(
+                                                                image.description
+                                                            )
+                                                        }}
+                                                        <button
+                                                            @click.stop="
+                                                                openDescriptionModal(
+                                                                    image
+                                                                )
+                                                            "
+                                                            class="text-blue-600 hover:text-blue-800 ml-1 font-medium"
+                                                        >
+                                                            Read more
+                                                        </button>
+                                                    </span>
+                                                    <span v-else>
+                                                        {{ image.description }}
+                                                    </span>
+                                                </p>
+                                            </div>
+
+                                            <div
+                                                class="flex items-center text-sm text-gray-500 gap-4 flex-shrink-0"
                                             >
                                                 <span
                                                     class="bg-gray-100 px-2 py-1 rounded-md"
@@ -437,7 +501,7 @@
                                         <!-- Admin controls -->
                                         <div
                                             v-if="isAdmin"
-                                            class="flex gap-2 ml-4"
+                                            class="flex gap-2 ml-4 flex-shrink-0"
                                         >
                                             <button
                                                 @click.stop="
@@ -490,12 +554,131 @@
                 </div>
             </div>
 
+            <!-- Description Modal -->
+            <div
+                v-if="showDescriptionModal"
+                @click="closeDescriptionModal"
+                class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            >
+                <div
+                    @click.stop
+                    class="bg-white rounded-lg w-full max-w-2xl max-h-[80vh] overflow-hidden"
+                >
+                    <!-- Modal Header -->
+                    <div class="flex justify-between items-center p-6 border-b">
+                        <div>
+                            <h3 class="text-xl font-semibold text-gray-800">
+                                {{ selectedImage?.title }}
+                            </h3>
+                            <p class="text-sm text-gray-500 mt-1">
+                                Full Description
+                            </p>
+                        </div>
+                        <button
+                            @click="closeDescriptionModal"
+                            class="text-gray-500 hover:text-gray-700 p-2"
+                        >
+                            <svg
+                                class="w-6 h-6"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"
+                                ></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Modal Content -->
+                    <div class="p-6 overflow-y-auto max-h-96">
+                        <!-- Image preview -->
+                        <div class="mb-4">
+                            <img
+                                :src="selectedImage?.image_url"
+                                :alt="selectedImage?.title"
+                                class="w-full h-48 object-cover rounded-lg"
+                            />
+                        </div>
+
+                        <!-- Full description -->
+                        <div class="prose max-w-none">
+                            <p
+                                class="text-gray-700 leading-relaxed whitespace-pre-line"
+                            >
+                                {{ selectedImage?.description }}
+                            </p>
+                        </div>
+
+                        <!-- Link info if available -->
+                        <div
+                            v-if="selectedImage?.link_url"
+                            class="mt-4 p-3 bg-blue-50 rounded-lg"
+                        >
+                            <p
+                                class="text-sm text-blue-700 flex items-center gap-2"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                    ></path>
+                                </svg>
+                                This image links to:
+                                <a
+                                    :href="selectedImage.link_url"
+                                    :target="
+                                        selectedImage.open_in_new_tab
+                                            ? '_blank'
+                                            : '_self'
+                                    "
+                                    class="underline"
+                                    >{{ selectedImage.link_url }}</a
+                                >
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="flex justify-end gap-3 p-6 border-t bg-gray-50">
+                        <button
+                            @click="closeDescriptionModal"
+                            class="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50"
+                        >
+                            Close
+                        </button>
+                        <button
+                            v-if="selectedImage?.link_url"
+                            @click="visitImageLink"
+                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                        >
+                            Visit Link
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Image Form Modal -->
             <div
                 v-if="showImageForm"
+                @click="resetForm"
                 class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
             >
-                <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div
+                    @click.stop
+                    class="bg-white rounded-lg p-6 w-full max-w-md mx-4"
+                >
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-lg font-semibold">
                             {{ editingImage ? "Edit Image" : "Add New Image" }}
@@ -577,7 +760,7 @@
                             </div>
                         </div>
 
-                        <!-- NEW: Link URL Field -->
+                        <!-- Link URL Field -->
                         <div class="mb-4">
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -596,7 +779,7 @@
                             </p>
                         </div>
 
-                        <!-- NEW: Open in New Tab Checkbox -->
+                        <!-- Open in New Tab Checkbox -->
                         <div class="mb-4" v-if="formData.link_url">
                             <label class="flex items-center">
                                 <input
@@ -671,29 +854,30 @@ export default {
             showImageForm: false,
             editingImage: null,
             imagePreview: null,
+            showDescriptionModal: false,
+            selectedImage: null,
+            descriptionWordLimit: 20,
             formData: {
                 title: "",
                 description: "",
                 display_order: 0,
                 imageFile: null,
-                link_url: "", // NEW
-                open_in_new_tab: true, // NEW
+                link_url: "",
+                open_in_new_tab: true,
             },
         };
     },
     computed: {
-        // Simple admin check like MyShop.vue
         isAdmin() {
             return this.user && this.user.role === "admin";
         },
     },
     async mounted() {
-        await this.fetchUserData(); // Fetch user data first
+        await this.fetchUserData();
         await this.fetchImages();
         console.log("Component mounted. isAdmin:", this.isAdmin);
     },
     methods: {
-        // Simple user data fetch like MyShop.vue
         async fetchUserData() {
             try {
                 const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -703,6 +887,43 @@ export default {
             } catch (error) {
                 console.error("Error getting user data:", error);
                 this.user = null;
+            }
+        },
+
+        shouldTruncateDescription(description) {
+            const words = description.trim().split(/\s+/);
+            return words.length > this.descriptionWordLimit;
+        },
+
+        getTruncatedDescription(description) {
+            const words = description.trim().split(/\s+/);
+            if (words.length <= this.descriptionWordLimit) {
+                return description;
+            }
+            return words.slice(0, this.descriptionWordLimit).join(" ") + "...";
+        },
+
+        openDescriptionModal(image) {
+            this.selectedImage = image;
+            this.showDescriptionModal = true;
+        },
+
+        closeDescriptionModal() {
+            this.showDescriptionModal = false;
+            this.selectedImage = null;
+        },
+
+        visitImageLink() {
+            if (this.selectedImage?.link_url) {
+                if (this.selectedImage.open_in_new_tab) {
+                    window.open(
+                        this.selectedImage.link_url,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+                } else {
+                    window.location.href = this.selectedImage.link_url;
+                }
             }
         },
 
@@ -735,9 +956,7 @@ export default {
             }
         },
 
-        // NEW: Handle image clicks for navigation
         handleImageClick(image, event) {
-            // If there's a link URL, navigate to it
             if (image.link_url) {
                 if (image.open_in_new_tab) {
                     window.open(
@@ -748,24 +967,20 @@ export default {
                 } else {
                     window.location.href = image.link_url;
                 }
-                // Prevent the default carousel behavior
                 event.stopPropagation();
                 return;
             }
-            // If no link URL, proceed with normal carousel behavior (do nothing, let the parent handle it)
         },
 
         handleImageUpload(event) {
             const file = event.target.files[0];
             if (file) {
-                // Validate file size (2MB limit)
                 if (file.size > 2 * 1024 * 1024) {
                     alert("Image file must be smaller than 2MB");
                     event.target.value = "";
                     return;
                 }
 
-                // Validate file type
                 if (!file.type.startsWith("image/")) {
                     alert("Please select a valid image file");
                     event.target.value = "";
@@ -774,7 +989,6 @@ export default {
 
                 this.formData.imageFile = file;
 
-                // Create preview
                 const reader = new FileReader();
                 reader.onload = (e) => {
                     this.imagePreview = e.target.result;
@@ -787,7 +1001,6 @@ export default {
             try {
                 let imageUrl = null;
 
-                // If we have a new image file, upload it first
                 if (this.formData.imageFile) {
                     const uploadFormData = new FormData();
                     uploadFormData.append("image", this.formData.imageFile);
@@ -814,23 +1027,20 @@ export default {
                     }
                 }
 
-                // Prepare gallery data
                 const galleryData = {
                     title: this.formData.title,
                     description: this.formData.description,
                     display_order: this.formData.display_order || 0,
-                    link_url: this.formData.link_url || null, // NEW
-                    open_in_new_tab: this.formData.open_in_new_tab, // NEW
+                    link_url: this.formData.link_url || null,
+                    open_in_new_tab: this.formData.open_in_new_tab,
                 };
 
-                // Include image URL if we uploaded a new image, or keep existing for edits
                 if (imageUrl) {
                     galleryData.image_url = imageUrl;
                 } else if (this.editingImage) {
                     galleryData.image_url = this.editingImage.image_url;
                 }
 
-                // Create or update gallery entry
                 const method = this.editingImage ? "PUT" : "POST";
                 const url = this.editingImage
                     ? `/api/gallery/${this.editingImage.id}`
@@ -874,7 +1084,6 @@ export default {
                 if (response.data.success) {
                     await this.fetchImages();
                     alert("Image deleted successfully!");
-                    // Reset current index if needed
                     if (this.currentImageIndex >= this.images.length - 1) {
                         this.currentImageIndex = Math.max(
                             0,
@@ -896,14 +1105,13 @@ export default {
                 description: "",
                 display_order: 0,
                 imageFile: null,
-                link_url: "", // NEW
-                open_in_new_tab: true, // NEW
+                link_url: "",
+                open_in_new_tab: true,
             };
             this.editingImage = null;
             this.showImageForm = false;
             this.imagePreview = null;
 
-            // Clear file input
             if (this.$refs.imageInput) {
                 this.$refs.imageInput.value = "";
             }
@@ -914,13 +1122,13 @@ export default {
                 title: image.title,
                 description: image.description,
                 display_order: image.display_order,
-                imageFile: null, // No file selected initially
-                link_url: image.link_url || "", // NEW
-                open_in_new_tab: image.open_in_new_tab ?? true, // NEW
+                imageFile: null,
+                link_url: image.link_url || "",
+                open_in_new_tab: image.open_in_new_tab ?? true,
             };
             this.editingImage = image;
             this.showImageForm = true;
-            this.imagePreview = image.image_url; // Show current image as preview
+            this.imagePreview = image.image_url;
         },
 
         nextImage() {
