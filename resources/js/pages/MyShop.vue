@@ -477,57 +477,86 @@
                                             :key="order.id"
                                             class="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                                         >
-                                            <div class="flex-1">
+                                            <div
+                                                class="flex items-center space-x-4 flex-1"
+                                            >
+                                                <!-- Customer Image -->
+                                                <img
+                                                    v-if="
+                                                        order.user
+                                                            ?.profile_image
+                                                    "
+                                                    :src="`/storage/profiles/${order.user.profile_image}`"
+                                                    :alt="order.user?.name"
+                                                    class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+                                                />
                                                 <div
-                                                    class="flex items-center justify-between"
+                                                    v-else
+                                                    class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center border-2 border-gray-200"
                                                 >
-                                                    <div>
-                                                        <p class="font-medium">
-                                                            {{
-                                                                order.shop_item
-                                                                    ?.name
-                                                            }}
-                                                        </p>
-                                                        <p
-                                                            class="text-sm text-gray-600"
-                                                        >
-                                                            Customer:
-                                                            {{
-                                                                order.user?.name
-                                                            }}
-                                                            • Qty:
-                                                            {{ order.quantity }}
-                                                        </p>
-                                                        <p
-                                                            class="text-sm text-gray-500"
-                                                        >
-                                                            {{
-                                                                new Date(
-                                                                    order.created_at
-                                                                ).toLocaleDateString()
-                                                            }}
-                                                            • Total: ₱{{
-                                                                formatCash(
-                                                                    order.price_paid *
-                                                                        order.quantity
-                                                                )
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                    <span
-                                                        :class="[
-                                                            'px-3 py-1 rounded-full text-sm ml-4',
-                                                            order.status ===
-                                                            'completed'
-                                                                ? 'bg-green-100 text-green-800'
-                                                                : order.status ===
-                                                                  'rejected'
-                                                                ? 'bg-red-100 text-red-800'
-                                                                : 'bg-yellow-100 text-yellow-800',
-                                                        ]"
+                                                    <i
+                                                        class="pi pi-user text-white text-lg"
+                                                    ></i>
+                                                </div>
+
+                                                <div class="flex-1">
+                                                    <div
+                                                        class="flex items-center justify-between"
                                                     >
-                                                        {{ order.status }}
-                                                    </span>
+                                                        <div>
+                                                            <p
+                                                                class="font-medium"
+                                                            >
+                                                                {{
+                                                                    order
+                                                                        .shop_item
+                                                                        ?.name
+                                                                }}
+                                                            </p>
+                                                            <p
+                                                                class="text-sm text-gray-600"
+                                                            >
+                                                                Customer:
+                                                                {{
+                                                                    order.user
+                                                                        ?.name
+                                                                }}
+                                                                • Qty:
+                                                                {{
+                                                                    order.quantity
+                                                                }}
+                                                            </p>
+                                                            <p
+                                                                class="text-sm text-gray-500"
+                                                            >
+                                                                {{
+                                                                    new Date(
+                                                                        order.created_at
+                                                                    ).toLocaleDateString()
+                                                                }}
+                                                                • Total: ₱{{
+                                                                    formatCash(
+                                                                        order.price_paid *
+                                                                            order.quantity
+                                                                    )
+                                                                }}
+                                                            </p>
+                                                        </div>
+                                                        <span
+                                                            :class="[
+                                                                'px-3 py-1 rounded-full text-sm ml-4',
+                                                                order.status ===
+                                                                'completed'
+                                                                    ? 'bg-green-100 text-green-800'
+                                                                    : order.status ===
+                                                                      'rejected'
+                                                                    ? 'bg-red-100 text-red-800'
+                                                                    : 'bg-yellow-100 text-yellow-800',
+                                                            ]"
+                                                        >
+                                                            {{ order.status }}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -696,475 +725,436 @@
                                             </div>
                                         </div>
 
-                                        <!-- Customer Progress and Available Rewards -->
+                                        <!-- Customer Search and Management -->
                                         <div
-                                            class="bg-white rounded-xl shadow-lg"
+                                            class="bg-white rounded-xl shadow-lg p-6"
                                         >
                                             <div
-                                                class="p-6 border-b border-gray-200"
+                                                class="flex justify-between items-center mb-4"
                                             >
                                                 <h4
                                                     class="text-lg font-semibold text-gray-900"
                                                 >
-                                                    Customer Loyalty Progress
+                                                    Customer Loyalty Management
                                                 </h4>
-                                                <p class="text-gray-600">
-                                                    Customers with completed
-                                                    loyalty cards
-                                                </p>
                                             </div>
-                                            <div class="p-6">
-                                                <div
-                                                    v-if="
-                                                        loyaltyProgress.length ===
-                                                        0
-                                                    "
-                                                    class="text-center py-8"
+
+                                            <!-- Search Bar -->
+                                            <div class="relative mb-6">
+                                                <label
+                                                    class="block text-sm font-medium text-gray-700 mb-2"
                                                 >
+                                                    Search Customers
+                                                </label>
+                                                <div class="relative">
+                                                    <input
+                                                        v-model="
+                                                            loyaltySearchQuery
+                                                        "
+                                                        @input="
+                                                            searchLoyaltyUsers
+                                                        "
+                                                        @focus="
+                                                            showLoyaltySearchDropdown = true
+                                                        "
+                                                        type="text"
+                                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent pl-10"
+                                                        placeholder="Search customers by name..."
+                                                        autocomplete="off"
+                                                    />
                                                     <i
-                                                        class="pi pi-users text-gray-300 text-4xl mb-4"
+                                                        class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                                                     ></i>
-                                                    <p class="text-gray-500">
-                                                        No customer loyalty
-                                                        progress yet
-                                                    </p>
-                                                </div>
-                                                <div v-else class="space-y-4">
+
+                                                    <!-- Search Results Dropdown -->
                                                     <div
-                                                        v-for="customer in loyaltyProgress.filter(
-                                                            (c) =>
-                                                                getCompletedCards(
-                                                                    c
-                                                                ) > 0
-                                                        )"
-                                                        :key="customer.user.id"
-                                                        class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                                                        v-if="
+                                                            showLoyaltySearchDropdown &&
+                                                            loyaltySearchResults.length >
+                                                                0
+                                                        "
+                                                        class="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"
                                                     >
                                                         <div
-                                                            class="flex items-center justify-between"
+                                                            v-for="user in loyaltySearchResults"
+                                                            :key="user.id"
+                                                            @click="
+                                                                selectLoyaltyUser(
+                                                                    user
+                                                                )
+                                                            "
+                                                            class="px-4 py-2 hover:bg-purple-50 cursor-pointer border-b border-gray-100 last:border-b-0"
                                                         >
                                                             <div
-                                                                class="flex items-center gap-4"
+                                                                class="flex items-center gap-3"
                                                             >
-                                                                <div
-                                                                    class="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-user"
-                                                                    ></i>
-                                                                </div>
+                                                                <img
+                                                                    :src="
+                                                                        user.profile_image ||
+                                                                        '/storage/profiles/${user.profile_image}'
+                                                                    "
+                                                                    :alt="
+                                                                        user.name
+                                                                    "
+                                                                    class="w-8 h-8 rounded-full object-cover"
+                                                                />
                                                                 <div>
-                                                                    <h5
+                                                                    <div
                                                                         class="font-medium text-gray-900"
                                                                     >
                                                                         {{
-                                                                            customer
-                                                                                .user
-                                                                                .name
+                                                                            user.name
                                                                         }}
-                                                                    </h5>
-                                                                    <p
-                                                                        class="text-sm text-gray-600"
+                                                                    </div>
+                                                                    <div
+                                                                        class="text-sm text-gray-500"
                                                                     >
-                                                                        Completed
-                                                                        Cards:
                                                                         {{
-                                                                            getCompletedCards(
-                                                                                customer
-                                                                            )
+                                                                            user.email
                                                                         }}
-                                                                    </p>
-                                                                    <p
-                                                                        class="text-xs text-gray-500"
-                                                                    >
-                                                                        Current
-                                                                        Progress:
-                                                                        {{
-                                                                            getCurrentCardPurchases(
-                                                                                customer
-                                                                            )
-                                                                        }}/{{
-                                                                            loyaltyCard.required_purchases
-                                                                        }}
-                                                                    </p>
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                            <div
-                                                                class="flex items-center gap-2"
-                                                            >
-                                                                <span
-                                                                    class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Loading indicator -->
+                                                    <div
+                                                        v-if="
+                                                            searchingLoyaltyUsers
+                                                        "
+                                                        class="absolute right-3 top-1/2 transform -translate-y-1/2"
+                                                    >
+                                                        <i
+                                                            class="pi pi-spin pi-spinner text-gray-400"
+                                                        ></i>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Clear search -->
+                                                <div
+                                                    v-if="loyaltySearchQuery"
+                                                    class="mt-2"
+                                                >
+                                                    <button
+                                                        @click="
+                                                            clearLoyaltySearch
+                                                        "
+                                                        class="text-sm text-purple-600 hover:text-purple-800"
+                                                    >
+                                                        <i
+                                                            class="pi pi-times mr-1"
+                                                        ></i>
+                                                        Clear search
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Customer List -->
+                                            <div
+                                                v-if="
+                                                    filteredLoyaltyCustomers.length >
+                                                    0
+                                                "
+                                                class="space-y-4"
+                                            >
+                                                <h5
+                                                    class="font-medium text-gray-900"
+                                                >
+                                                    {{
+                                                        loyaltySearchQuery
+                                                            ? "Search Results"
+                                                            : "Active Customers"
+                                                    }}
+                                                    ({{
+                                                        filteredLoyaltyCustomers.length
+                                                    }})
+                                                </h5>
+                                                <div
+                                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                                                >
+                                                    <div
+                                                        v-for="customer in filteredLoyaltyCustomers"
+                                                        :key="customer.user_id"
+                                                        class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-200 hover:shadow-md transition-shadow cursor-pointer"
+                                                        @click="
+                                                            openCustomerLoyaltyModal(
+                                                                customer
+                                                            )
+                                                        "
+                                                    >
+                                                        <div
+                                                            class="flex items-center gap-3 mb-3"
+                                                        >
+                                                            <img
+                                                                :src="
+                                                                    customer
+                                                                        .user
+                                                                        .profile_image_url ||
+                                                                    '/storage/profiles/${user.profile_image}'
+                                                                "
+                                                                :alt="
+                                                                    customer
+                                                                        .user
+                                                                        .name
+                                                                "
+                                                                class="w-12 h-12 rounded-full object-cover"
+                                                            />
+                                                            <div class="flex-1">
+                                                                <h6
+                                                                    class="font-semibold text-gray-900"
                                                                 >
                                                                     {{
-                                                                        getCompletedCards(
-                                                                            customer
-                                                                        )
+                                                                        customer
+                                                                            .user
+                                                                            .name
                                                                     }}
-                                                                    Available
-                                                                </span>
-                                                                <button
-                                                                    @click="
-                                                                        openCustomerLoyaltyModal(
+                                                                </h6>
+                                                                <p
+                                                                    class="text-sm text-gray-600"
+                                                                >
+                                                                    {{
+                                                                        customer.current_purchases
+                                                                    }}
+                                                                    purchases
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="space-y-2">
+                                                            <div
+                                                                class="flex justify-between text-sm"
+                                                            >
+                                                                <span
+                                                                    >Progress:</span
+                                                                >
+                                                                <span
+                                                                    class="font-medium"
+                                                                >
+                                                                    {{
+                                                                        getCurrentCardPurchases(
                                                                             customer
                                                                         )
-                                                                    "
-                                                                    class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-eye mr-1"
-                                                                    ></i>
-                                                                    View Details
-                                                                </button>
+                                                                    }}/{{
+                                                                        loyaltyCard.required_purchases
+                                                                    }}
+                                                                </span>
                                                             </div>
+                                                            <div
+                                                                class="w-full bg-purple-200 rounded-full h-2"
+                                                            >
+                                                                <div
+                                                                    class="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                                                    :style="{
+                                                                        width:
+                                                                            getProgressPercentage(
+                                                                                customer
+                                                                            ) +
+                                                                            '%',
+                                                                    }"
+                                                                ></div>
+                                                            </div>
+                                                            <div
+                                                                class="text-xs text-gray-600 text-center"
+                                                            >
+                                                                {{
+                                                                    getCompletedCards(
+                                                                        customer
+                                                                    )
+                                                                }}
+                                                                cards completed
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div
+                                                v-else-if="
+                                                    loyaltySearchQuery &&
+                                                    !searchingLoyaltyUsers
+                                                "
+                                                class="text-center py-8 text-gray-500"
+                                            >
+                                                <i
+                                                    class="pi pi-search text-3xl mb-2"
+                                                ></i>
+                                                <p>
+                                                    No customers found matching
+                                                    "{{ loyaltySearchQuery }}"
+                                                </p>
+                                            </div>
+
+                                            <div
+                                                v-else-if="!loyaltySearchQuery"
+                                                class="text-center py-8 text-gray-500"
+                                            >
+                                                <i
+                                                    class="pi pi-users text-3xl mb-2"
+                                                ></i>
+                                                <p>
+                                                    No customers with loyalty
+                                                    purchases yet
+                                                </p>
+                                                <p class="text-sm mt-1">
+                                                    Use the search above to find
+                                                    and add purchases for any
+                                                    customer
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Claimed Rewards -->
+                                        <div
+                                            v-if="claimedRewards.length > 0"
+                                            class="bg-white rounded-xl shadow-lg p-6"
+                                        >
+                                            <h4
+                                                class="text-lg font-semibold text-gray-900 mb-4"
+                                            >
+                                                <i
+                                                    class="pi pi-check-circle text-green-500 mr-2"
+                                                ></i>
+                                                Claimed Rewards ({{
+                                                    claimedRewards.length
+                                                }})
+                                            </h4>
+                                            <div class="space-y-4">
+                                                <div
+                                                    v-for="reward in claimedRewards"
+                                                    :key="reward.id"
+                                                    class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg"
+                                                >
+                                                    <div
+                                                        class="flex items-center gap-4"
+                                                    >
+                                                        <img
+                                                            :src="
+                                                                reward.user
+                                                                    .profile_image_url ||
+                                                                '/storage/profiles/${user.profile_image}'
+                                                            "
+                                                            :alt="
+                                                                reward.user.name
+                                                            "
+                                                            class="w-12 h-12 rounded-full object-cover"
+                                                        />
+                                                        <div>
+                                                            <h6
+                                                                class="font-semibold text-gray-900"
+                                                            >
+                                                                {{
+                                                                    reward.user
+                                                                        .name
+                                                                }}
+                                                            </h6>
+                                                            <p
+                                                                class="text-sm text-gray-600"
+                                                            >
+                                                                Claimed
+                                                                {{
+                                                                    formatDate(
+                                                                        reward.claimed_at
+                                                                    )
+                                                                }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="text-right">
+                                                        <div
+                                                            class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium"
+                                                        >
+                                                            <i
+                                                                class="pi pi-check mr-1"
+                                                            ></i>
+                                                            Claimed
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
 
+                                        <!-- Pending Rewards (modified to go directly to claimed) -->
                                         <div
-                                            class="bg-white rounded-xl shadow-lg"
+                                            v-if="pendingRewards.length > 0"
+                                            class="bg-white rounded-xl shadow-lg p-6"
                                         >
-                                            <div
-                                                class="p-6 border-b border-gray-200"
+                                            <h4
+                                                class="text-lg font-semibold text-gray-900 mb-4"
                                             >
-                                                <h4
-                                                    class="text-lg font-semibold text-gray-900"
-                                                >
-                                                    Loyalty Rewards Management
-                                                </h4>
-                                                <p class="text-gray-600">
-                                                    Manage customer reward
-                                                    claims
-                                                </p>
-                                            </div>
-
-                                            <div class="p-6">
-                                                <!-- Pending Rewards -->
+                                                <i
+                                                    class="pi pi-clock text-orange-500 mr-2"
+                                                ></i>
+                                                Pending Rewards ({{
+                                                    pendingRewards.length
+                                                }})
+                                            </h4>
+                                            <div class="space-y-4">
                                                 <div
-                                                    v-if="
-                                                        pendingRewards.length >
-                                                        0
-                                                    "
-                                                    class="mb-6"
+                                                    v-for="reward in pendingRewards"
+                                                    :key="reward.id"
+                                                    class="flex items-center justify-between p-4 bg-orange-50 border border-orange-200 rounded-lg"
                                                 >
-                                                    <h5
-                                                        class="text-md font-semibold text-yellow-700 mb-3 flex items-center"
-                                                    >
-                                                        <i
-                                                            class="pi pi-clock mr-2"
-                                                        ></i>
-                                                        Pending Approval ({{
-                                                            pendingRewards.length
-                                                        }})
-                                                    </h5>
-                                                    <div class="space-y-3">
-                                                        <div
-                                                            v-for="reward in pendingRewards"
-                                                            :key="reward.id"
-                                                            class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
-                                                        >
-                                                            <div
-                                                                class="flex items-center gap-4"
-                                                            >
-                                                                <div
-                                                                    class="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-gift"
-                                                                    ></i>
-                                                                </div>
-                                                                <div>
-                                                                    <h6
-                                                                        class="font-medium text-gray-900"
-                                                                    >
-                                                                        {{
-                                                                            reward
-                                                                                .user
-                                                                                .name
-                                                                        }}
-                                                                    </h6>
-                                                                    <p
-                                                                        class="text-sm text-gray-600"
-                                                                    >
-                                                                        Wants:
-                                                                        {{
-                                                                            reward
-                                                                                .shop_item
-                                                                                ?.name ||
-                                                                            "Any item"
-                                                                        }}
-                                                                        • Card
-                                                                        #{{
-                                                                            reward.card_completion_number
-                                                                        }}
-                                                                    </p>
-                                                                    <p
-                                                                        class="text-xs text-gray-500"
-                                                                    >
-                                                                        {{
-                                                                            formatDate(
-                                                                                reward.created_at
-                                                                            )
-                                                                        }}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div
-                                                                class="flex gap-2"
-                                                            >
-                                                                <button
-                                                                    @click="
-                                                                        approveReward(
-                                                                            reward.id
-                                                                        )
-                                                                    "
-                                                                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-check mr-1"
-                                                                    ></i>
-                                                                    Approve
-                                                                </button>
-                                                                <button
-                                                                    @click="
-                                                                        rejectReward(
-                                                                            reward.id,
-                                                                            'Out of stock'
-                                                                        )
-                                                                    "
-                                                                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-times mr-1"
-                                                                    ></i>
-                                                                    Reject
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Approved Rewards (Ready to Claim) -->
-                                                <div
-                                                    v-if="
-                                                        approvedRewards.length >
-                                                        0
-                                                    "
-                                                    class="mb-6"
-                                                >
-                                                    <h5
-                                                        class="text-md font-semibold text-green-700 mb-3 flex items-center"
-                                                    >
-                                                        <i
-                                                            class="pi pi-check-circle mr-2"
-                                                        ></i>
-                                                        Ready to Claim ({{
-                                                            approvedRewards.length
-                                                        }})
-                                                    </h5>
-                                                    <div class="space-y-3">
-                                                        <div
-                                                            v-for="reward in approvedRewards"
-                                                            :key="reward.id"
-                                                            class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg"
-                                                        >
-                                                            <div
-                                                                class="flex items-center gap-4"
-                                                            >
-                                                                <div
-                                                                    class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-gift"
-                                                                    ></i>
-                                                                </div>
-                                                                <div>
-                                                                    <h6
-                                                                        class="font-medium text-gray-900"
-                                                                    >
-                                                                        {{
-                                                                            reward
-                                                                                .user
-                                                                                .name
-                                                                        }}
-                                                                    </h6>
-                                                                    <p
-                                                                        class="text-sm text-gray-600"
-                                                                    >
-                                                                        Approved:
-                                                                        {{
-                                                                            reward
-                                                                                .shop_item
-                                                                                ?.name ||
-                                                                            "Any item"
-                                                                        }}
-                                                                        • Card
-                                                                        #{{
-                                                                            reward.card_completion_number
-                                                                        }}
-                                                                    </p>
-                                                                    <p
-                                                                        class="text-xs text-gray-500"
-                                                                    >
-                                                                        Approved:
-                                                                        {{
-                                                                            formatDate(
-                                                                                reward.approved_at
-                                                                            )
-                                                                        }}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div
-                                                                class="flex gap-2"
-                                                            >
-                                                                <button
-                                                                    @click="
-                                                                        markAsClaimed(
-                                                                            reward.id
-                                                                        )
-                                                                    "
-                                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-check mr-1"
-                                                                    ></i>
-                                                                    Mark as
-                                                                    Claimed
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                                <!-- Claimed Rewards (History) -->
-                                                <div
-                                                    v-if="
-                                                        claimedRewards.length >
-                                                        0
-                                                    "
-                                                    class="mb-6"
-                                                >
-                                                    <h5
-                                                        class="text-md font-semibold text-blue-700 mb-3 flex items-center"
-                                                    >
-                                                        <i
-                                                            class="pi pi-history mr-2"
-                                                        ></i>
-                                                        Claimed History ({{
-                                                            claimedRewards.length
-                                                        }})
-                                                    </h5>
-                                                    <div class="space-y-3">
-                                                        <div
-                                                            v-for="reward in claimedRewards.slice(
-                                                                0,
-                                                                5
-                                                            )"
-                                                            :key="reward.id"
-                                                            class="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg opacity-75"
-                                                        >
-                                                            <div
-                                                                class="flex items-center gap-4"
-                                                            >
-                                                                <div
-                                                                    class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-check"
-                                                                    ></i>
-                                                                </div>
-                                                                <div>
-                                                                    <h6
-                                                                        class="font-medium text-gray-900"
-                                                                    >
-                                                                        {{
-                                                                            reward
-                                                                                .user
-                                                                                .name
-                                                                        }}
-                                                                    </h6>
-                                                                    <p
-                                                                        class="text-sm text-gray-600"
-                                                                    >
-                                                                        Claimed:
-                                                                        {{
-                                                                            reward
-                                                                                .shop_item
-                                                                                ?.name ||
-                                                                            "Any item"
-                                                                        }}
-                                                                        • Card
-                                                                        #{{
-                                                                            reward.card_completion_number
-                                                                        }}
-                                                                    </p>
-                                                                    <p
-                                                                        class="text-xs text-gray-500"
-                                                                    >
-                                                                        Claimed:
-                                                                        {{
-                                                                            formatDate(
-                                                                                reward.claimed_at
-                                                                            )
-                                                                        }}
-                                                                    </p>
-                                                                </div>
-                                                            </div>
-                                                            <div
-                                                                class="flex items-center"
-                                                            >
-                                                                <span
-                                                                    class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
-                                                                >
-                                                                    Completed
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                     <div
-                                                        v-if="
-                                                            claimedRewards.length >
-                                                            5
-                                                        "
-                                                        class="text-center mt-3"
+                                                        class="flex items-center gap-4"
                                                     >
-                                                        <span
-                                                            class="text-sm text-gray-500"
-                                                        >
-                                                            And
-                                                            {{
-                                                                claimedRewards.length -
-                                                                5
-                                                            }}
-                                                            more claimed
-                                                            rewards...
-                                                        </span>
+                                                        <img
+                                                            :src="
+                                                                reward.user
+                                                                    .profile_image_url ||
+                                                                '/storage/profiles/${user.profile_image}'
+                                                            "
+                                                            :alt="
+                                                                reward.user.name
+                                                            "
+                                                            class="w-12 h-12 rounded-full object-cover"
+                                                        />
+                                                        <div>
+                                                            <h6
+                                                                class="font-semibold text-gray-900"
+                                                            >
+                                                                {{
+                                                                    reward.user
+                                                                        .name
+                                                                }}
+                                                            </h6>
+                                                            <p
+                                                                class="text-sm text-gray-600"
+                                                            >
+                                                                Requested
+                                                                {{
+                                                                    formatDate(
+                                                                        reward.created_at
+                                                                    )
+                                                                }}
+                                                            </p>
+                                                            <div
+                                                                class="text-xs text-gray-500 mt-1"
+                                                            >
+                                                                Completed
+                                                                {{
+                                                                    reward.completed_purchases ||
+                                                                    loyaltyCard.required_purchases
+                                                                }}
+                                                                purchases
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                </div>
-
-                                                <!-- Empty State -->
-                                                <div
-                                                    v-if="
-                                                        loyaltyRewards.length ===
-                                                        0
-                                                    "
-                                                    class="text-center py-8"
-                                                >
-                                                    <i
-                                                        class="pi pi-gift text-gray-300 text-4xl mb-4"
-                                                    ></i>
-                                                    <h5
-                                                        class="text-lg font-medium text-gray-600 mb-2"
-                                                    >
-                                                        No Loyalty Rewards Yet
-                                                    </h5>
-                                                    <p class="text-gray-500">
-                                                        Rewards will appear here
-                                                        when customers complete
-                                                        their loyalty cards
-                                                    </p>
+                                                    <div class="flex gap-2">
+                                                        <button
+                                                            @click="
+                                                                markAsClaimed(
+                                                                    reward.id
+                                                                )
+                                                            "
+                                                            class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                        >
+                                                            <i
+                                                                class="pi pi-check mr-1"
+                                                            ></i>
+                                                            Mark as Claimed
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -1909,6 +1899,11 @@ export default {
                 image: null,
             },
 
+            loyaltySearchQuery: "",
+            loyaltySearchResults: [],
+            loyaltySearchTimeout: null,
+            showLoyaltySearchDropdown: false,
+            searchingLoyaltyUsers: false,
             loyaltyCard: null,
             loyaltyProgress: [],
             loyaltyRewards: [],
@@ -1927,6 +1922,37 @@ export default {
     },
 
     computed: {
+        filteredLoyaltyCustomers() {
+            if (!this.loyaltyProgress) return [];
+
+            // If search query exists, show search results instead of regular customers
+            if (
+                this.loyaltySearchQuery &&
+                this.loyaltySearchResults.length > 0
+            ) {
+                // Map search results to loyalty progress format
+                return this.loyaltySearchResults.map((user) => {
+                    // Find existing progress for this user
+                    const existingProgress = this.loyaltyProgress.find(
+                        (p) => p.user_id === user.id
+                    );
+                    return (
+                        existingProgress || {
+                            user_id: user.id,
+                            user: user,
+                            current_purchases: 0,
+                            completed_cards: 0,
+                            last_purchase_at: null,
+                        }
+                    );
+                });
+            }
+
+            // Default: only show customers with purchases > 0
+            return this.loyaltyProgress.filter(
+                (customer) => customer.current_purchases > 0
+            );
+        },
         isAdmin() {
             return this.user && this.user.role === "admin";
         },
@@ -2008,6 +2034,62 @@ export default {
     },
 
     methods: {
+        // Add these methods in the methods section:
+        searchLoyaltyUsers() {
+            clearTimeout(this.loyaltySearchTimeout);
+
+            if (this.loyaltySearchQuery.length < 2) {
+                this.loyaltySearchResults = [];
+                this.showLoyaltySearchDropdown = false;
+                return;
+            }
+
+            this.loyaltySearchTimeout = setTimeout(async () => {
+                try {
+                    this.searchingLoyaltyUsers = true;
+                    const response = await axios.get(
+                        `/api/users/search?q=${encodeURIComponent(
+                            this.loyaltySearchQuery
+                        )}`
+                    );
+
+                    if (response.data.success) {
+                        this.loyaltySearchResults = response.data.users;
+                        this.showLoyaltySearchDropdown = true;
+                    }
+                } catch (error) {
+                    console.error("Error searching loyalty users:", error);
+                    this.loyaltySearchResults = [];
+                } finally {
+                    this.searchingLoyaltyUsers = false;
+                }
+            }, 300);
+        },
+
+        selectLoyaltyUser(user) {
+            // Find or create loyalty progress for this user
+            let customer = this.loyaltyProgress.find(
+                (p) => p.user_id === user.id
+            );
+            if (!customer) {
+                customer = {
+                    user_id: user.id,
+                    user: user,
+                    current_purchases: 0,
+                    completed_cards: 0,
+                    last_purchase_at: null,
+                };
+            }
+
+            this.openCustomerLoyaltyModal(customer);
+            this.clearLoyaltySearch();
+        },
+
+        clearLoyaltySearch() {
+            this.loyaltySearchQuery = "";
+            this.loyaltySearchResults = [];
+            this.showLoyaltySearchDropdown = false;
+        },
         async fetchShopData() {
             try {
                 this.loading = true;
@@ -2735,10 +2817,18 @@ export default {
         },
     },
 
+    // Add to mounted() method:
     async mounted() {
         await this.fetchUserData();
         await this.fetchShopData();
         await this.fetchLoyaltyCard();
+
+        // Handle click outside for loyalty search dropdown
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".relative")) {
+                this.showLoyaltySearchDropdown = false;
+            }
+        });
     },
 };
 </script>

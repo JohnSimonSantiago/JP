@@ -594,6 +594,9 @@ class LoyaltyCardController extends Controller
     /**
  * Mark a loyalty reward as claimed (customer has received the item)
  */
+/**
+ * Mark a loyalty reward as claimed (customer has received the item)
+ */
 public function markAsClaimed(Shop $shop, LoyaltyCardReward $reward)
 {
     try {
@@ -622,11 +625,11 @@ public function markAsClaimed(Shop $shop, LoyaltyCardReward $reward)
             ], 403);
         }
 
-        // Only approved rewards can be marked as claimed
-        if ($reward->status !== 'approved') {
+        // UPDATED: Allow pending or approved rewards to be marked as claimed
+        if (!in_array($reward->status, ['pending', 'approved'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Only approved rewards can be marked as claimed'
+                'message' => 'Only pending or approved rewards can be marked as claimed'
             ], 400);
         }
 
