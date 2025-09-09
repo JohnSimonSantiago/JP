@@ -50,8 +50,7 @@ Route::prefix('shops')->group(function () {
     Route::get('/', [ShopController::class, 'index']); // List all shops
     Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items
     Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews
-    Route::get('/my-shop/notifications', [ShopController::class, 'getShopNotifications'])->middleware('auth:sanctum');
-
+    
 });
 
 // Public gallery routes
@@ -195,6 +194,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('point-shop')->group(function () {
         Route::post('/{item}/purchase', [PointShopController::class, 'purchase']); // Purchase point shop item
     });
+    
+    Route::get('/my-shop/notifications', [ShopController::class, 'getShopNotifications']);
     
     // Update existing purchases route to support shop filtering
     Route::get('/my-purchases', [ShopItemController::class, 'getPurchases']); // This route already exists, just needs updating

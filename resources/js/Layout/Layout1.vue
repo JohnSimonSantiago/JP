@@ -587,7 +587,7 @@
                             >
                                 {{ user.role === "admin" ? "Admin" : "Owner" }}
                             </span>
-                            <!-- Combined notifications badge -->
+                            <!-- FIXED: Use totalShopNotifications instead of pendingOrdersCount -->
                             <div
                                 v-if="totalShopNotifications > 0"
                                 class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse"
@@ -652,6 +652,10 @@ export default {
     components: {
         Button,
     },
+    // Fix your data section in Layout.vue
+    // Fix your Layout.vue - Here are the specific changes needed:
+
+    // 1. ADD these properties to your data section:
     data() {
         return {
             user: {
@@ -663,8 +667,6 @@ export default {
                 profile_image: null,
                 is_premium: false,
                 role: "user",
-                shopOrdersCount: 0,
-                shopLoyaltyCount: 0,
             },
             userRank: null,
 
@@ -680,18 +682,22 @@ export default {
             // Individual notification data
             pendingOrders: [],
             tradeRequests: [],
-            tradeSent: [], // Add sent trades
+            tradeSent: [],
             betRequests: [],
-            betsSent: [], // Add sent bets
+            betsSent: [],
             refereeRequests: [],
 
             // Notification counts
             pendingOrdersCount: 0,
             tradeRequestsCount: 0,
-            tradeSentCount: 0, // Add sent count
+            tradeSentCount: 0,
             betRequestsCount: 0,
-            betsSentCount: 0, // Add sent bets count
+            betsSentCount: 0,
             refereeRequestsCount: 0,
+
+            // ADD THESE MISSING PROPERTIES:
+            shopOrdersCount: 0,
+            shopLoyaltyCount: 0,
 
             // Polling
             notificationPollingInterval: null,
@@ -728,7 +734,7 @@ export default {
                 this.betRequestsCount +
                 this.betsSentCount +
                 this.refereeRequestsCount +
-                this.totalShopNotifications // Add this line
+                this.totalShopNotifications // ADD THIS LINE
             );
         },
 
@@ -785,6 +791,7 @@ export default {
                     }
                 );
             }
+
             return tabs;
         },
 
@@ -793,14 +800,16 @@ export default {
                 case "orders":
                     return this.pendingOrders.slice(0, 5);
                 case "loyalty":
-                    // For now, show a simple message - you can enhance this later
-                    return [
-                        {
-                            id: "loyalty-summary",
-                            message: `${this.shopLoyaltyCount} pending loyalty rewards`,
-                            link: "/my-shop?tab=loyalty",
-                        },
-                    ];
+                    // For now, show a simple message
+                    return this.shopLoyaltyCount > 0
+                        ? [
+                              {
+                                  id: "loyalty-summary",
+                                  message: `${this.shopLoyaltyCount} pending loyalty rewards`,
+                                  link: "/my-shop?tab=loyalty",
+                              },
+                          ]
+                        : [];
                 case "trades":
                     return this.tradeRequests.slice(0, 5);
                 case "bets":
@@ -870,6 +879,7 @@ export default {
                 this.shopLoyaltyCount = 0;
             }
         },
+
         formatPoints(points) {
             return (points || 0).toLocaleString();
         },
@@ -967,7 +977,7 @@ export default {
                 // Fetch bet requests and referee requests
                 promises.push(this.fetchBetRequests());
 
-                // NEW: Fetch shop notifications (orders + loyalty counts)
+                // ADD THIS: Fetch shop notifications (orders + loyalty counts)
                 if (this.isShopOwnerOrAdmin) {
                     promises.push(this.fetchShopNotifications());
                 }
@@ -980,7 +990,6 @@ export default {
                 this.loading = false;
             }
         },
-
         async fetchPendingOrders() {
             try {
                 let response;
