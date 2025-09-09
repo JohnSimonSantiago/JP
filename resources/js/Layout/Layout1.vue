@@ -587,14 +587,15 @@
                             >
                                 {{ user.role === "admin" ? "Admin" : "Owner" }}
                             </span>
+                            <!-- Combined notifications badge -->
                             <div
-                                v-if="pendingOrdersCount > 0"
-                                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-semibold"
+                                v-if="totalShopNotifications > 0"
+                                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse"
                             >
                                 {{
-                                    pendingOrdersCount > 9
-                                        ? "9+"
-                                        : pendingOrdersCount
+                                    totalShopNotifications > 99
+                                        ? "99+"
+                                        : totalShopNotifications
                                 }}
                             </div>
                         </router-link>
@@ -662,6 +663,8 @@ export default {
                 profile_image: null,
                 is_premium: false,
                 role: "user",
+                shopOrdersCount: 0,
+                shopLoyaltyCount: 0,
             },
             userRank: null,
 
@@ -712,6 +715,11 @@ export default {
             return this.user.role === "admin";
         },
 
+        totalShopNotifications() {
+            return this.shopOrdersCount + this.shopLoyaltyCount;
+        },
+
+        // UPDATE: Include shop notifications in total count
         totalNotificationsCount() {
             return (
                 this.pendingOrdersCount +
@@ -719,7 +727,8 @@ export default {
                 this.tradeSentCount +
                 this.betRequestsCount +
                 this.betsSentCount +
-                this.refereeRequestsCount
+                this.refereeRequestsCount +
+                this.totalShopNotifications // Add this line
             );
         },
 
@@ -761,14 +770,21 @@ export default {
 
             // Only show orders tab for shop owners/admins
             if (this.isShopOwnerOrAdmin) {
-                tabs.unshift({
-                    key: "orders",
-                    label: "Orders",
-                    icon: "pi pi-shopping-cart",
-                    count: this.pendingOrdersCount,
-                });
+                tabs.unshift(
+                    {
+                        key: "orders",
+                        label: "Shop Orders",
+                        icon: "pi pi-shopping-cart",
+                        count: this.shopOrdersCount,
+                    },
+                    {
+                        key: "loyalty",
+                        label: "Loyalty Rewards",
+                        icon: "pi pi-gift",
+                        count: this.shopLoyaltyCount,
+                    }
+                );
             }
-
             return tabs;
         },
 
@@ -776,6 +792,15 @@ export default {
             switch (this.activeNotificationTab) {
                 case "orders":
                     return this.pendingOrders.slice(0, 5);
+                case "loyalty":
+                    // For now, show a simple message - you can enhance this later
+                    return [
+                        {
+                            id: "loyalty-summary",
+                            message: `${this.shopLoyaltyCount} pending loyalty rewards`,
+                            link: "/my-shop?tab=loyalty",
+                        },
+                    ];
                 case "trades":
                     return this.tradeRequests.slice(0, 5);
                 case "bets":
@@ -789,6 +814,62 @@ export default {
     },
 
     methods: {
+        async fetchNotifications() {
+            if (!this.user.id || this.loading) return;
+
+            try {
+                this.loading = true;
+
+                // Fetch user notifications (trades, bets, referee)
+                const response = await axios.get("/api/notifications");
+
+                if (response.data.success) {
+                    const data = response.data;
+
+                    // Update notification data
+                    this.pendingOrders = data.pending_orders || [];
+                    this.tradeRequests = data.trade_requests || [];
+                    this.tradeSent = data.trade_sent || [];
+                    this.betRequests = data.bet_requests || [];
+                    this.betsSent = data.bets_sent || [];
+                    this.refereeRequests = data.referee_requests || [];
+
+                    // Update counts
+                    this.pendingOrdersCount = data.pending_orders_count || 0;
+                    this.tradeRequestsCount = data.trade_requests_count || 0;
+                    this.tradeSentCount = data.trade_sent_count || 0;
+                    this.betRequestsCount = data.bet_requests_count || 0;
+                    this.betsSentCount = data.bets_sent_count || 0;
+                    this.refereeRequestsCount =
+                        data.referee_requests_count || 0;
+                }
+            } catch (error) {
+                this.notificationError = "Failed to load notifications";
+                console.error("Error fetching notifications:", error);
+            } finally {
+                this.loading = false;
+            }
+        },
+        // Add this method to your Layout.vue methods section
+
+        async fetchShopNotifications() {
+            if (!this.hasShop) return;
+
+            try {
+                const response = await axios.get("/api/my-shop/notifications");
+                if (response.data.success) {
+                    this.shopOrdersCount =
+                        response.data.pending_orders_count || 0;
+                    this.shopLoyaltyCount =
+                        response.data.pending_loyalty_count || 0;
+                }
+            } catch (error) {
+                // Silently fail - shop notifications are not critical
+                console.error("Failed to fetch shop notifications:", error);
+                this.shopOrdersCount = 0;
+                this.shopLoyaltyCount = 0;
+            }
+        },
         formatPoints(points) {
             return (points || 0).toLocaleString();
         },
@@ -885,6 +966,11 @@ export default {
 
                 // Fetch bet requests and referee requests
                 promises.push(this.fetchBetRequests());
+
+                // NEW: Fetch shop notifications (orders + loyalty counts)
+                if (this.isShopOwnerOrAdmin) {
+                    promises.push(this.fetchShopNotifications());
+                }
 
                 await Promise.all(promises);
             } catch (error) {
@@ -1029,7 +1115,10 @@ export default {
         },
 
         startNotificationPolling() {
-            // Poll every 30 seconds
+            // Initial fetch
+            this.fetchAllNotifications();
+
+            // Set up polling every 30 seconds
             this.notificationPollingInterval = setInterval(() => {
                 this.fetchAllNotifications();
             }, 30000);

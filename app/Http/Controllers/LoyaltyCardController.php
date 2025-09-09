@@ -591,4 +591,81 @@ class LoyaltyCardController extends Controller
             \Log::error('Failed to update loyalty progress: ' . $e->getMessage());
         }
     }
+    /**
+ * Mark a loyalty reward as claimed (customer has received the item)
+ */
+public function markAsClaimed(Shop $shop, LoyaltyCardReward $reward)
+{
+    try {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Please login'
+            ], 401);
+        }
+
+        // Check authorization
+        if (!$this->canEditShop($user, $shop)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - You cannot edit this shop'
+            ], 403);
+        }
+
+        // Verify reward belongs to this shop
+        if ($reward->loyaltyCard->shop_id !== $shop->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reward does not belong to this shop'
+            ], 403);
+        }
+
+        // Only approved rewards can be marked as claimed
+        if ($reward->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only approved rewards can be marked as claimed'
+            ], 400);
+        }
+
+        // Mark as claimed
+        $reward->markAsClaimed();
+
+        // Optionally: Create a record in purchases table to track the free item
+        // This helps with inventory and accounting
+        try {
+            Purchase::create([
+                'user_id' => $reward->user_id,
+                'shop_id' => $shop->id,
+                'shop_item_id' => $reward->shop_item_id,
+                'quantity' => 1,
+                'price_per_item' => 0, // Free item
+                'total_cost' => 0,
+                'currency_type' => 'cash',
+                'status' => 'approved', // Auto-approved since it's a loyalty reward
+                'counts_for_loyalty' => false, // Don't count free items for loyalty
+                'loyalty_card_id' => $reward->loyalty_card_id
+            ]);
+        } catch (\Exception $e) {
+            // If purchase creation fails, don't fail the whole operation
+            \Log::warning('Failed to create purchase record for loyalty reward: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reward marked as claimed successfully',
+            'reward' => $reward->fresh(['user:id,name,email', 'shopItem:id,name'])
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to mark reward as claimed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 }

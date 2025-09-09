@@ -42,17 +42,37 @@ class LoyaltyCardProgress extends Model
     /**
      * Increment purchase count
      */
-    public function incrementPurchase()
-    {
-        $this->increment('current_purchases');
-        $this->update(['last_purchase_at' => now()]);
+    /**
+ * Increment purchase count and create pending rewards when cards are completed
+ */
+public function incrementPurchase()
+{
+    $oldCompletedCards = $this->completed_cards;
+    
+    // Increment purchase count
+    $this->increment('current_purchases');
+    $this->update(['last_purchase_at' => now()]);
 
-        // Check if user completed a card
-        if ($this->current_purchases >= $this->loyaltyCard->required_purchases) {
-            $completedCards = floor($this->current_purchases / $this->loyaltyCard->required_purchases);
-            $this->update(['completed_cards' => $completedCards]);
+    // Calculate new completed cards
+    $newCompletedCards = floor($this->current_purchases / $this->loyaltyCard->required_purchases);
+    
+    // If completed cards increased, create pending reward records
+    if ($newCompletedCards > $oldCompletedCards) {
+        $this->update(['completed_cards' => $newCompletedCards]);
+        
+        // Create pending reward records for each newly completed card
+        for ($cardNumber = $oldCompletedCards + 1; $cardNumber <= $newCompletedCards; $cardNumber++) {
+            \App\Models\LoyaltyCardReward::create([
+                'loyalty_card_id' => $this->loyalty_card_id,
+                'user_id' => $this->user_id,
+                'shop_item_id' => null, // Shop owner can specify which item later
+                'card_completion_number' => $cardNumber,
+                'status' => 'pending', // Needs shop owner approval
+                'approved_at' => null
+            ]);
         }
     }
+}
 
     /**
      * Decrement purchase count (for manual adjustments)

@@ -120,7 +120,7 @@
                     </div>
 
                     <!-- Tab Navigation -->
-                    <div class="bg-white rounded-xl shadow-lg">
+                    <div class="bg-white rounded-xl shadow-lg mb-8">
                         <div class="border-b border-gray-200">
                             <nav class="flex space-x-8 px-6">
                                 <button
@@ -130,25 +130,23 @@
                                     :class="[
                                         'py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2',
                                         activeTab === tab.id
-                                            ? 'border-green-500 text-green-600'
+                                            ? 'border-purple-500 text-purple-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
                                     ]"
                                 >
                                     <i :class="tab.icon"></i>
-                                    {{ tab.name }}
-                                    <!-- Add badge for loyalty tab if there are pending rewards -->
+                                    <span>{{ tab.name }}</span>
+                                    <!-- Badge for counts -->
                                     <span
-                                        v-if="
-                                            tab.id === 'loyalty' &&
-                                            pendingRewards.length > 0
-                                        "
-                                        class="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold ml-1"
+                                        v-if="tab.count && tab.count > 0"
+                                        :class="[
+                                            'ml-1 px-2 py-0.5 text-xs rounded-full font-semibold',
+                                            activeTab === tab.id
+                                                ? 'bg-purple-100 text-purple-700'
+                                                : 'bg-red-500 text-white',
+                                        ]"
                                     >
-                                        {{
-                                            pendingRewards.length > 9
-                                                ? "9+"
-                                                : pendingRewards.length
-                                        }}
+                                        {{ tab.count > 99 ? "99+" : tab.count }}
                                     </span>
                                 </button>
                             </nav>
@@ -698,7 +696,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Customer Progress -->
+                                        <!-- Customer Progress and Available Rewards -->
                                         <div
                                             class="bg-white rounded-xl shadow-lg"
                                         >
@@ -708,167 +706,114 @@
                                                 <h4
                                                     class="text-lg font-semibold text-gray-900"
                                                 >
-                                                    Customer Progress
+                                                    Customer Loyalty Progress
                                                 </h4>
                                                 <p class="text-gray-600">
-                                                    Track your customers'
-                                                    loyalty progress
+                                                    Customers with completed
+                                                    loyalty cards
                                                 </p>
                                             </div>
-
-                                            <div
-                                                v-if="loadingLoyaltyData"
-                                                class="p-12 text-center"
-                                            >
-                                                <i
-                                                    class="pi pi-spin pi-spinner text-purple-500 text-2xl"
-                                                ></i>
-                                            </div>
-
-                                            <div
-                                                v-else-if="
-                                                    loyaltyProgress.length === 0
-                                                "
-                                                class="p-12 text-center"
-                                            >
-                                                <i
-                                                    class="pi pi-users text-gray-300 text-4xl mb-4"
-                                                ></i>
-                                                <p class="text-gray-600">
-                                                    No customer progress yet
-                                                </p>
-                                                <p
-                                                    class="text-sm text-gray-500"
+                                            <div class="p-6">
+                                                <div
+                                                    v-if="
+                                                        loyaltyProgress.length ===
+                                                        0
+                                                    "
+                                                    class="text-center py-8"
                                                 >
-                                                    Progress will appear when
-                                                    customers make purchases
-                                                </p>
-                                            </div>
-
-                                            <div v-else class="p-6">
-                                                <div class="space-y-4">
+                                                    <i
+                                                        class="pi pi-users text-gray-300 text-4xl mb-4"
+                                                    ></i>
+                                                    <p class="text-gray-500">
+                                                        No customer loyalty
+                                                        progress yet
+                                                    </p>
+                                                </div>
+                                                <div v-else class="space-y-4">
                                                     <div
-                                                        v-for="customer in loyaltyProgress"
-                                                        :key="customer.user_id"
-                                                        class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                                        v-for="customer in loyaltyProgress.filter(
+                                                            (c) =>
+                                                                getCompletedCards(
+                                                                    c
+                                                                ) > 0
+                                                        )"
+                                                        :key="customer.user.id"
+                                                        class="p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                                                     >
                                                         <div
-                                                            class="flex items-center gap-4"
+                                                            class="flex items-center justify-between"
                                                         >
                                                             <div
-                                                                class="w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center font-semibold"
+                                                                class="flex items-center gap-4"
                                                             >
-                                                                {{
-                                                                    customer.user.name
-                                                                        .charAt(
-                                                                            0
-                                                                        )
-                                                                        .toUpperCase()
-                                                                }}
-                                                            </div>
-                                                            <div>
-                                                                <h5
-                                                                    class="font-medium text-gray-900"
+                                                                <div
+                                                                    class="w-12 h-12 bg-purple-500 text-white rounded-full flex items-center justify-center"
                                                                 >
-                                                                    {{
-                                                                        customer
-                                                                            .user
-                                                                            .name
-                                                                    }}
-                                                                </h5>
-                                                                <p
-                                                                    class="text-sm text-gray-600"
-                                                                >
-                                                                    {{
-                                                                        getCurrentCardPurchases(
+                                                                    <i
+                                                                        class="pi pi-user"
+                                                                    ></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h5
+                                                                        class="font-medium text-gray-900"
+                                                                    >
+                                                                        {{
                                                                             customer
-                                                                        )
-                                                                    }}/{{
-                                                                        loyaltyCard.required_purchases
-                                                                    }}
-                                                                    purchases •
+                                                                                .user
+                                                                                .name
+                                                                        }}
+                                                                    </h5>
+                                                                    <p
+                                                                        class="text-sm text-gray-600"
+                                                                    >
+                                                                        Completed
+                                                                        Cards:
+                                                                        {{
+                                                                            getCompletedCards(
+                                                                                customer
+                                                                            )
+                                                                        }}
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-xs text-gray-500"
+                                                                    >
+                                                                        Current
+                                                                        Progress:
+                                                                        {{
+                                                                            getCurrentCardPurchases(
+                                                                                customer
+                                                                            )
+                                                                        }}/{{
+                                                                            loyaltyCard.required_purchases
+                                                                        }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div
+                                                                class="flex items-center gap-2"
+                                                            >
+                                                                <span
+                                                                    class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium"
+                                                                >
                                                                     {{
                                                                         getCompletedCards(
                                                                             customer
                                                                         )
                                                                     }}
-                                                                    cards
-                                                                    completed
-                                                                </p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div
-                                                            class="flex items-center gap-4"
-                                                        >
-                                                            <!-- Progress Bar -->
-                                                            <div
-                                                                class="w-32 bg-gray-200 rounded-full h-2"
-                                                            >
-                                                                <div
-                                                                    class="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                                                                    :style="{
-                                                                        width:
-                                                                            getProgressPercentage(
-                                                                                customer
-                                                                            ) +
-                                                                            '%',
-                                                                    }"
-                                                                ></div>
-                                                            </div>
-
-                                                            <!-- Action Buttons -->
-                                                            <div
-                                                                class="flex gap-2"
-                                                            >
-                                                                <button
-                                                                    @click="
-                                                                        adjustLoyaltyCount(
-                                                                            customer.user_id,
-                                                                            'add'
-                                                                        )
-                                                                    "
-                                                                    :disabled="
-                                                                        adjustingLoyalty
-                                                                    "
-                                                                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                                                                    title="Add 1 purchase"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-plus"
-                                                                    ></i>
-                                                                </button>
-                                                                <button
-                                                                    @click="
-                                                                        adjustLoyaltyCount(
-                                                                            customer.user_id,
-                                                                            'remove'
-                                                                        )
-                                                                    "
-                                                                    :disabled="
-                                                                        adjustingLoyalty ||
-                                                                        customer.current_purchases ===
-                                                                            0
-                                                                    "
-                                                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50"
-                                                                    title="Remove 1 purchase"
-                                                                >
-                                                                    <i
-                                                                        class="pi pi-minus"
-                                                                    ></i>
-                                                                </button>
+                                                                    Available
+                                                                </span>
                                                                 <button
                                                                     @click="
                                                                         openCustomerLoyaltyModal(
                                                                             customer
                                                                         )
                                                                     "
-                                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
-                                                                    title="View details"
+                                                                    class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                                                                 >
                                                                     <i
-                                                                        class="pi pi-eye"
+                                                                        class="pi pi-eye mr-1"
                                                                     ></i>
+                                                                    View Details
                                                                 </button>
                                                             </div>
                                                         </div>
@@ -877,9 +822,7 @@
                                             </div>
                                         </div>
 
-                                        <!-- Pending Rewards -->
                                         <div
-                                            v-if="pendingRewards.length > 0"
                                             class="bg-white rounded-xl shadow-lg"
                                         >
                                             <div
@@ -888,96 +831,340 @@
                                                 <h4
                                                     class="text-lg font-semibold text-gray-900"
                                                 >
-                                                    Pending Reward Claims
+                                                    Loyalty Rewards Management
                                                 </h4>
                                                 <p class="text-gray-600">
-                                                    Customers waiting for reward
-                                                    approval
+                                                    Manage customer reward
+                                                    claims
                                                 </p>
                                             </div>
 
                                             <div class="p-6">
-                                                <div class="space-y-4">
-                                                    <div
-                                                        v-for="reward in pendingRewards"
-                                                        :key="reward.id"
-                                                        class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                                                <!-- Pending Rewards -->
+                                                <div
+                                                    v-if="
+                                                        pendingRewards.length >
+                                                        0
+                                                    "
+                                                    class="mb-6"
+                                                >
+                                                    <h5
+                                                        class="text-md font-semibold text-yellow-700 mb-3 flex items-center"
                                                     >
+                                                        <i
+                                                            class="pi pi-clock mr-2"
+                                                        ></i>
+                                                        Pending Approval ({{
+                                                            pendingRewards.length
+                                                        }})
+                                                    </h5>
+                                                    <div class="space-y-3">
                                                         <div
-                                                            class="flex items-center gap-4"
+                                                            v-for="reward in pendingRewards"
+                                                            :key="reward.id"
+                                                            class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
                                                         >
                                                             <div
-                                                                class="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center"
+                                                                class="flex items-center gap-4"
                                                             >
-                                                                <i
-                                                                    class="pi pi-gift"
-                                                                ></i>
+                                                                <div
+                                                                    class="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-gift"
+                                                                    ></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6
+                                                                        class="font-medium text-gray-900"
+                                                                    >
+                                                                        {{
+                                                                            reward
+                                                                                .user
+                                                                                .name
+                                                                        }}
+                                                                    </h6>
+                                                                    <p
+                                                                        class="text-sm text-gray-600"
+                                                                    >
+                                                                        Wants:
+                                                                        {{
+                                                                            reward
+                                                                                .shop_item
+                                                                                ?.name ||
+                                                                            "Any item"
+                                                                        }}
+                                                                        • Card
+                                                                        #{{
+                                                                            reward.card_completion_number
+                                                                        }}
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-xs text-gray-500"
+                                                                    >
+                                                                        {{
+                                                                            formatDate(
+                                                                                reward.created_at
+                                                                            )
+                                                                        }}
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                            <div>
-                                                                <h5
-                                                                    class="font-medium text-gray-900"
-                                                                >
-                                                                    {{
-                                                                        reward
-                                                                            .user
-                                                                            .name
-                                                                    }}
-                                                                </h5>
-                                                                <p
-                                                                    class="text-sm text-gray-600"
-                                                                >
-                                                                    Claimed:
-                                                                    {{
-                                                                        reward
-                                                                            .shop_item
-                                                                            .name
-                                                                    }}
-                                                                    • Card #{{
-                                                                        reward.card_completion_number
-                                                                    }}
-                                                                </p>
-                                                                <p
-                                                                    class="text-xs text-gray-500"
-                                                                >
-                                                                    {{
-                                                                        formatDate(
-                                                                            reward.created_at
+                                                            <div
+                                                                class="flex gap-2"
+                                                            >
+                                                                <button
+                                                                    @click="
+                                                                        approveReward(
+                                                                            reward.id
                                                                         )
-                                                                    }}
-                                                                </p>
+                                                                    "
+                                                                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-check mr-1"
+                                                                    ></i>
+                                                                    Approve
+                                                                </button>
+                                                                <button
+                                                                    @click="
+                                                                        rejectReward(
+                                                                            reward.id,
+                                                                            'Out of stock'
+                                                                        )
+                                                                    "
+                                                                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-times mr-1"
+                                                                    ></i>
+                                                                    Reject
+                                                                </button>
                                                             </div>
-                                                        </div>
-
-                                                        <div class="flex gap-2">
-                                                            <button
-                                                                @click="
-                                                                    approveReward(
-                                                                        reward.id
-                                                                    )
-                                                                "
-                                                                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                            >
-                                                                <i
-                                                                    class="pi pi-check mr-1"
-                                                                ></i>
-                                                                Approve
-                                                            </button>
-                                                            <button
-                                                                @click="
-                                                                    rejectReward(
-                                                                        reward.id,
-                                                                        'Out of stock'
-                                                                    )
-                                                                "
-                                                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                                                            >
-                                                                <i
-                                                                    class="pi pi-times mr-1"
-                                                                ></i>
-                                                                Reject
-                                                            </button>
                                                         </div>
                                                     </div>
+                                                </div>
+
+                                                <!-- Approved Rewards (Ready to Claim) -->
+                                                <div
+                                                    v-if="
+                                                        approvedRewards.length >
+                                                        0
+                                                    "
+                                                    class="mb-6"
+                                                >
+                                                    <h5
+                                                        class="text-md font-semibold text-green-700 mb-3 flex items-center"
+                                                    >
+                                                        <i
+                                                            class="pi pi-check-circle mr-2"
+                                                        ></i>
+                                                        Ready to Claim ({{
+                                                            approvedRewards.length
+                                                        }})
+                                                    </h5>
+                                                    <div class="space-y-3">
+                                                        <div
+                                                            v-for="reward in approvedRewards"
+                                                            :key="reward.id"
+                                                            class="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg"
+                                                        >
+                                                            <div
+                                                                class="flex items-center gap-4"
+                                                            >
+                                                                <div
+                                                                    class="w-10 h-10 bg-green-500 text-white rounded-full flex items-center justify-center"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-gift"
+                                                                    ></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6
+                                                                        class="font-medium text-gray-900"
+                                                                    >
+                                                                        {{
+                                                                            reward
+                                                                                .user
+                                                                                .name
+                                                                        }}
+                                                                    </h6>
+                                                                    <p
+                                                                        class="text-sm text-gray-600"
+                                                                    >
+                                                                        Approved:
+                                                                        {{
+                                                                            reward
+                                                                                .shop_item
+                                                                                ?.name ||
+                                                                            "Any item"
+                                                                        }}
+                                                                        • Card
+                                                                        #{{
+                                                                            reward.card_completion_number
+                                                                        }}
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-xs text-gray-500"
+                                                                    >
+                                                                        Approved:
+                                                                        {{
+                                                                            formatDate(
+                                                                                reward.approved_at
+                                                                            )
+                                                                        }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div
+                                                                class="flex gap-2"
+                                                            >
+                                                                <button
+                                                                    @click="
+                                                                        markAsClaimed(
+                                                                            reward.id
+                                                                        )
+                                                                    "
+                                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-check mr-1"
+                                                                    ></i>
+                                                                    Mark as
+                                                                    Claimed
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Claimed Rewards (History) -->
+                                                <div
+                                                    v-if="
+                                                        claimedRewards.length >
+                                                        0
+                                                    "
+                                                    class="mb-6"
+                                                >
+                                                    <h5
+                                                        class="text-md font-semibold text-blue-700 mb-3 flex items-center"
+                                                    >
+                                                        <i
+                                                            class="pi pi-history mr-2"
+                                                        ></i>
+                                                        Claimed History ({{
+                                                            claimedRewards.length
+                                                        }})
+                                                    </h5>
+                                                    <div class="space-y-3">
+                                                        <div
+                                                            v-for="reward in claimedRewards.slice(
+                                                                0,
+                                                                5
+                                                            )"
+                                                            :key="reward.id"
+                                                            class="flex items-center justify-between p-4 bg-blue-50 border border-blue-200 rounded-lg opacity-75"
+                                                        >
+                                                            <div
+                                                                class="flex items-center gap-4"
+                                                            >
+                                                                <div
+                                                                    class="w-10 h-10 bg-blue-500 text-white rounded-full flex items-center justify-center"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-check"
+                                                                    ></i>
+                                                                </div>
+                                                                <div>
+                                                                    <h6
+                                                                        class="font-medium text-gray-900"
+                                                                    >
+                                                                        {{
+                                                                            reward
+                                                                                .user
+                                                                                .name
+                                                                        }}
+                                                                    </h6>
+                                                                    <p
+                                                                        class="text-sm text-gray-600"
+                                                                    >
+                                                                        Claimed:
+                                                                        {{
+                                                                            reward
+                                                                                .shop_item
+                                                                                ?.name ||
+                                                                            "Any item"
+                                                                        }}
+                                                                        • Card
+                                                                        #{{
+                                                                            reward.card_completion_number
+                                                                        }}
+                                                                    </p>
+                                                                    <p
+                                                                        class="text-xs text-gray-500"
+                                                                    >
+                                                                        Claimed:
+                                                                        {{
+                                                                            formatDate(
+                                                                                reward.claimed_at
+                                                                            )
+                                                                        }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div
+                                                                class="flex items-center"
+                                                            >
+                                                                <span
+                                                                    class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+                                                                >
+                                                                    Completed
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div
+                                                        v-if="
+                                                            claimedRewards.length >
+                                                            5
+                                                        "
+                                                        class="text-center mt-3"
+                                                    >
+                                                        <span
+                                                            class="text-sm text-gray-500"
+                                                        >
+                                                            And
+                                                            {{
+                                                                claimedRewards.length -
+                                                                5
+                                                            }}
+                                                            more claimed
+                                                            rewards...
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Empty State -->
+                                                <div
+                                                    v-if="
+                                                        loyaltyRewards.length ===
+                                                        0
+                                                    "
+                                                    class="text-center py-8"
+                                                >
+                                                    <i
+                                                        class="pi pi-gift text-gray-300 text-4xl mb-4"
+                                                    ></i>
+                                                    <h5
+                                                        class="text-lg font-medium text-gray-600 mb-2"
+                                                    >
+                                                        No Loyalty Rewards Yet
+                                                    </h5>
+                                                    <p class="text-gray-500">
+                                                        Rewards will appear here
+                                                        when customers complete
+                                                        their loyalty cards
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
@@ -1748,13 +1935,62 @@ export default {
                 (reward) => reward.status === "pending"
             );
         },
+        approvedRewards() {
+            return this.loyaltyRewards.filter(
+                (reward) => reward.status === "approved"
+            );
+        },
 
-        hasLoyaltyCard() {
-            return !!this.loyaltyCard;
+        claimedRewards() {
+            return this.loyaltyRewards.filter(
+                (reward) => reward.status === "claimed"
+            );
+        },
+
+        rejectedRewards() {
+            return this.loyaltyRewards.filter(
+                (reward) => reward.status === "rejected"
+            );
         },
 
         loyaltyCardActive() {
             return this.loyaltyCard && this.loyaltyCard.is_active;
+        },
+
+        // Helper to check if shop has loyalty card
+        hasLoyaltyCard() {
+            return this.loyaltyCard !== null;
+        },
+        pendingOrdersCount() {
+            return this.pendingOrders ? this.pendingOrders.length : 0;
+        },
+
+        // NEW: Count pending loyalty rewards
+        pendingLoyaltyCount() {
+            return this.pendingRewards.length;
+        },
+
+        // NEW: Total notifications count for sidebar
+        totalShopNotifications() {
+            return this.pendingOrdersCount + this.pendingLoyaltyCount;
+        },
+        tabs() {
+            return [
+                { id: "items", name: "Items", icon: "pi pi-box" },
+                {
+                    id: "orders",
+                    name: "Orders",
+                    icon: "pi pi-shopping-cart",
+                    count: this.pendingOrdersCount,
+                },
+                {
+                    id: "loyalty",
+                    name: "Loyalty Card",
+                    icon: "pi pi-gift",
+                    count: this.pendingLoyaltyCount,
+                },
+                { id: "settings", name: "Settings", icon: "pi pi-cog" },
+            ];
         },
     },
 
@@ -2468,6 +2704,32 @@ export default {
                     detail:
                         error.response?.data?.message ||
                         "Failed to approve purchase",
+                });
+            }
+        },
+        // Add this method to your existing methods in MyShop.vue
+
+        async markAsClaimed(rewardId) {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-rewards/${rewardId}/mark-claimed`
+                );
+
+                if (response.data.success) {
+                    await this.fetchLoyaltyProgress();
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Reward marked as claimed successfully",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to mark reward as claimed",
                 });
             }
         },

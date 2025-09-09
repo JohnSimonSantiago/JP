@@ -528,4 +528,64 @@ class ShopController extends Controller
             abort(403, 'Access denied. Admin privileges required.');
         }
     }
+    public function getShopNotifications(Request $request)
+{
+    try {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        // Get user's shop
+        $shop = null;
+        if ($user->role === 'admin') {
+            // Admin gets notifications from all shops
+            $pendingOrdersCount = Purchase::where('status', 'pending')
+                ->whereHas('shop')
+                ->count();
+            
+            $pendingLoyaltyCount = LoyaltyCardReward::where('status', 'pending')
+                ->count();
+        } else {
+            // Shop owner gets notifications from their shop only
+            $shop = $user->shops()->first();
+            
+            if (!$shop) {
+                return response()->json([
+                    'success' => true,
+                    'pending_orders_count' => 0,
+                    'pending_loyalty_count' => 0
+                ]);
+            }
+
+            $pendingOrdersCount = $shop->purchases()
+                ->where('status', 'pending')
+                ->count();
+                
+            $pendingLoyaltyCount = LoyaltyCardReward::where('status', 'pending')
+                ->whereHas('loyaltyCard', function($query) use ($shop) {
+                    $query->where('shop_id', $shop->id);
+                })
+                ->count();
+        }
+
+        return response()->json([
+            'success' => true,
+            'pending_orders_count' => $pendingOrdersCount,
+            'pending_loyalty_count' => $pendingLoyaltyCount,
+            'total_count' => $pendingOrdersCount + $pendingLoyaltyCount
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to fetch shop notifications',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 }

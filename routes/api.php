@@ -31,6 +31,7 @@ Route::prefix('shops')->group(function () {
         Route::post('/loyalty-card', [LoyaltyCardController::class, 'store']); 
         Route::put('/loyalty-card', [LoyaltyCardController::class, 'update']); 
         Route::post('/loyalty-card/toggle', [LoyaltyCardController::class, 'toggle']); 
+        Route::post('/loyalty-rewards/{reward}/mark-claimed', [LoyaltyCardController::class, 'markAsClaimed']);
         
         // Loyalty Progress Management
         Route::get('/loyalty-progress', [LoyaltyCardController::class, 'getProgress']); 
@@ -49,6 +50,8 @@ Route::prefix('shops')->group(function () {
     Route::get('/', [ShopController::class, 'index']); // List all shops
     Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items
     Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews
+    Route::get('/my-shop/notifications', [ShopController::class, 'getShopNotifications'])->middleware('auth:sanctum');
+
 });
 
 // Public gallery routes
