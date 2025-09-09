@@ -538,61 +538,64 @@ class ShopItemController extends Controller
      * Shop Owner/Admin: Approve a purchase - WITH STOCK DEDUCTION
      */
     public function approvePurchase($shopId, $purchaseId)
-    {
-        try {
-            // Manually find the shop and purchase
-            $shop = Shop::findOrFail($shopId);
-            $purchase = $shop->purchases()->findOrFail($purchaseId);
-            
-            $user = Auth::user();
-            
-            // Check authorization
-            if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized'
-                ], 403);
-            }
-
-            if ($purchase->status !== 'pending') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This purchase has already been processed'
-                ], 400);
-            }
-
-            DB::transaction(function () use ($purchase) {
-                // Get the shop item
-                $shopItem = $purchase->shopItem;
-                
-                // Deduct stock ONLY if the item has limited stock (not null)
-                if ($shopItem->stock !== null) {
-                    // Check if there's enough stock
-                    if ($shopItem->stock < $purchase->quantity) {
-                        throw new \Exception('Insufficient stock available. Current stock: ' . $shopItem->stock . ', requested: ' . $purchase->quantity);
-                    }
-                    
-                    // Deduct the stock
-                    $shopItem->decrement('stock', $purchase->quantity);
-                }
-                
-                // Update purchase status
-                $purchase->update(['status' => 'completed']);
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Purchase approved successfully and stock updated'
-            ]);
-
-        } catch (\Exception $e) {
+{
+    try {
+        // Manually find the shop and purchase
+        $shop = Shop::findOrFail($shopId);
+        $purchase = $shop->purchases()->findOrFail($purchaseId);
+                     
+        $user = Auth::user();
+                     
+        // Check authorization
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve purchase: ' . $e->getMessage()
-            ], 500);
+                'message' => 'Unauthorized'
+            ], 403);
         }
-    }
 
+        if ($purchase->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This purchase has already been processed'
+            ], 400);
+        }
+
+        DB::transaction(function () use ($purchase) {
+            // Get the shop item
+            $shopItem = $purchase->shopItem;
+                             
+            // Deduct stock ONLY if the item has limited stock (not null)
+            if ($shopItem->stock !== null) {
+                // Check if there's enough stock
+                if ($shopItem->stock < $purchase->quantity) {
+                    throw new \Exception('Insufficient stock available. Current stock: ' . $shopItem->stock . ', requested: ' . $purchase->quantity);
+                }
+                                 
+                // Deduct the stock
+                $shopItem->decrement('stock', $purchase->quantity);
+            }
+                             
+            // Update purchase status
+            $purchase->update(['status' => 'completed']);
+            
+            // *** LOYALTY SYSTEM INTEGRATION ***
+            // Update loyalty progress when purchase is approved
+            \App\Http\Controllers\LoyaltyCardController::updateLoyaltyOnPurchaseApproval($purchase);
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Purchase approved successfully and stock updated'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to approve purchase: ' . $e->getMessage()
+        ], 500);
+    }
+}
     /**
      * Shop Owner/Admin: Reject a purchase
      */

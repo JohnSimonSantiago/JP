@@ -170,4 +170,13 @@ class Shop extends Model
             'average_rating' => $this->reviews()->avg('rating') ?: 0,
         ];
     }
+    public function loyaltyCard()
+{
+    return $this->hasOne(LoyaltyCard::class);
+}
+
+public function hasLoyaltyCard()
+{
+    return $this->loyaltyCard()->exists();
+}
 }

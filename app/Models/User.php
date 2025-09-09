@@ -339,4 +339,22 @@ class User extends Authenticatable
 
         return $data;
     }
+    public function loyaltyProgress()
+{
+    return $this->hasMany(LoyaltyCardProgress::class);
+}
+
+public function loyaltyRewards()
+{
+    return $this->hasMany(LoyaltyCardReward::class);
+}
+
+public function getLoyaltyProgressForShop($shopId)
+{
+    return $this->loyaltyProgress()
+        ->whereHas('loyaltyCard', function($query) use ($shopId) {
+            $query->where('shop_id', $shopId);
+        })
+        ->first();
+}
 }

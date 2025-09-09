@@ -128,14 +128,28 @@
                                     :key="tab.id"
                                     @click="activeTab = tab.id"
                                     :class="[
-                                        'py-4 px-1 border-b-2 font-medium text-sm transition-colors',
+                                        'py-4 px-1 border-b-2 font-medium text-sm transition-colors flex items-center gap-2',
                                         activeTab === tab.id
                                             ? 'border-green-500 text-green-600'
                                             : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
                                     ]"
                                 >
-                                    <i :class="tab.icon + ' mr-2'"></i>
+                                    <i :class="tab.icon"></i>
                                     {{ tab.name }}
+                                    <!-- Add badge for loyalty tab if there are pending rewards -->
+                                    <span
+                                        v-if="
+                                            tab.id === 'loyalty' &&
+                                            pendingRewards.length > 0
+                                        "
+                                        class="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold ml-1"
+                                    >
+                                        {{
+                                            pendingRewards.length > 9
+                                                ? "9+"
+                                                : pendingRewards.length
+                                        }}
+                                    </span>
                                 </button>
                             </nav>
                         </div>
@@ -356,7 +370,7 @@
                                                             </p>
                                                         </div>
 
-                                                        <!-- Order Details - Made smaller -->
+                                                        <!-- Order Details -->
                                                         <div
                                                             class="text-right ml-4"
                                                         >
@@ -542,6 +556,432 @@
                                         Orders will appear here once customers
                                         start purchasing
                                     </p>
+                                </div>
+                            </div>
+
+                            <!-- Loyalty Card Tab -->
+                            <div v-if="activeTab === 'loyalty'">
+                                <div class="space-y-6">
+                                    <!-- Loyalty Card Header -->
+                                    <div
+                                        class="flex justify-between items-center"
+                                    >
+                                        <div>
+                                            <h3
+                                                class="text-xl font-semibold text-gray-900"
+                                            >
+                                                Loyalty Card System
+                                            </h3>
+                                            <p class="text-gray-600">
+                                                Manage customer loyalty and
+                                                rewards
+                                            </p>
+                                        </div>
+                                        <div class="flex gap-3">
+                                            <button
+                                                v-if="hasLoyaltyCard"
+                                                @click="openLoyaltyCardForm"
+                                                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-colors"
+                                            >
+                                                <i class="pi pi-cog mr-2"></i>
+                                                Settings
+                                            </button>
+
+                                            <button
+                                                v-if="hasLoyaltyCard"
+                                                @click="toggleLoyaltyCard"
+                                                :class="
+                                                    loyaltyCardActive
+                                                        ? 'bg-red-500 hover:bg-red-600'
+                                                        : 'bg-green-500 hover:bg-green-600'
+                                                "
+                                                class="text-white px-4 py-2 rounded-lg transition-colors"
+                                            >
+                                                <i
+                                                    :class="
+                                                        loyaltyCardActive
+                                                            ? 'pi pi-pause'
+                                                            : 'pi pi-play'
+                                                    "
+                                                    class="mr-2"
+                                                ></i>
+                                                {{
+                                                    loyaltyCardActive
+                                                        ? "Deactivate"
+                                                        : "Activate"
+                                                }}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- No Loyalty Card State -->
+                                    <div
+                                        v-if="!hasLoyaltyCard"
+                                        class="bg-white rounded-xl shadow-lg p-12 text-center"
+                                    >
+                                        <i
+                                            class="pi pi-gift text-gray-300 text-5xl mb-4"
+                                        ></i>
+                                        <h3
+                                            class="text-xl font-semibold text-gray-800 mb-2"
+                                        >
+                                            No Loyalty Card System
+                                        </h3>
+                                        <p class="text-gray-600 mb-6">
+                                            Create a loyalty card to reward your
+                                            customers and increase retention.
+                                        </p>
+                                        <button
+                                            @click="openLoyaltyCardForm"
+                                            class="bg-purple-500 hover:bg-purple-600 text-white px-6 py-3 rounded-lg transition-colors"
+                                        >
+                                            <i class="pi pi-plus mr-2"></i>
+                                            Create Loyalty Card
+                                        </button>
+                                    </div>
+
+                                    <!-- Loyalty Card Dashboard -->
+                                    <div v-else class="space-y-6">
+                                        <!-- Loyalty Card Info -->
+                                        <div
+                                            class="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl p-6"
+                                        >
+                                            <div
+                                                class="flex justify-between items-start"
+                                            >
+                                                <div>
+                                                    <h3
+                                                        class="text-xl font-bold mb-2"
+                                                    >
+                                                        {{ loyaltyCard.name }}
+                                                    </h3>
+                                                    <p class="opacity-90 mb-4">
+                                                        {{
+                                                            loyaltyCard.description ||
+                                                            "Reward your loyal customers"
+                                                        }}
+                                                    </p>
+                                                    <div
+                                                        class="flex items-center gap-4"
+                                                    >
+                                                        <span
+                                                            class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm"
+                                                        >
+                                                            <i
+                                                                class="pi pi-shopping-cart mr-1"
+                                                            ></i>
+                                                            {{
+                                                                loyaltyCard.required_purchases
+                                                            }}
+                                                            purchases = 1 free
+                                                            item
+                                                        </span>
+                                                        <span
+                                                            :class="
+                                                                loyaltyCardActive
+                                                                    ? 'bg-green-500 bg-opacity-30'
+                                                                    : 'bg-red-500 bg-opacity-30'
+                                                            "
+                                                            class="px-3 py-1 rounded-full text-sm"
+                                                        >
+                                                            {{
+                                                                loyaltyCardActive
+                                                                    ? "Active"
+                                                                    : "Inactive"
+                                                            }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <i
+                                                    class="pi pi-gift text-4xl opacity-50"
+                                                ></i>
+                                            </div>
+                                        </div>
+
+                                        <!-- Customer Progress -->
+                                        <div
+                                            class="bg-white rounded-xl shadow-lg"
+                                        >
+                                            <div
+                                                class="p-6 border-b border-gray-200"
+                                            >
+                                                <h4
+                                                    class="text-lg font-semibold text-gray-900"
+                                                >
+                                                    Customer Progress
+                                                </h4>
+                                                <p class="text-gray-600">
+                                                    Track your customers'
+                                                    loyalty progress
+                                                </p>
+                                            </div>
+
+                                            <div
+                                                v-if="loadingLoyaltyData"
+                                                class="p-12 text-center"
+                                            >
+                                                <i
+                                                    class="pi pi-spin pi-spinner text-purple-500 text-2xl"
+                                                ></i>
+                                            </div>
+
+                                            <div
+                                                v-else-if="
+                                                    loyaltyProgress.length === 0
+                                                "
+                                                class="p-12 text-center"
+                                            >
+                                                <i
+                                                    class="pi pi-users text-gray-300 text-4xl mb-4"
+                                                ></i>
+                                                <p class="text-gray-600">
+                                                    No customer progress yet
+                                                </p>
+                                                <p
+                                                    class="text-sm text-gray-500"
+                                                >
+                                                    Progress will appear when
+                                                    customers make purchases
+                                                </p>
+                                            </div>
+
+                                            <div v-else class="p-6">
+                                                <div class="space-y-4">
+                                                    <div
+                                                        v-for="customer in loyaltyProgress"
+                                                        :key="customer.user_id"
+                                                        class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                                    >
+                                                        <div
+                                                            class="flex items-center gap-4"
+                                                        >
+                                                            <div
+                                                                class="w-10 h-10 bg-purple-500 text-white rounded-full flex items-center justify-center font-semibold"
+                                                            >
+                                                                {{
+                                                                    customer.user.name
+                                                                        .charAt(
+                                                                            0
+                                                                        )
+                                                                        .toUpperCase()
+                                                                }}
+                                                            </div>
+                                                            <div>
+                                                                <h5
+                                                                    class="font-medium text-gray-900"
+                                                                >
+                                                                    {{
+                                                                        customer
+                                                                            .user
+                                                                            .name
+                                                                    }}
+                                                                </h5>
+                                                                <p
+                                                                    class="text-sm text-gray-600"
+                                                                >
+                                                                    {{
+                                                                        getCurrentCardPurchases(
+                                                                            customer
+                                                                        )
+                                                                    }}/{{
+                                                                        loyaltyCard.required_purchases
+                                                                    }}
+                                                                    purchases •
+                                                                    {{
+                                                                        getCompletedCards(
+                                                                            customer
+                                                                        )
+                                                                    }}
+                                                                    cards
+                                                                    completed
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div
+                                                            class="flex items-center gap-4"
+                                                        >
+                                                            <!-- Progress Bar -->
+                                                            <div
+                                                                class="w-32 bg-gray-200 rounded-full h-2"
+                                                            >
+                                                                <div
+                                                                    class="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                                                                    :style="{
+                                                                        width:
+                                                                            getProgressPercentage(
+                                                                                customer
+                                                                            ) +
+                                                                            '%',
+                                                                    }"
+                                                                ></div>
+                                                            </div>
+
+                                                            <!-- Action Buttons -->
+                                                            <div
+                                                                class="flex gap-2"
+                                                            >
+                                                                <button
+                                                                    @click="
+                                                                        adjustLoyaltyCount(
+                                                                            customer.user_id,
+                                                                            'add'
+                                                                        )
+                                                                    "
+                                                                    :disabled="
+                                                                        adjustingLoyalty
+                                                                    "
+                                                                    class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                                                    title="Add 1 purchase"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-plus"
+                                                                    ></i>
+                                                                </button>
+                                                                <button
+                                                                    @click="
+                                                                        adjustLoyaltyCount(
+                                                                            customer.user_id,
+                                                                            'remove'
+                                                                        )
+                                                                    "
+                                                                    :disabled="
+                                                                        adjustingLoyalty ||
+                                                                        customer.current_purchases ===
+                                                                            0
+                                                                    "
+                                                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm transition-colors disabled:opacity-50"
+                                                                    title="Remove 1 purchase"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-minus"
+                                                                    ></i>
+                                                                </button>
+                                                                <button
+                                                                    @click="
+                                                                        openCustomerLoyaltyModal(
+                                                                            customer
+                                                                        )
+                                                                    "
+                                                                    class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm transition-colors"
+                                                                    title="View details"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-eye"
+                                                                    ></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Pending Rewards -->
+                                        <div
+                                            v-if="pendingRewards.length > 0"
+                                            class="bg-white rounded-xl shadow-lg"
+                                        >
+                                            <div
+                                                class="p-6 border-b border-gray-200"
+                                            >
+                                                <h4
+                                                    class="text-lg font-semibold text-gray-900"
+                                                >
+                                                    Pending Reward Claims
+                                                </h4>
+                                                <p class="text-gray-600">
+                                                    Customers waiting for reward
+                                                    approval
+                                                </p>
+                                            </div>
+
+                                            <div class="p-6">
+                                                <div class="space-y-4">
+                                                    <div
+                                                        v-for="reward in pendingRewards"
+                                                        :key="reward.id"
+                                                        class="flex items-center justify-between p-4 bg-yellow-50 border border-yellow-200 rounded-lg"
+                                                    >
+                                                        <div
+                                                            class="flex items-center gap-4"
+                                                        >
+                                                            <div
+                                                                class="w-10 h-10 bg-yellow-500 text-white rounded-full flex items-center justify-center"
+                                                            >
+                                                                <i
+                                                                    class="pi pi-gift"
+                                                                ></i>
+                                                            </div>
+                                                            <div>
+                                                                <h5
+                                                                    class="font-medium text-gray-900"
+                                                                >
+                                                                    {{
+                                                                        reward
+                                                                            .user
+                                                                            .name
+                                                                    }}
+                                                                </h5>
+                                                                <p
+                                                                    class="text-sm text-gray-600"
+                                                                >
+                                                                    Claimed:
+                                                                    {{
+                                                                        reward
+                                                                            .shop_item
+                                                                            .name
+                                                                    }}
+                                                                    • Card #{{
+                                                                        reward.card_completion_number
+                                                                    }}
+                                                                </p>
+                                                                <p
+                                                                    class="text-xs text-gray-500"
+                                                                >
+                                                                    {{
+                                                                        formatDate(
+                                                                            reward.created_at
+                                                                        )
+                                                                    }}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+
+                                                        <div class="flex gap-2">
+                                                            <button
+                                                                @click="
+                                                                    approveReward(
+                                                                        reward.id
+                                                                    )
+                                                                "
+                                                                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                            >
+                                                                <i
+                                                                    class="pi pi-check mr-1"
+                                                                ></i>
+                                                                Approve
+                                                            </button>
+                                                            <button
+                                                                @click="
+                                                                    rejectReward(
+                                                                        reward.id,
+                                                                        'Out of stock'
+                                                                    )
+                                                                "
+                                                                class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                                                            >
+                                                                <i
+                                                                    class="pi pi-times mr-1"
+                                                                ></i>
+                                                                Reject
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -997,6 +1437,230 @@
                         </form>
                     </div>
                 </div>
+
+                <!-- Loyalty Card Form Modal -->
+                <div
+                    v-if="showLoyaltyCardForm"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                >
+                    <div
+                        class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+                    >
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                            {{
+                                hasLoyaltyCard
+                                    ? "Edit Loyalty Card"
+                                    : "Create Loyalty Card"
+                            }}
+                        </h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-2"
+                                    >Card Name</label
+                                >
+                                <input
+                                    v-model="loyaltyCardForm.name"
+                                    type="text"
+                                    placeholder="e.g., VIP Loyalty Card"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-2"
+                                    >Description (Optional)</label
+                                >
+                                <textarea
+                                    v-model="loyaltyCardForm.description"
+                                    placeholder="Describe your loyalty program..."
+                                    rows="3"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-2"
+                                    >Required Purchases</label
+                                >
+                                <input
+                                    v-model.number="
+                                        loyaltyCardForm.required_purchases
+                                    "
+                                    type="number"
+                                    :min="1"
+                                    :max="100"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                />
+                                <small class="text-gray-500"
+                                    >How many items customers need to buy for 1
+                                    free item</small
+                                >
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <input
+                                    v-model="loyaltyCardForm.is_active"
+                                    type="checkbox"
+                                    id="loyalty-active"
+                                    class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                                />
+                                <label
+                                    for="loyalty-active"
+                                    class="text-sm text-gray-700"
+                                    >Active</label
+                                >
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end gap-2 mt-6">
+                            <button
+                                type="button"
+                                @click="showLoyaltyCardForm = false"
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                @click="
+                                    hasLoyaltyCard
+                                        ? updateLoyaltyCard()
+                                        : createLoyaltyCard()
+                                "
+                                class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors"
+                            >
+                                {{ hasLoyaltyCard ? "Update" : "Create" }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customer Loyalty Modal -->
+                <div
+                    v-if="showLoyaltyProgressModal"
+                    class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                >
+                    <div
+                        class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6"
+                    >
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">
+                            {{
+                                selectedCustomerLoyalty
+                                    ? `${selectedCustomerLoyalty.user.name}'s Loyalty Progress`
+                                    : "Customer Loyalty"
+                            }}
+                        </h3>
+                        <div v-if="selectedCustomerLoyalty" class="space-y-6">
+                            <!-- Progress Overview -->
+                            <div
+                                class="text-center bg-purple-50 p-6 rounded-lg"
+                            >
+                                <div
+                                    class="text-3xl font-bold text-purple-600 mb-2"
+                                >
+                                    {{
+                                        selectedCustomerLoyalty.current_purchases
+                                    }}
+                                </div>
+                                <p class="text-gray-600">Total Purchases</p>
+
+                                <div class="mt-4 text-center">
+                                    <div
+                                        class="text-xl font-semibold text-gray-900"
+                                    >
+                                        {{
+                                            getCompletedCards(
+                                                selectedCustomerLoyalty
+                                            )
+                                        }}
+                                        Cards Completed
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        Current Progress:
+                                        {{
+                                            getCurrentCardPurchases(
+                                                selectedCustomerLoyalty
+                                            )
+                                        }}/{{ loyaltyCard.required_purchases }}
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div
+                                    class="w-full bg-gray-200 rounded-full h-4 mt-4"
+                                >
+                                    <div
+                                        class="bg-purple-500 h-4 rounded-full transition-all duration-300"
+                                        :style="{
+                                            width:
+                                                getProgressPercentage(
+                                                    selectedCustomerLoyalty
+                                                ) + '%',
+                                        }"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Actions -->
+                            <div class="flex gap-3 justify-center">
+                                <button
+                                    @click="
+                                        adjustLoyaltyCount(
+                                            selectedCustomerLoyalty.user_id,
+                                            'add'
+                                        )
+                                    "
+                                    :disabled="adjustingLoyalty"
+                                    class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-plus"></i>
+                                    Add Purchase
+                                </button>
+                                <button
+                                    @click="
+                                        adjustLoyaltyCount(
+                                            selectedCustomerLoyalty.user_id,
+                                            'remove'
+                                        )
+                                    "
+                                    :disabled="
+                                        adjustingLoyalty ||
+                                        selectedCustomerLoyalty.current_purchases ===
+                                            0
+                                    "
+                                    class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    <i class="pi pi-minus"></i>
+                                    Remove Purchase
+                                </button>
+                            </div>
+
+                            <!-- Last Activity -->
+                            <div
+                                v-if="selectedCustomerLoyalty.last_purchase_at"
+                                class="text-center text-sm text-gray-500"
+                            >
+                                Last purchase:
+                                {{
+                                    formatDate(
+                                        selectedCustomerLoyalty.last_purchase_at
+                                    )
+                                }}
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end mt-6">
+                            <button
+                                @click="showLoyaltyProgressModal = false"
+                                class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </Layout>
@@ -1021,6 +1685,7 @@ export default {
             tabs: [
                 { id: "items", name: "Items", icon: "pi pi-box" },
                 { id: "orders", name: "Orders", icon: "pi pi-shopping-cart" },
+                { id: "loyalty", name: "Loyalty Card", icon: "pi pi-gift" }, // ADD THIS LINE
                 { id: "settings", name: "Settings", icon: "pi pi-cog" },
             ],
 
@@ -1056,12 +1721,40 @@ export default {
                 is_active: true,
                 image: null,
             },
+
+            loyaltyCard: null,
+            loyaltyProgress: [],
+            loyaltyRewards: [],
+            showLoyaltyCardForm: false,
+            showLoyaltyProgressModal: false,
+            selectedCustomerLoyalty: null,
+            loyaltyCardForm: {
+                name: "Loyalty Card",
+                description: "",
+                required_purchases: 10,
+                is_active: true,
+            },
+            adjustingLoyalty: false,
+            loadingLoyaltyData: false,
         };
     },
 
     computed: {
         isAdmin() {
             return this.user && this.user.role === "admin";
+        },
+        pendingRewards() {
+            return this.loyaltyRewards.filter(
+                (reward) => reward.status === "pending"
+            );
+        },
+
+        hasLoyaltyCard() {
+            return !!this.loyaltyCard;
+        },
+
+        loyaltyCardActive() {
+            return this.loyaltyCard && this.loyaltyCard.is_active;
         },
     },
 
@@ -1484,15 +2177,306 @@ export default {
         formatCash(amount) {
             return parseFloat(amount || 0).toFixed(2);
         },
+        formatDate(date) {
+            return new Date(date).toLocaleDateString("en-US", {
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+        },
 
         formatPoints(points) {
             return (points || 0).toLocaleString();
+        },
+        async fetchLoyaltyCard() {
+            if (!this.shop) return;
+
+            try {
+                this.loadingLoyaltyData = true;
+                const response = await axios.get(
+                    `/api/shops/${this.shop.id}/loyalty-card`
+                );
+
+                if (response.data.success) {
+                    this.loyaltyCard = response.data.loyalty_card;
+                    await this.fetchLoyaltyProgress();
+                }
+            } catch (error) {
+                console.error("Error fetching loyalty card:", error);
+            } finally {
+                this.loadingLoyaltyData = false;
+            }
+        },
+
+        async fetchLoyaltyProgress() {
+            if (!this.loyaltyCard) return;
+
+            try {
+                const response = await axios.get(
+                    `/api/shops/${this.shop.id}/loyalty-progress`
+                );
+
+                if (response.data.success) {
+                    this.loyaltyProgress = response.data.progress;
+                    this.loyaltyRewards = response.data.rewards;
+                }
+            } catch (error) {
+                console.error("Error fetching loyalty progress:", error);
+            }
+        },
+
+        async createLoyaltyCard() {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-card`,
+                    this.loyaltyCardForm
+                );
+
+                if (response.data.success) {
+                    this.loyaltyCard = response.data.loyalty_card;
+                    this.showLoyaltyCardForm = false;
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Loyalty card created successfully!",
+                    });
+                    await this.fetchLoyaltyProgress();
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to create loyalty card",
+                });
+            }
+        },
+
+        async updateLoyaltyCard() {
+            try {
+                const response = await axios.put(
+                    `/api/shops/${this.shop.id}/loyalty-card`,
+                    this.loyaltyCardForm
+                );
+
+                if (response.data.success) {
+                    this.loyaltyCard = response.data.loyalty_card;
+                    this.showLoyaltyCardForm = false;
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Loyalty card updated successfully!",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to update loyalty card",
+                });
+            }
+        },
+
+        async toggleLoyaltyCard() {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-card/toggle`
+                );
+
+                if (response.data.success) {
+                    this.loyaltyCard.is_active = !this.loyaltyCard.is_active;
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: `Loyalty card ${
+                            this.loyaltyCard.is_active
+                                ? "activated"
+                                : "deactivated"
+                        }`,
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to toggle loyalty card",
+                });
+            }
+        },
+
+        async adjustLoyaltyCount(customerId, action) {
+            try {
+                this.adjustingLoyalty = true;
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-progress/${customerId}/adjust`,
+                    {
+                        action: action, // 'add' or 'remove'
+                    }
+                );
+
+                if (response.data.success) {
+                    await this.fetchLoyaltyProgress();
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: `Loyalty count ${
+                            action === "add" ? "added" : "removed"
+                        } successfully`,
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to adjust loyalty count",
+                });
+            } finally {
+                this.adjustingLoyalty = false;
+            }
+        },
+
+        async approveReward(rewardId) {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-rewards/${rewardId}/approve`
+                );
+
+                if (response.data.success) {
+                    await this.fetchLoyaltyProgress();
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Reward approved successfully",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to approve reward",
+                });
+            }
+        },
+
+        async rejectReward(rewardId, reason) {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/loyalty-rewards/${rewardId}/reject`,
+                    {
+                        reason: reason,
+                    }
+                );
+
+                if (response.data.success) {
+                    await this.fetchLoyaltyProgress();
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Reward rejected",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: "Failed to reject reward",
+                });
+            }
+        },
+
+        openLoyaltyCardForm() {
+            if (this.loyaltyCard) {
+                // Edit mode
+                this.loyaltyCardForm = {
+                    name: this.loyaltyCard.name,
+                    description: this.loyaltyCard.description,
+                    required_purchases: this.loyaltyCard.required_purchases,
+                    is_active: this.loyaltyCard.is_active,
+                };
+            } else {
+                // Create mode
+                this.loyaltyCardForm = {
+                    name: "Loyalty Card",
+                    description: "",
+                    required_purchases: 10,
+                    is_active: true,
+                };
+            }
+            this.showLoyaltyCardForm = true;
+        },
+
+        openCustomerLoyaltyModal(customer) {
+            this.selectedCustomerLoyalty = customer;
+            this.showLoyaltyProgressModal = true;
+        },
+
+        getProgressPercentage(customer) {
+            if (!this.loyaltyCard) return 0;
+            const currentInCard =
+                customer.current_purchases %
+                this.loyaltyCard.required_purchases;
+            return (currentInCard / this.loyaltyCard.required_purchases) * 100;
+        },
+
+        getCurrentCardPurchases(customer) {
+            if (!this.loyaltyCard) return 0;
+            return (
+                customer.current_purchases % this.loyaltyCard.required_purchases
+            );
+        },
+
+        getCompletedCards(customer) {
+            if (!this.loyaltyCard) return 0;
+            return Math.floor(
+                customer.current_purchases / this.loyaltyCard.required_purchases
+            );
+        },
+
+        // ===== MODIFY EXISTING METHODS =====
+
+        // Modify the existing approvePurchase method to include loyalty update
+        async approvePurchase(purchase) {
+            try {
+                const response = await axios.post(
+                    `/api/shops/${this.shop.id}/items/purchases/${purchase.id}/approve`
+                );
+
+                if (response.data.success) {
+                    // Refresh data including loyalty progress
+                    await Promise.all([
+                        this.fetchShopData(),
+                        this.fetchLoyaltyProgress(),
+                    ]);
+
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Success",
+                        detail: "Purchase approved successfully",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to approve purchase",
+                });
+            }
         },
     },
 
     async mounted() {
         await this.fetchUserData();
         await this.fetchShopData();
+        await this.fetchLoyaltyCard();
     },
 };
 </script>

@@ -17,13 +17,16 @@ class Purchase extends Model
         'currency_type', // NEW: Track if paid with points or cash
         'quantity',
         'status',
-        'rejection_reason'
+        'rejection_reason',
+         'counts_for_loyalty',    // ADD THIS
+    'loyalty_card_id'      
     ];
 
     protected $casts = [
         'price_paid' => 'decimal:2', // Changed to decimal to handle cash
         'quantity' => 'integer',
-        'currency_type' => 'string'
+        'currency_type' => 'string',
+        'counts_for_loyalty' => 'boolean'  // ADD THIS
     ];
 
     /**
@@ -151,4 +154,8 @@ class Purchase extends Model
             return number_format($total, 0) . ' points';
         }
     }
+    public function loyaltyCard()
+{
+    return $this->belongsTo(LoyaltyCard::class);
+}
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\LeaderboardController;
 use App\Http\Controllers\AdminPricingController;
 use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\PointShopController;
+use App\Http\Controllers\LoyaltyCardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -24,6 +25,27 @@ Route::post('/logout', [LoginController::class, 'logout']);
 
 // Public shop routes
 Route::prefix('shops')->group(function () {
+  Route::prefix('{shop}')->group(function () {
+        // Loyalty Card CRUD
+        Route::get('/loyalty-card', [LoyaltyCardController::class, 'show']); 
+        Route::post('/loyalty-card', [LoyaltyCardController::class, 'store']); 
+        Route::put('/loyalty-card', [LoyaltyCardController::class, 'update']); 
+        Route::post('/loyalty-card/toggle', [LoyaltyCardController::class, 'toggle']); 
+        
+        // Loyalty Progress Management
+        Route::get('/loyalty-progress', [LoyaltyCardController::class, 'getProgress']); 
+        Route::post('/loyalty-progress/{userId}/adjust', [LoyaltyCardController::class, 'adjustProgress']); 
+        
+        // Loyalty Rewards Management
+        Route::post('/loyalty-rewards/{reward}/approve', [LoyaltyCardController::class, 'approveReward']);
+        Route::post('/loyalty-rewards/{reward}/reject', [LoyaltyCardController::class, 'rejectReward']);
+        
+        // Customer Loyalty Routes (for customers viewing shops)
+        Route::get('/loyalty-status', [LoyaltyCardController::class, 'getCustomerProgress']); 
+        Route::post('/loyalty-claim', [LoyaltyCardController::class, 'claimReward']); 
+    });
+
+    
     Route::get('/', [ShopController::class, 'index']); // List all shops
     Route::get('/{shop}', [ShopController::class, 'show']); // View specific shop with items
     Route::get('/{shop}/reviews', [ShopController::class, 'getReviews']); // View reviews
