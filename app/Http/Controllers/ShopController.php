@@ -416,18 +416,19 @@ class ShopController extends Controller
         $statistics = $shop->getStatistics();
         
         // Get recent orders
-        $recentOrders = $shop->purchases()
-            ->with(['user:id,name', 'shopItem:id,name'])
-            ->orderByDesc('created_at')
-            ->limit(10)
-            ->get();
+$recentOrders = $shop->purchases()
+    ->with(['user:id,name,profile_image', 'shopItem:id,name,image']) // Add image here
+    ->orderByDesc('created_at')
+    ->limit(10)
+    ->get();
+
         
         // Get pending orders
         $pendingOrders = $shop->purchases()
-            ->pending()
-            ->with(['user:id,name', 'shopItem:id,name'])
-            ->orderBy('created_at')
-            ->get();
+    ->pending()
+    ->with(['user:id,name,profile_image', 'shopItem:id,name,image']) // Add image here
+    ->orderBy('created_at')
+    ->get();
         
         return response()->json([
             'success' => true,

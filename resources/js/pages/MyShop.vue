@@ -334,115 +334,182 @@
                                             <div
                                                 class="flex items-center justify-between"
                                             >
-                                                <div class="flex-1">
+                                                <div
+                                                    class="flex items-start space-x-4 flex-1"
+                                                >
+                                                    <!-- User Profile Image -->
                                                     <div
-                                                        class="flex items-start justify-between mb-2"
+                                                        class="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-200 flex-shrink-0"
                                                     >
-                                                        <div class="flex-1">
-                                                            <p
-                                                                class="font-medium text-lg"
-                                                            >
-                                                                {{
-                                                                    order
-                                                                        .shop_item
-                                                                        ?.name
-                                                                }}
-                                                            </p>
-                                                            <p
-                                                                class="text-sm text-gray-600"
-                                                            >
-                                                                Customer:
-                                                                {{
-                                                                    order.user
-                                                                        ?.name
-                                                                }}
-                                                            </p>
-                                                            <p
-                                                                class="text-sm text-gray-500"
-                                                            >
-                                                                {{
-                                                                    new Date(
-                                                                        order.created_at
-                                                                    ).toLocaleDateString()
-                                                                }}
-                                                            </p>
-                                                        </div>
-
-                                                        <!-- Order Details -->
+                                                        <img
+                                                            v-if="
+                                                                order.user
+                                                                    ?.profile_image
+                                                            "
+                                                            :src="`/storage/profiles/${order.user.profile_image}`"
+                                                            :alt="
+                                                                order.user?.name
+                                                            "
+                                                            class="w-full h-full object-cover"
+                                                            @error="
+                                                                handleImageError(
+                                                                    $event
+                                                                )
+                                                            "
+                                                        />
                                                         <div
-                                                            class="text-right ml-4"
+                                                            v-else
+                                                            class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
                                                         >
-                                                            <div
-                                                                class="bg-white px-2 py-1 rounded border text-center min-w-[60px]"
-                                                            >
-                                                                <p
-                                                                    class="text-xs text-gray-600"
-                                                                >
-                                                                    Qty
-                                                                </p>
-                                                                <p
-                                                                    class="font-semibold text-sm"
-                                                                >
-                                                                    {{
-                                                                        order.quantity
-                                                                    }}
-                                                                </p>
-                                                            </div>
+                                                            <i
+                                                                class="pi pi-user text-white text-sm"
+                                                            ></i>
                                                         </div>
                                                     </div>
 
-                                                    <!-- Price Information -->
+                                                    <!-- Item Image -->
                                                     <div
-                                                        class="flex items-center space-x-4 mt-3"
+                                                        class="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 flex-shrink-0"
                                                     >
+                                                        <img
+                                                            v-if="
+                                                                order.shop_item
+                                                                    ?.image
+                                                            "
+                                                            :src="`/storage/${order.shop_item.image}`"
+                                                            :alt="
+                                                                order.shop_item
+                                                                    ?.name
+                                                            "
+                                                            class="w-full h-full object-cover"
+                                                            @error="
+                                                                handleImageError(
+                                                                    $event
+                                                                )
+                                                            "
+                                                        />
                                                         <div
-                                                            class="flex items-center space-x-2 text-sm"
+                                                            v-else
+                                                            class="w-full h-full bg-gray-200 flex items-center justify-center"
                                                         >
-                                                            <span
-                                                                class="text-gray-600"
-                                                                >Unit
-                                                                Price:</span
-                                                            >
-                                                            <span
-                                                                class="font-medium text-green-600"
-                                                            >
-                                                                ₱{{
-                                                                    formatCash(
-                                                                        order.price_paid
-                                                                    )
-                                                                }}
-                                                            </span>
+                                                            <i
+                                                                class="pi pi-image text-gray-400"
+                                                            ></i>
                                                         </div>
+                                                    </div>
+
+                                                    <!-- Order Details -->
+                                                    <div class="flex-1">
                                                         <div
-                                                            class="flex items-center space-x-2 text-sm"
+                                                            class="flex items-start justify-between mb-2"
                                                         >
-                                                            <span
-                                                                class="text-gray-600"
-                                                                >Total:</span
+                                                            <div class="flex-1">
+                                                                <p
+                                                                    class="font-medium text-lg"
+                                                                >
+                                                                    {{
+                                                                        order
+                                                                            .shop_item
+                                                                            ?.name
+                                                                    }}
+                                                                </p>
+                                                                <p
+                                                                    class="text-sm text-gray-600"
+                                                                >
+                                                                    Customer:
+                                                                    {{
+                                                                        order
+                                                                            .user
+                                                                            ?.name
+                                                                    }}
+                                                                </p>
+                                                                <p
+                                                                    class="text-sm text-gray-500"
+                                                                >
+                                                                    {{
+                                                                        new Date(
+                                                                            order.created_at
+                                                                        ).toLocaleDateString()
+                                                                    }}
+                                                                </p>
+                                                            </div>
+
+                                                            <!-- Quantity Box (Centered) -->
+                                                            <div
+                                                                class="flex items-center justify-center ml-4"
                                                             >
-                                                            <span
-                                                                class="font-semibold text-green-600 text-base"
-                                                            >
-                                                                ₱{{
-                                                                    formatCash(
-                                                                        order.price_paid *
+                                                                <div
+                                                                    class="bg-white px-3 py-2 rounded border text-center min-w-[60px] flex flex-col items-center justify-center"
+                                                                >
+                                                                    <p
+                                                                        class="text-xs text-gray-600 mb-1"
+                                                                    >
+                                                                        Qty
+                                                                    </p>
+                                                                    <p
+                                                                        class="font-semibold text-sm"
+                                                                    >
+                                                                        {{
                                                                             order.quantity
-                                                                    )
-                                                                }}
-                                                            </span>
+                                                                        }}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Price Information -->
+                                                        <div
+                                                            class="flex items-center space-x-4 mt-3"
+                                                        >
+                                                            <div
+                                                                class="flex items-center space-x-2 text-sm"
+                                                            >
+                                                                <span
+                                                                    class="text-gray-600"
+                                                                    >Unit
+                                                                    Price:</span
+                                                                >
+                                                                <span
+                                                                    class="font-medium text-green-600"
+                                                                >
+                                                                    ₱{{
+                                                                        formatCash(
+                                                                            order.price_paid
+                                                                        )
+                                                                    }}
+                                                                </span>
+                                                            </div>
+                                                            <div
+                                                                class="flex items-center space-x-2 text-sm"
+                                                            >
+                                                                <span
+                                                                    class="text-gray-600"
+                                                                    >Total:</span
+                                                                >
+                                                                <span
+                                                                    class="font-semibold text-green-600 text-base"
+                                                                >
+                                                                    ₱{{
+                                                                        formatCash(
+                                                                            order.price_paid *
+                                                                                order.quantity
+                                                                        )
+                                                                    }}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
 
-                                                <!-- Action Buttons -->
+                                                <!-- Action Buttons (Side by side) -->
                                                 <div
-                                                    class="flex flex-col space-y-2 ml-6"
+                                                    class="flex space-x-2 ml-6"
                                                 >
                                                     <button
                                                         @click="
                                                             approveOrder(order)
                                                         "
-                                                        class="px-4 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center"
+                                                        class="px-3 py-2 bg-green-500 text-white text-sm rounded-lg hover:bg-green-600 transition-colors flex items-center"
                                                     >
                                                         <i
                                                             class="pi pi-check mr-1"
@@ -453,7 +520,7 @@
                                                         @click="
                                                             rejectOrder(order)
                                                         "
-                                                        class="px-4 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex items-center"
+                                                        class="px-3 py-2 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 transition-colors flex items-center"
                                                     >
                                                         <i
                                                             class="pi pi-times mr-1"
@@ -481,22 +548,26 @@
                                                 class="flex items-center space-x-4 flex-1"
                                             >
                                                 <!-- Customer Image -->
-                                                <img
-                                                    v-if="
-                                                        order.user
-                                                            ?.profile_image
-                                                    "
-                                                    :src="`/storage/profiles/${order.user.profile_image}`"
-                                                    :alt="order.user?.name"
-                                                    class="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
-                                                />
                                                 <div
-                                                    v-else
-                                                    class="w-12 h-12 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center border-2 border-gray-200"
+                                                    class="w-12 h-12 rounded-full overflow-hidden border-2 border-gray-200 flex-shrink-0"
                                                 >
-                                                    <i
-                                                        class="pi pi-user text-white text-lg"
-                                                    ></i>
+                                                    <img
+                                                        v-if="
+                                                            order.user
+                                                                ?.profile_image
+                                                        "
+                                                        :src="`/storage/profiles/${order.user.profile_image}`"
+                                                        :alt="order.user?.name"
+                                                        class="w-full h-full object-cover"
+                                                    />
+                                                    <div
+                                                        v-else
+                                                        class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                    >
+                                                        <i
+                                                            class="pi pi-user text-white text-lg"
+                                                        ></i>
+                                                    </div>
                                                 </div>
 
                                                 <div class="flex-1">
@@ -788,16 +859,28 @@
                                                             <div
                                                                 class="flex items-center gap-3"
                                                             >
-                                                                <img
-                                                                    :src="
-                                                                        user.profile_image ||
-                                                                        '/storage/profiles/${user.profile_image}'
-                                                                    "
-                                                                    :alt="
-                                                                        user.name
-                                                                    "
-                                                                    class="w-8 h-8 rounded-full object-cover"
-                                                                />
+                                                                <div
+                                                                    class="w-8 h-8 rounded-full overflow-hidden border border-gray-200 flex-shrink-0"
+                                                                >
+                                                                    <img
+                                                                        v-if="
+                                                                            user.profile_image
+                                                                        "
+                                                                        :src="`/storage/profiles/${user.profile_image}`"
+                                                                        :alt="
+                                                                            user.name
+                                                                        "
+                                                                        class="w-full h-full object-cover"
+                                                                    />
+                                                                    <div
+                                                                        v-else
+                                                                        class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                                    >
+                                                                        <i
+                                                                            class="pi pi-user text-white text-xs"
+                                                                        ></i>
+                                                                    </div>
+                                                                </div>
                                                                 <div>
                                                                     <div
                                                                         class="font-medium text-gray-900"
@@ -886,20 +969,32 @@
                                                         <div
                                                             class="flex items-center gap-3 mb-3"
                                                         >
-                                                            <img
-                                                                :src="
-                                                                    customer
-                                                                        .user
-                                                                        .profile_image_url ||
-                                                                    '/storage/profiles/${user.profile_image}'
-                                                                "
-                                                                :alt="
-                                                                    customer
-                                                                        .user
-                                                                        .name
-                                                                "
-                                                                class="w-12 h-12 rounded-full object-cover"
-                                                            />
+                                                            <div
+                                                                class="w-12 h-12 rounded-full overflow-hidden border-2 border-purple-200 flex-shrink-0"
+                                                            >
+                                                                <img
+                                                                    v-if="
+                                                                        customer
+                                                                            .user
+                                                                            .profile_image
+                                                                    "
+                                                                    :src="`/storage/profiles/${customer.user.profile_image}`"
+                                                                    :alt="
+                                                                        customer
+                                                                            .user
+                                                                            .name
+                                                                    "
+                                                                    class="w-full h-full object-cover"
+                                                                />
+                                                                <div
+                                                                    v-else
+                                                                    class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                                >
+                                                                    <i
+                                                                        class="pi pi-user text-white text-sm"
+                                                                    ></i>
+                                                                </div>
+                                                            </div>
                                                             <div class="flex-1">
                                                                 <h6
                                                                     class="font-semibold text-gray-900"
@@ -1028,17 +1123,30 @@
                                                     <div
                                                         class="flex items-center gap-4"
                                                     >
-                                                        <img
-                                                            :src="
-                                                                reward.user
-                                                                    .profile_image_url ||
-                                                                '/storage/profiles/${user.profile_image}'
-                                                            "
-                                                            :alt="
-                                                                reward.user.name
-                                                            "
-                                                            class="w-12 h-12 rounded-full object-cover"
-                                                        />
+                                                        <div
+                                                            class="w-12 h-12 rounded-full overflow-hidden border-2 border-green-200 flex-shrink-0"
+                                                        >
+                                                            <img
+                                                                v-if="
+                                                                    reward.user
+                                                                        .profile_image
+                                                                "
+                                                                :src="`/storage/profiles/${reward.user.profile_image}`"
+                                                                :alt="
+                                                                    reward.user
+                                                                        .name
+                                                                "
+                                                                class="w-full h-full object-cover"
+                                                            />
+                                                            <div
+                                                                v-else
+                                                                class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                            >
+                                                                <i
+                                                                    class="pi pi-user text-white text-sm"
+                                                                ></i>
+                                                            </div>
+                                                        </div>
                                                         <div>
                                                             <h6
                                                                 class="font-semibold text-gray-900"
@@ -1098,17 +1206,30 @@
                                                     <div
                                                         class="flex items-center gap-4"
                                                     >
-                                                        <img
-                                                            :src="
-                                                                reward.user
-                                                                    .profile_image_url ||
-                                                                '/storage/profiles/${user.profile_image}'
-                                                            "
-                                                            :alt="
-                                                                reward.user.name
-                                                            "
-                                                            class="w-12 h-12 rounded-full object-cover"
-                                                        />
+                                                        <div
+                                                            class="w-12 h-12 rounded-full overflow-hidden border-2 border-orange-200 flex-shrink-0"
+                                                        >
+                                                            <img
+                                                                v-if="
+                                                                    reward.user
+                                                                        .profile_image
+                                                                "
+                                                                :src="`/storage/profiles/${reward.user.profile_image}`"
+                                                                :alt="
+                                                                    reward.user
+                                                                        .name
+                                                                "
+                                                                class="w-full h-full object-cover"
+                                                            />
+                                                            <div
+                                                                v-else
+                                                                class="w-full h-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center"
+                                                            >
+                                                                <i
+                                                                    class="pi pi-user text-white text-sm"
+                                                                ></i>
+                                                            </div>
+                                                        </div>
                                                         <div>
                                                             <h6
                                                                 class="font-semibold text-gray-900"

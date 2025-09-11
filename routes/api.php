@@ -26,6 +26,7 @@ Route::post('/logout', [LoginController::class, 'logout']);
 // Public shop routes
 Route::prefix('shops')->group(function () {
   Route::prefix('{shop}')->group(function () {
+
         // Loyalty Card CRUD
         Route::get('/loyalty-card', [LoyaltyCardController::class, 'show']); 
         Route::post('/loyalty-card', [LoyaltyCardController::class, 'store']); 
@@ -59,6 +60,9 @@ Route::get('/gallery/{id}', [GalleryController::class, 'show']); // Get specific
 
 // AUTHENTICATED ROUTES
 Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/user/loyalty-progress', [LoyaltyCardController::class, 'getUserLoyaltyProgress']);
+
     
     // Current user route (for getting basic user info)
     Route::get('/user', [UserController::class, 'getCurrentUser']);

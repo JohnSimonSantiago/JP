@@ -317,15 +317,15 @@ class LoyaltyCardController extends Controller
 
             // Get customer progress with user details
             $progress = $loyaltyCard->progress()
-                ->with('user:id,name,email')
-                ->orderBy('current_purchases', 'desc')
-                ->get();
+     ->with('user:id,name,email,profile_image')  // ✅ Added profile_image
+    ->orderBy('current_purchases', 'desc')
+    ->get();
 
             // Get pending rewards
             $rewards = $loyaltyCard->rewards()
-                ->with(['user:id,name,email', 'shopItem:id,name'])
-                ->orderBy('created_at', 'desc')
-                ->get();
+    ->with(['user:id,name,email,profile_image', 'shopItem:id,name'])  // ✅ Added profile_image
+    ->orderBy('created_at', 'desc')
+    ->get();
 
             return response()->json([
                 'success' => true,
@@ -666,6 +666,84 @@ public function markAsClaimed(Shop $shop, LoyaltyCardReward $reward)
         return response()->json([
             'success' => false,
             'message' => 'Failed to mark reward as claimed',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+public function getUserLoyaltyProgress(Request $request) {
+    try {
+        $user = Auth::user();
+        
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized - Please login'
+            ], 401);
+        }
+
+        // Get user's active loyalty progress (where they have purchases or recent activity)
+        $activeProgress = LoyaltyCardProgress::where('user_id', $user->id)
+            ->with([
+                'loyaltyCard' => function($query) {
+                    $query->select('id', 'shop_id', 'name', 'description', 'required_purchases', 'is_active');
+                },
+                'loyaltyCard.shop' => function($query) {
+                    $query->select('id', 'name', 'description');
+                }
+            ])
+            ->whereHas('loyaltyCard', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->where(function ($query) {
+                // Include progress where user has purchases OR recent activity (last 60 days)
+                $query->where('current_purchases', '>', 0)
+                      ->orWhere('last_purchase_at', '>=', now()->subDays(60));
+            })
+            ->orderBy('last_purchase_at', 'desc')
+            ->get();
+
+        // Add pending rewards data to each progress record
+        $activeProgress = $activeProgress->map(function ($progress) use ($user) {
+            // Get pending rewards for this loyalty card
+            $pendingRewards = \App\Models\LoyaltyCardReward::where('user_id', $user->id)
+                ->where('loyalty_card_id', $progress->loyalty_card_id)
+                ->where('status', 'pending')
+                ->select('id', 'card_completion_number', 'status', 'created_at')
+                ->get();
+            
+            // Add pending rewards to the progress object
+            $progress->pending_rewards = $pendingRewards;
+            
+            return $progress;
+        });
+
+        // Get available loyalty programs from shops where user has no progress yet
+        $userProgressShopIds = $activeProgress->pluck('loyaltyCard.shop_id')->filter();
+        
+        $availablePrograms = Shop::whereHas('loyaltyCard', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->whereNotIn('id', $userProgressShopIds) // Exclude shops where user already has progress
+            ->with(['loyaltyCard' => function($query) {
+                $query->select('id', 'shop_id', 'name', 'description', 'required_purchases');
+            }])
+            ->limit(12) // Limit to prevent too many results
+            ->orderBy('name')
+            ->get(['id', 'name', 'description']);
+
+        return response()->json([
+            'success' => true,
+            'active_progress' => $activeProgress,
+            'available_programs' => $availablePrograms
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Error fetching user loyalty progress: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to load loyalty progress',
             'error' => $e->getMessage()
         ], 500);
     }

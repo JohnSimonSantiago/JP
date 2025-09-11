@@ -122,4 +122,5 @@ public function incrementPurchase()
     {
         return $this->current_purchases >= $this->loyaltyCard->required_purchases;
     }
+    
 }

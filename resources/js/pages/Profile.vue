@@ -653,7 +653,7 @@
                 </div>
 
                 <!-- Membership Card -->
-                <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
                     <h2
                         class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2"
                     >
@@ -763,6 +763,319 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- Loyalty Progress Section -->
+                <!-- Loyalty Progress Section -->
+                <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2
+                            class="text-xl font-bold text-gray-800 flex items-center gap-2"
+                        >
+                            <i class="pi pi-gift text-purple-500"></i>
+                            Loyalty Progress
+                        </h2>
+                        <button
+                            v-if="availableLoyaltyPrograms.length > 0"
+                            @click="showAllPrograms = !showAllPrograms"
+                            class="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                        >
+                            <span>{{
+                                showAllPrograms
+                                    ? "Show Less"
+                                    : "View All Programs"
+                            }}</span>
+                            <i
+                                :class="
+                                    showAllPrograms
+                                        ? 'pi pi-chevron-up'
+                                        : 'pi pi-chevron-down'
+                                "
+                            ></i>
+                        </button>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div v-if="loadingLoyalty" class="text-center py-8">
+                        <i
+                            class="pi pi-spin pi-spinner text-2xl text-gray-400"
+                        ></i>
+                        <p class="text-gray-500 mt-2">
+                            Loading loyalty progress...
+                        </p>
+                    </div>
+
+                    <!-- Active/Claimable Progress -->
+                    <div
+                        v-else-if="activeLoyaltyProgress.length > 0"
+                        class="space-y-4"
+                    >
+                        <div
+                            v-for="progress in activeLoyaltyProgress"
+                            :key="`${
+                                progress.loyalty_card?.shop?.id ||
+                                progress.loyalty_card_id
+                            }-${progress.loyalty_card_id}`"
+                            class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                            :class="
+                                progress.canClaim
+                                    ? 'border-green-300 bg-green-50'
+                                    : ''
+                            "
+                        >
+                            <!-- Shop Header -->
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center"
+                                    >
+                                        <i
+                                            class="pi pi-shop text-white text-lg"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-semibold text-gray-800">
+                                            {{
+                                                progress.loyalty_card?.shop
+                                                    ?.name || "Unknown Shop"
+                                            }}
+                                        </h3>
+                                        <p class="text-sm text-gray-600">
+                                            {{
+                                                progress.loyalty_card.name ||
+                                                "Loyalty Card"
+                                            }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Claim Badge for Completed Cards -->
+                                <div
+                                    v-if="progress.canClaim"
+                                    class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1"
+                                >
+                                    <i class="pi pi-gift"></i>
+                                    Claim Reward!
+                                </div>
+
+                                <!-- Recent Activity Badge -->
+                                <div
+                                    v-else-if="progress.isRecent"
+                                    class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                                >
+                                    Recent Activity
+                                </div>
+                            </div>
+
+                            <!-- Claim Display Section (show when card can be claimed) -->
+                            <div
+                                v-if="progress.canClaim"
+                                class="mb-4 p-4 bg-gradient-to-r from-green-100 to-emerald-100 border border-green-200 rounded-lg"
+                            >
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center"
+                                    >
+                                        <i
+                                            class="pi pi-gift text-white text-lg"
+                                        ></i>
+                                    </div>
+                                    <div>
+                                        <h4
+                                            class="font-semibold text-green-800 text-lg"
+                                        >
+                                            Claim Now at
+                                            {{
+                                                progress.loyalty_card?.shop
+                                                    ?.name || "Shop"
+                                            }}
+                                        </h4>
+                                        <p class="text-sm text-green-700">
+                                            Visit the shop to claim your loyalty
+                                            reward
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Bar -->
+                            <div class="mb-3">
+                                <div
+                                    class="flex justify-between items-center mb-2"
+                                >
+                                    <span
+                                        class="text-sm font-medium text-gray-700"
+                                    >
+                                        {{
+                                            progress.current_purchases %
+                                            progress.loyalty_card
+                                                .required_purchases
+                                        }}
+                                        /
+                                        {{
+                                            progress.loyalty_card
+                                                .required_purchases
+                                        }}
+                                        purchases
+                                    </span>
+                                    <span class="text-sm text-gray-500">
+                                        {{
+                                            Math.floor(
+                                                progress.current_purchases /
+                                                    progress.loyalty_card
+                                                        .required_purchases
+                                            )
+                                        }}
+                                        completed
+                                    </span>
+                                </div>
+
+                                <div
+                                    class="w-full bg-gray-200 rounded-full h-3"
+                                >
+                                    <div
+                                        class="h-3 rounded-full transition-all duration-300"
+                                        :class="
+                                            progress.canClaim
+                                                ? 'bg-green-500'
+                                                : 'bg-purple-500'
+                                        "
+                                        :style="`width: ${progress.progressPercentage}%`"
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <!-- Stats Row -->
+                            <div class="grid grid-cols-3 gap-4 text-center">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div
+                                        class="text-lg font-bold text-gray-800"
+                                    >
+                                        {{ progress.current_purchases }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Total Purchases
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div
+                                        class="text-lg font-bold text-gray-800"
+                                    >
+                                        {{ progress.completed_cards }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Cards Completed
+                                    </div>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <div
+                                        class="text-lg font-bold text-gray-800"
+                                    >
+                                        {{
+                                            progress.loyalty_card
+                                                .required_purchases -
+                                            (progress.current_purchases %
+                                                progress.loyalty_card
+                                                    .required_purchases)
+                                        }}
+                                    </div>
+                                    <div class="text-xs text-gray-500">
+                                        Purchases Needed
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Last Activity -->
+                            <div
+                                v-if="progress.last_purchase_at"
+                                class="mt-3 text-sm text-gray-500 flex items-center gap-1"
+                            >
+                                <i class="pi pi-clock"></i>
+                                Last purchase:
+                                {{
+                                    formatRelativeDate(
+                                        progress.last_purchase_at
+                                    )
+                                }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Available Programs (Expandable) -->
+                    <div
+                        v-if="
+                            showAllPrograms &&
+                            availableLoyaltyPrograms.length > 0
+                        "
+                        class="mt-6 pt-6 border-t border-gray-200"
+                    >
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            Available Loyalty Programs
+                        </h3>
+                        <div
+                            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                        >
+                            <div
+                                v-for="shop in availableLoyaltyPrograms"
+                                :key="shop.id"
+                                class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                                @click="visitShop(shop.id)"
+                            >
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div
+                                        class="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-lg flex items-center justify-center"
+                                    >
+                                        <i class="pi pi-shop text-white"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-medium text-gray-800">
+                                            {{ shop.name }}
+                                        </h4>
+                                        <p class="text-sm text-gray-600">
+                                            {{
+                                                shop.loyalty_card?.name ||
+                                                "Loyalty Program"
+                                            }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    Earn a reward every
+                                    {{
+                                        shop.loyalty_card?.required_purchases ||
+                                        10
+                                    }}
+                                    purchases
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- No Loyalty Progress State -->
+                    <div
+                        v-else-if="
+                            !loadingLoyalty &&
+                            activeLoyaltyProgress.length === 0
+                        "
+                        class="text-center py-8"
+                    >
+                        <i class="pi pi-gift text-gray-300 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-600 mb-2">
+                            No Loyalty Progress Yet
+                        </h3>
+                        <p class="text-gray-500 mb-4">
+                            Start shopping at participating stores to earn
+                            loyalty rewards!
+                        </p>
+
+                        <!-- Quick link to browse shops -->
+                        <button
+                            @click="$inertia.visit('/shops')"
+                            class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors"
+                        >
+                            Browse Shops
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     </Layout>
@@ -772,6 +1085,10 @@
 export default {
     data() {
         return {
+            loyaltyProgress: [], // Ensure it's always an array
+            availableLoyaltyPrograms: [], // Ensure it's always an array
+            loadingLoyalty: true, // Start with true, will be set to false after API call
+            showAllPrograms: false,
             user: {
                 id: null,
                 name: "",
@@ -809,6 +1126,87 @@ export default {
         };
     },
     computed: {
+        activeLoyaltyProgress() {
+            console.log("Computing activeLoyaltyProgress...");
+            console.log("Raw loyaltyProgress:", this.loyaltyProgress);
+
+            if (!Array.isArray(this.loyaltyProgress)) {
+                console.warn(
+                    "loyaltyProgress is not an array:",
+                    this.loyaltyProgress
+                );
+                return [];
+            }
+
+            const processed = this.loyaltyProgress
+                .filter((progress) => {
+                    if (!progress || !progress.loyalty_card) {
+                        console.warn("Invalid progress item:", progress);
+                        return false;
+                    }
+
+                    const hasActivity = progress.current_purchases > 0;
+                    const isRecent =
+                        progress.last_purchase_at &&
+                        new Date(progress.last_purchase_at) >
+                            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+                    // Check if user has pending rewards (this is the key change)
+                    const hasPendingRewards =
+                        progress.pending_rewards &&
+                        progress.pending_rewards.length > 0;
+
+                    return hasActivity || isRecent || hasPendingRewards;
+                })
+                .map((progress) => {
+                    try {
+                        const requiredPurchases =
+                            progress.loyalty_card.required_purchases || 10;
+                        const currentPurchases =
+                            progress.current_purchases || 0;
+
+                        const progressPercentage = Math.min(
+                            ((currentPurchases % requiredPurchases) /
+                                requiredPurchases) *
+                                100,
+                            100
+                        );
+
+                        // Updated canClaim logic - check for actual pending rewards
+                        const canClaim =
+                            progress.pending_rewards &&
+                            progress.pending_rewards.length > 0;
+
+                        const isRecent =
+                            progress.last_purchase_at &&
+                            new Date(progress.last_purchase_at) >
+                                new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+                        return {
+                            ...progress,
+                            progressPercentage,
+                            canClaim,
+                            isRecent,
+                            completed_cards: progress.completed_cards || 0,
+                            // Add pending rewards count for display
+                            pendingRewardsCount: progress.pending_rewards
+                                ? progress.pending_rewards.length
+                                : 0,
+                        };
+                    } catch (error) {
+                        console.error(
+                            "Error processing progress item:",
+                            progress,
+                            error
+                        );
+                        return null;
+                    }
+                })
+                .filter(Boolean);
+
+            console.log("Processed activeLoyaltyProgress:", processed);
+            return processed;
+        },
         privacySettings() {
             return (
                 this.user.privacy_settings || {
@@ -905,7 +1303,109 @@ export default {
             return { daysLeft, percentage, circumference, offset, color };
         },
     },
+    watch: {
+        loadingLoyalty(newVal, oldVal) {
+            console.log("loadingLoyalty changed from", oldVal, "to", newVal);
+        },
+        loyaltyProgress(newVal, oldVal) {
+            console.log("loyaltyProgress changed:", newVal);
+        },
+    },
     methods: {
+        debugLoyaltyState() {
+            console.log("=== LOYALTY DEBUG STATE ===");
+            console.log("loadingLoyalty:", this.loadingLoyalty);
+            console.log("loyaltyProgress:", this.loyaltyProgress);
+            console.log("loyaltyProgress type:", typeof this.loyaltyProgress);
+            console.log(
+                "loyaltyProgress isArray:",
+                Array.isArray(this.loyaltyProgress)
+            );
+            console.log(
+                "loyaltyProgress length:",
+                this.loyaltyProgress?.length
+            );
+            console.log("activeLoyaltyProgress:", this.activeLoyaltyProgress);
+            console.log(
+                "activeLoyaltyProgress length:",
+                this.activeLoyaltyProgress?.length
+            );
+            console.log(
+                "availableLoyaltyPrograms:",
+                this.availableLoyaltyPrograms
+            );
+            console.log(
+                "availableLoyaltyPrograms length:",
+                this.availableLoyaltyPrograms?.length
+            );
+            console.log("=== END DEBUG ===");
+        },
+        async fetchLoyaltyProgress() {
+            try {
+                console.log("Starting loyalty progress fetch...");
+                this.loadingLoyalty = true;
+
+                const response = await axios.get("/api/user/loyalty-progress");
+
+                console.log("API Response:", response);
+                console.log("Response Data:", response.data);
+
+                if (response.data && response.data.success) {
+                    console.log("Setting loyalty data...");
+                    this.loyaltyProgress = response.data.active_progress || [];
+                    this.availableLoyaltyPrograms =
+                        response.data.available_programs || [];
+
+                    console.log("Loyalty Progress Set:", this.loyaltyProgress);
+                    console.log(
+                        "Available Programs Set:",
+                        this.availableLoyaltyPrograms
+                    );
+                } else {
+                    console.error(
+                        "API response indicates failure:",
+                        response.data
+                    );
+                    this.$toast.add({
+                        severity: "error",
+                        summary: "Error",
+                        detail: "Invalid response from server",
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching loyalty progress:", error);
+                console.error("Error response:", error.response?.data);
+
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Failed to load loyalty progress",
+                });
+            } finally {
+                console.log("Setting loadingLoyalty to false...");
+                this.loadingLoyalty = false;
+                console.log("LoadingLoyalty is now:", this.loadingLoyalty);
+            }
+        },
+
+        formatRelativeDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+            if (diffInDays === 0) return "Today";
+            if (diffInDays === 1) return "Yesterday";
+            if (diffInDays < 7) return `${diffInDays} days ago`;
+            if (diffInDays < 30)
+                return `${Math.floor(diffInDays / 7)} weeks ago`;
+            return date.toLocaleDateString();
+        },
+
+        visitShop(shopId) {
+            this.$inertia.visit(`/shops/${shopId}`);
+        },
         async fetchUserData() {
             try {
                 this.loading = true;
@@ -1151,8 +1651,14 @@ export default {
             });
         },
     },
-    mounted() {
-        this.fetchUserData();
+    async mounted() {
+        await this.fetchUserData();
+        await this.fetchLoyaltyProgress();
+
+        // Debug the final state
+        this.$nextTick(() => {
+            this.debugLoyaltyState();
+        });
     },
 };
 </script>
