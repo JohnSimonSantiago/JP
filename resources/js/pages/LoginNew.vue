@@ -90,7 +90,7 @@
                         >
                             {{ isLoading ? "Signing in..." : "Sign in" }}
                         </button>
-
+                        <!-- 
                         <p
                             class="text-sm font-light text-gray-500 dark:text-gray-400"
                         >
@@ -102,7 +102,7 @@
                                     >Sign up</a
                                 >
                             </RouterLink>
-                        </p>
+                        </p> -->
                     </form>
                 </div>
             </div>

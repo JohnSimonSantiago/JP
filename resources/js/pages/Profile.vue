@@ -961,7 +961,7 @@
                             </div>
 
                             <!-- Stats Row -->
-                            <div class="grid grid-cols-3 gap-4 text-center">
+                            <!-- <div class="grid grid-cols-3 gap-4 text-center">
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <div
                                         class="text-lg font-bold text-gray-800"
@@ -998,7 +998,7 @@
                                         Purchases Needed
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <!-- Last Activity -->
                             <div
