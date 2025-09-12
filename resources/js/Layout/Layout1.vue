@@ -482,8 +482,7 @@
                             <span class="font-medium">Dashboard</span>
                         </router-link>
 
-                        <!-- Rest of sidebar links... (keeping existing) -->
-                        <router-link
+                        <!-- <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/leaderboards"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
@@ -492,10 +491,9 @@
                                 class="pi pi-chart-bar text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Leaderboards</span>
-                        </router-link>
+                        </router-link> -->
 
-                        <!-- Trade with notification indicator -->
-                        <router-link
+                        <!-- <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/trade"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
@@ -514,7 +512,7 @@
                                         : totalTradeNotifications
                                 }}
                             </div>
-                        </router-link>
+                        </router-link> -->
 
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
@@ -528,7 +526,7 @@
                         </router-link>
 
                         <!-- Matches/Bets with notification indicator -->
-                        <router-link
+                        <!-- <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/bet"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
@@ -547,7 +545,7 @@
                                         : totalBetNotifications
                                 }}
                             </div>
-                        </router-link>
+                        </router-link> -->
 
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"

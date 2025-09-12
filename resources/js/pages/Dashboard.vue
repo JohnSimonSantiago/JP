@@ -79,11 +79,8 @@
                 <div class="mb-8 flex justify-between items-center">
                     <div>
                         <h1 class="text-3xl font-bold text-gray-800 mb-2">
-                            Image Gallery Dashboard
+                            What's Up
                         </h1>
-                        <p class="text-gray-600">
-                            Explore our collection of stunning images
-                        </p>
                     </div>
                     <button
                         v-if="isAdmin"
@@ -132,7 +129,7 @@
                 <!-- Carousel Section -->
                 <div class="mb-12">
                     <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-                        Featured Images
+                        Featured Promos!
                     </h2>
                     <div
                         class="relative bg-white rounded-lg shadow-lg overflow-hidden"
@@ -361,9 +358,6 @@
 
                 <!-- Image List Section -->
                 <div>
-                    <h2 class="text-2xl font-semibold text-gray-800 mb-6">
-                        All Images
-                    </h2>
                     <div class="space-y-4">
                         <div
                             v-for="(image, index) in images"
@@ -371,14 +365,16 @@
                             :class="{
                                 'ring-2 ring-blue-500':
                                     index === currentImageIndex,
+                                'cursor-pointer': image.link_url,
+                                'hover:shadow-lg': image.link_url,
                             }"
-                            class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+                            class="bg-white rounded-lg shadow-md overflow-hidden transition-shadow"
+                            @click="handleImageListClick(image, $event, index)"
                         >
                             <div class="flex h-48">
-                                <!-- Small image - now clickable -->
+                                <!-- Small image thumbnail -->
                                 <div
-                                    class="w-48 h-48 flex-shrink-0 relative group cursor-pointer"
-                                    @click="handleImageClick(image, $event)"
+                                    class="w-48 h-48 flex-shrink-0 relative group"
                                 >
                                     <img
                                         :src="image.image_url"
@@ -412,12 +408,9 @@
                                 </div>
 
                                 <!-- Description with fixed height -->
-                                <div
-                                    class="flex-1 p-6 h-48 flex flex-col"
-                                    @click="goToImage(index)"
-                                >
+                                <div class="flex-1 p-6 h-48 flex flex-col">
                                     <div
-                                        class="flex items-start justify-between cursor-pointer h-full"
+                                        class="flex items-start justify-between h-full"
                                     >
                                         <div
                                             class="flex-1 flex flex-col h-full"
@@ -969,6 +962,32 @@ export default {
                 }
                 event.stopPropagation();
                 return;
+            }
+        },
+
+        // New method for handling image list clicks
+        handleImageListClick(image, event, index) {
+            // Check if the click is on a button or element that should prevent navigation
+            const clickedElement = event.target.closest("button");
+            if (clickedElement) {
+                // If clicked on a button (like Read more, Edit, Delete), don't navigate
+                return;
+            }
+
+            // If image has a link, navigate to it
+            if (image.link_url) {
+                if (image.open_in_new_tab) {
+                    window.open(
+                        image.link_url,
+                        "_blank",
+                        "noopener,noreferrer"
+                    );
+                } else {
+                    window.location.href = image.link_url;
+                }
+            } else {
+                // If no link, just switch to this image in the carousel
+                this.goToImage(index);
             }
         },
 

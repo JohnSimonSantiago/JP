@@ -688,9 +688,9 @@ public function getUserLoyaltyProgress(Request $request) {
                 'loyaltyCard' => function($query) {
                     $query->select('id', 'shop_id', 'name', 'description', 'required_purchases', 'is_active');
                 },
-                'loyaltyCard.shop' => function($query) {
-                    $query->select('id', 'name', 'description');
-                }
+            'loyaltyCard.shop' => function($query) {
+    $query->select('id', 'name', 'description', 'logo');
+}
             ])
             ->whereHas('loyaltyCard', function ($query) {
                 $query->where('is_active', true);

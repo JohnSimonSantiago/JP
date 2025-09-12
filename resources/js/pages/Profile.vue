@@ -826,9 +826,25 @@
                             <div class="flex justify-between items-start mb-3">
                                 <div class="flex items-center gap-3">
                                     <div
-                                        class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center"
+                                        class="w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center overflow-hidden"
                                     >
+                                        <img
+                                            v-if="
+                                                progress.loyalty_card?.shop
+                                                    ?.logo_url
+                                            "
+                                            :src="
+                                                progress.loyalty_card.shop
+                                                    .logo_url
+                                            "
+                                            :alt="
+                                                progress.loyalty_card?.shop
+                                                    ?.name || 'Shop logo'
+                                            "
+                                            class="w-full h-full object-cover"
+                                        />
                                         <i
+                                            v-else
                                             class="pi pi-shop text-white text-lg"
                                         ></i>
                                     </div>
