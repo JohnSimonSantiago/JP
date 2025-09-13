@@ -24,13 +24,87 @@
                         Sign in to your account
                     </h1>
 
+                    <!-- Error Messages with different styling for approval pending -->
                     <div
                         v-if="errorMsg != ''"
-                        class="p-4 mb-4 text-sm text-red-800 rounded-lg bg-red-50 dark:bg-gray-800 dark:text-red-400"
+                        class="p-4 mb-4 text-sm rounded-lg"
+                        :class="
+                            errorType === 'approval_pending'
+                                ? 'text-yellow-800 bg-yellow-50 border border-yellow-300 dark:bg-gray-800 dark:text-yellow-400 dark:border-yellow-600'
+                                : 'text-red-800 bg-red-50 border border-red-300 dark:bg-gray-800 dark:text-red-400 dark:border-red-600'
+                        "
                         role="alert"
                     >
-                        <span class="font-medium">Log in failed!</span>
-                        {{ errorMsg }}
+                        <div class="flex">
+                            <!-- Warning icon for approval pending -->
+                            <svg
+                                v-if="errorType === 'approval_pending'"
+                                class="flex-shrink-0 w-4 h-4 mt-0.5 mr-2"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"
+                                />
+                            </svg>
+                            <!-- Error icon for other errors -->
+                            <svg
+                                v-else
+                                class="flex-shrink-0 w-4 h-4 mt-0.5 mr-2"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"
+                                />
+                            </svg>
+                            <div>
+                                <span class="font-medium">
+                                    {{
+                                        errorType === "approval_pending"
+                                            ? "Account Pending Approval"
+                                            : "Log in failed!"
+                                    }}
+                                </span>
+                                <div class="mt-1">{{ errorMsg }}</div>
+                                <!-- Additional help text for approval pending -->
+                                <div
+                                    v-if="errorType === 'approval_pending'"
+                                    class="mt-2 text-sm"
+                                >
+                                    Your registration has been submitted and is
+                                    awaiting administrator approval. You will be
+                                    able to log in once your account has been
+                                    reviewed and approved.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Success Message -->
+                    <div
+                        v-if="message"
+                        class="p-4 mb-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-300 dark:bg-gray-800 dark:text-green-400 dark:border-green-600"
+                        role="alert"
+                    >
+                        <div class="flex">
+                            <svg
+                                class="flex-shrink-0 w-4 h-4 mt-0.5 mr-2"
+                                aria-hidden="true"
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path
+                                    d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5Zm3.707 8.207-4 4a1 1 0 0 1-1.414 0l-2-2a1 1 0 0 1 1.414-1.414L9 10.586l3.293-3.293a1 1 0 0 1 1.414 1.414Z"
+                                />
+                            </svg>
+                            <span class="font-medium">{{ message }}</span>
+                        </div>
                     </div>
 
                     <!-- Loading indicator -->
@@ -90,7 +164,7 @@
                         >
                             {{ isLoading ? "Signing in..." : "Sign in" }}
                         </button>
-                        <!-- 
+
                         <p
                             class="text-sm font-light text-gray-500 dark:text-gray-400"
                         >
@@ -102,7 +176,7 @@
                                     >Sign up</a
                                 >
                             </RouterLink>
-                        </p> -->
+                        </p>
                     </form>
                 </div>
             </div>
@@ -118,6 +192,7 @@ export default {
             password: "",
             message: this.$route.query.messageSent,
             errorMsg: "",
+            errorType: "", // Track the type of error for different styling
             isLoading: false,
         };
     },
@@ -125,6 +200,7 @@ export default {
         async login() {
             // Clear previous errors and set loading state
             this.errorMsg = "";
+            this.errorType = "";
             this.isLoading = true;
 
             try {
@@ -168,6 +244,11 @@ export default {
                     error.response.data.message
                 ) {
                     this.errorMsg = error.response.data.message;
+
+                    // Check if this is an approval pending error
+                    if (error.response.data.type === "approval_pending") {
+                        this.errorType = "approval_pending";
+                    }
                 } else {
                     this.errorMsg =
                         "An unexpected error occurred. Please try again.";
@@ -179,6 +260,7 @@ export default {
 
         clearErrMsg() {
             this.errorMsg = "";
+            this.errorType = "";
         },
     },
 

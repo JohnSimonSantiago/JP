@@ -109,50 +109,56 @@ class UserController extends Controller
     }
 
     public function signUp(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255|unique:users,name',
-            'password' => 'required|string|min:6|confirmed',
-        ], [
-            'name.unique' => 'This username is already taken.',
-            'name.required' => 'Username is required.',
-            'password.required' => 'Password is required.',
-            'password.min' => 'Password must be at least 6 characters.',
-            'password.confirmed' => 'Password confirmation does not match.',
-        ]);
+{
+    $request->validate([
+        'name' => 'required|string|max:255|unique:users,name',
+        'password' => 'required|string|min:6|confirmed',
+    ], [
+        'name.unique' => 'This username is already taken.',
+        'name.required' => 'Username is required.',
+        'password.required' => 'Password is required.',
+        'password.min' => 'Password must be at least 6 characters.',
+        'password.confirmed' => 'Password confirmation does not match.',
+    ]);
 
-        try {
-            $newUser = new User();
-            $newUser->name = $request->name;
-            $newUser->password = Hash::make($request->password);
-            $newUser->level = 1;
-            $newUser->stars = 100; // FIXED: Use stars instead of points
-            $newUser->points = 100; // Keep both for compatibility
-            $newUser->is_premium = false;
-            $newUser->role = 'user'; // Set default role
+    try {
+        $newUser = new User();
+        $newUser->name = $request->name;
+        $newUser->password = Hash::make($request->password);
+        $newUser->level = 1;
+        $newUser->stars = 100; // FIXED: Use stars instead of points
+        $newUser->points = 100; // Keep both for compatibility
+        $newUser->is_premium = false;
+        $newUser->role = 'user'; // Set default role
+        $newUser->is_approved = false; // NEW: Set to false - needs admin approval
 
-            $newUser->save();
+        $newUser->save();
 
-            return response()->json([
-                'message' => 'User created successfully',
-                'user' => [
-                    'id' => $newUser->id,
-                    'name' => $newUser->name,
-                    'level' => $newUser->level,
-                    'stars' => $newUser->stars,
-                    'points' => $newUser->points,
-                    'is_premium' => $newUser->is_premium,
-                    'role' => $newUser->role,
-                ]
-            ], 201);
-                
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Failed to create user',
-                'error' => 'Something went wrong. Please try again.'
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Account created successfully! Your registration is pending approval. You will be able to log in once an administrator has reviewed and approved your account.',
+            'type' => 'signup_success',
+            'approval_required' => true,
+            'user' => [
+                'id' => $newUser->id,
+                'name' => $newUser->name,
+                'level' => $newUser->level,
+                'stars' => $newUser->stars,
+                'points' => $newUser->points,
+                'is_premium' => $newUser->is_premium,
+                'role' => $newUser->role,
+                'is_approved' => $newUser->is_approved,
+            ]
+        ], 201);
+            
+    } catch (\Exception $e) {
+        \Log::error('User signup error: ' . $e->getMessage());
+        
+        return response()->json([
+            'message' => 'Failed to create user',
+            'error' => 'Something went wrong. Please try again.'
+        ], 500);
     }
+}
 
     public function validatePassword(Request $request)
     {

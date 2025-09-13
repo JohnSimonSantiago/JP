@@ -13,7 +13,16 @@ class LoginController extends Controller
     {
         if (User::where("name", $request->name)->exists()) {
             $user = User::where("name", $request->name)->first();
+            
             if (Hash::check($request->password, $user->password)) {
+                
+                // Check if user is approved - NEW APPROVAL CHECK
+                if (!$user->is_approved) {
+                    return response()->json([
+                        'message' => 'Your account is pending approval. Please contact an administrator.',
+                        'type' => 'approval_pending'
+                    ], 403);
+                }
                 
                 // For API authentication, create a token
                 $token = $user->createToken('auth-token')->plainTextToken;

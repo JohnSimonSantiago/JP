@@ -618,6 +618,35 @@
                             </span>
                         </router-link>
 
+                        <!-- Admin User Approval (Admins Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/admin/users"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group relative"
+                        >
+                            <i
+                                class="pi pi-users text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">User Management</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                            >
+                                Admin
+                            </span>
+                            <!-- Pending approval notification badge -->
+                            <div
+                                v-if="pendingApprovalCount > 0"
+                                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse"
+                            >
+                                {{
+                                    pendingApprovalCount > 99
+                                        ? "99+"
+                                        : pendingApprovalCount
+                                }}
+                            </div>
+                        </router-link>
+
                         <!-- Divider -->
                         <div class="border-t border-gray-200 my-4"></div>
 
@@ -696,6 +725,7 @@ export default {
             // ADD THESE MISSING PROPERTIES:
             shopOrdersCount: 0,
             shopLoyaltyCount: 0,
+            pendingApprovalCount: 0, // <-- THIS WAS MISSING!
 
             // Polling
             notificationPollingInterval: null,
@@ -821,6 +851,23 @@ export default {
     },
 
     methods: {
+        async fetchPendingApprovalCount() {
+            if (!this.isAdmin) return;
+
+            try {
+                const response = await axios.get("/admin/users");
+                if (response.data.success) {
+                    const users = response.data.users || [];
+                    this.pendingApprovalCount = users.filter(
+                        (user) => !user.is_approved
+                    ).length;
+                }
+            } catch (error) {
+                console.error("Failed to fetch pending approval count:", error);
+                this.pendingApprovalCount = 0;
+            }
+        },
+
         async fetchNotifications() {
             if (!this.user.id || this.loading) return;
 
@@ -975,9 +1022,14 @@ export default {
                 // Fetch bet requests and referee requests
                 promises.push(this.fetchBetRequests());
 
-                // ADD THIS: Fetch shop notifications (orders + loyalty counts)
+                // Fetch shop notifications (orders + loyalty counts)
                 if (this.isShopOwnerOrAdmin) {
                     promises.push(this.fetchShopNotifications());
+                }
+
+                // ADD THIS: Fetch pending approval count for admins
+                if (this.isAdmin) {
+                    promises.push(this.fetchPendingApprovalCount());
                 }
 
                 await Promise.all(promises);

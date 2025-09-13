@@ -25,6 +25,7 @@ class User extends Authenticatable
         'points',
         'stars',
         'is_premium',
+         'is_approved',
         'profile_image',
         'gender',          // NEW
         'birthday',        // NEW
@@ -51,6 +52,7 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'birthday' => 'date',           // NEW: Cast birthday as date
         'is_premium' => 'boolean',
+        'is_approved' => 'boolean',
         'privacy_settings' => 'array',  // NEW: Cast privacy settings as array
     ];
 
@@ -357,4 +359,24 @@ public function getLoyaltyProgressForShop($shopId)
         })
         ->first();
 }
+ public function isApproved()
+    {
+        return $this->is_approved;
+    }
+
+    /**
+     * Scope to get only approved users.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('is_approved', true);
+    }
+
+    /**
+     * Scope to get only pending approval users.
+     */
+    public function scopePendingApproval($query)
+    {
+        return $query->where('is_approved', false);
+    }
 }
