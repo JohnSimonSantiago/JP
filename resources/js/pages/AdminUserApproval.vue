@@ -1,12 +1,20 @@
 <template>
     <Layout>
-        <div class="p-6 bg-white dark:bg-gray-800 rounded-lg shadow">
-            <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                User Approval Management
-            </h2>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header -->
+            <div class="mb-8">
+                <h1
+                    class="text-3xl font-bold text-gray-900 dark:text-white mb-2"
+                >
+                    User Management
+                </h1>
+                <p class="text-gray-600 dark:text-gray-400">
+                    Manage user registrations and approvals
+                </p>
+            </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <!-- Statistics Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div
                     class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4"
                 >
@@ -22,7 +30,7 @@
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
                                     stroke-width="2"
-                                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                                 />
                             </svg>
                         </div>
@@ -142,8 +150,27 @@
                 >
             </div>
 
+            <!-- Error State -->
+            <div v-else-if="error" class="text-center py-8">
+                <div class="text-red-600 dark:text-red-400 mb-4">
+                    <i class="pi pi-exclamation-triangle text-2xl"></i>
+                </div>
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+                >
+                    Error Loading Users
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">{{ error }}</p>
+                <button
+                    @click="fetchUsers"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                >
+                    Retry
+                </button>
+            </div>
+
             <!-- Users Table -->
-            <div v-else class="overflow-x-auto">
+            <div v-else-if="users.length > 0" class="overflow-x-auto">
                 <table
                     class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                 >
@@ -187,13 +214,19 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <img
-                                        :src="
-                                            user.profile_image ||
-                                            'https://via.placeholder.com/40'
-                                        "
+                                        v-if="user.profile_image"
+                                        :src="`/storage/profiles/${user.profile_image}`"
                                         :alt="user.name"
                                         class="h-10 w-10 rounded-full object-cover"
                                     />
+                                    <div
+                                        v-else
+                                        class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
+                                    >
+                                        <i
+                                            class="pi pi-user text-gray-500 dark:text-gray-400"
+                                        ></i>
+                                    </div>
                                     <div class="ml-4">
                                         <div
                                             class="text-sm font-medium text-gray-900 dark:text-white"
@@ -203,32 +236,53 @@
                                         <div
                                             class="text-sm text-gray-500 dark:text-gray-400"
                                         >
-                                            {{ user.email || "No email" }}
+                                            {{ user.email }}
+                                        </div>
+                                        <div
+                                            class="flex items-center gap-2 mt-1"
+                                        >
+                                            <span class="text-xs text-gray-500">
+                                                Level {{ user.level || 1 }}
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                •
+                                            </span>
+                                            <span class="text-xs text-gray-500">
+                                                {{ user.points || 0 }} points
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
                             </td>
-                            <td
-                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white"
-                            >
-                                {{ formatDate(user.created_at) }}
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div
+                                    class="text-sm text-gray-900 dark:text-white"
+                                >
+                                    {{ formatDate(user.created_at) }}
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                     :class="getRoleColor(user.role)"
+                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                 >
-                                    {{ user.role }}
+                                    {{
+                                        user.role === "admin"
+                                            ? "Administrator"
+                                            : user.role === "shop_owner"
+                                            ? "Shop Owner"
+                                            : "User"
+                                    }}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
-                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                     :class="
                                         user.is_approved
                                             ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
                                             : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
                                     "
+                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                 >
                                     {{
                                         user.is_approved
@@ -238,96 +292,70 @@
                                 </span>
                             </td>
                             <td
-                                class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2"
+                                class="px-6 py-4 whitespace-nowrap text-sm font-medium"
                             >
-                                <button
-                                    v-if="!user.is_approved"
-                                    @click="approveUser(user)"
-                                    :disabled="processingUsers[user.id]"
-                                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                                >
-                                    <svg
-                                        v-if="!processingUsers[user.id]"
-                                        class="w-4 h-4 mr-1"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
+                                <div class="flex gap-2">
+                                    <button
+                                        v-if="!user.is_approved"
+                                        @click="approveUser(user)"
+                                        :disabled="processingUsers[user.id]"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M5 13l4 4L19 7"
-                                        />
-                                    </svg>
-                                    <div v-else class="w-4 h-4 mr-1">
-                                        <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
-                                        ></div>
-                                    </div>
-                                    Approve
-                                </button>
-
-                                <button
-                                    v-if="user.is_approved"
-                                    @click="revokeApproval(user)"
-                                    :disabled="processingUsers[user.id]"
-                                    class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                                >
-                                    <svg
-                                        v-if="!processingUsers[user.id]"
-                                        class="w-4 h-4 mr-1"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
+                                        <i
+                                            v-if="processingUsers[user.id]"
+                                            class="pi pi-spin pi-spinner mr-1"
+                                        ></i>
+                                        <i v-else class="pi pi-check mr-1"></i>
+                                        {{
+                                            processingUsers[user.id]
+                                                ? "Approving..."
+                                                : "Approve"
+                                        }}
+                                    </button>
+                                    <button
+                                        v-if="
+                                            user.is_approved &&
+                                            user.role !== 'admin'
+                                        "
+                                        @click="revokeApproval(user)"
+                                        :disabled="processingUsers[user.id]"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="2"
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
-                                    <div v-else class="w-4 h-4 mr-1">
-                                        <div
-                                            class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"
-                                        ></div>
-                                    </div>
-                                    Revoke
-                                </button>
+                                        <i
+                                            v-if="processingUsers[user.id]"
+                                            class="pi pi-spin pi-spinner mr-1"
+                                        ></i>
+                                        <i v-else class="pi pi-times mr-1"></i>
+                                        {{
+                                            processingUsers[user.id]
+                                                ? "Revoking..."
+                                                : "Revoke"
+                                        }}
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
 
-                <!-- Empty State -->
-                <div v-if="filteredUsers.length === 0" class="text-center py-8">
-                    <svg
-                        class="mx-auto h-12 w-12 text-gray-400"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-                        />
-                    </svg>
-                    <h3
-                        class="mt-4 text-lg font-medium text-gray-900 dark:text-white"
-                    >
-                        No {{ activeTab }} users found
-                    </h3>
-                    <p class="mt-2 text-gray-500 dark:text-gray-400">
-                        {{
-                            activeTab === "pending"
-                                ? "All users have been reviewed."
-                                : "No approved users yet."
-                        }}
-                    </p>
+            <!-- Empty State -->
+            <div v-else class="text-center py-12">
+                <div class="text-gray-400 dark:text-gray-600 mb-4">
+                    <i class="pi pi-users text-6xl"></i>
                 </div>
+                <h3
+                    class="text-lg font-semibold text-gray-900 dark:text-white mb-2"
+                >
+                    No Users Found
+                </h3>
+                <p class="text-gray-600 dark:text-gray-400">
+                    {{
+                        activeTab === "pending"
+                            ? "All users have been reviewed."
+                            : "No approved users yet."
+                    }}
+                </p>
             </div>
         </div>
     </Layout>
@@ -341,6 +369,7 @@ export default {
             users: [],
             activeTab: "pending",
             isLoading: false,
+            error: null,
             processingUsers: {}, // Track which users are being processed
         };
     },
@@ -365,37 +394,109 @@ export default {
         },
     },
     methods: {
+        setupAxiosToken() {
+            const token = localStorage.getItem("auth-token");
+            if (token) {
+                axios.defaults.headers.common[
+                    "Authorization"
+                ] = `Bearer ${token}`;
+                return true;
+            }
+            return false;
+        },
+
         async fetchUsers() {
             this.isLoading = true;
+            this.error = null;
+
             try {
-                const response = await axios.get("/admin/users");
-                this.users = response.data.users;
+                if (!this.setupAxiosToken()) {
+                    throw new Error("No authentication token found");
+                }
+
+                const response = await axios.get("/api/admin/users");
+
+                if (response.data.success) {
+                    this.users = response.data.users || [];
+                } else {
+                    throw new Error(
+                        response.data.message || "Failed to fetch users"
+                    );
+                }
             } catch (error) {
                 console.error("Error fetching users:", error);
-                this.$toast.error("Failed to load users");
+                this.error =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Failed to load users";
+
+                // If unauthorized, redirect to login
+                if (error.response?.status === 401) {
+                    localStorage.removeItem("auth-token");
+                    localStorage.removeItem("user");
+                    this.$router.push("/");
+                }
             } finally {
                 this.isLoading = false;
             }
         },
 
         async approveUser(user) {
-            this.$set(this.processingUsers, user.id, true);
+            // Vue 3 compatible: Use reactive object assignment
+            this.processingUsers[user.id] = true;
 
             try {
-                await axios.post(`/admin/users/${user.id}/approve`);
-
-                // Update local state
-                const userIndex = this.users.findIndex((u) => u.id === user.id);
-                if (userIndex !== -1) {
-                    this.$set(this.users[userIndex], "is_approved", true);
+                if (!this.setupAxiosToken()) {
+                    throw new Error("No authentication token found");
                 }
 
-                this.$toast.success(`${user.name} has been approved`);
+                const response = await axios.post(
+                    `/api/admin/users/${user.id}/approve`
+                );
+
+                if (response.data.success) {
+                    // Update local state - Vue 3 compatible
+                    const userIndex = this.users.findIndex(
+                        (u) => u.id === user.id
+                    );
+                    if (userIndex !== -1) {
+                        this.users[userIndex].is_approved = true;
+                    }
+
+                    // Show success toast if available
+                    if (this.$toast) {
+                        this.$toast.add({
+                            severity: "success",
+                            summary: "Success",
+                            detail: `${user.name} has been approved`,
+                            life: 3000,
+                        });
+                    }
+                } else {
+                    throw new Error(
+                        response.data.message || "Failed to approve user"
+                    );
+                }
             } catch (error) {
                 console.error("Error approving user:", error);
-                this.$toast.error("Failed to approve user");
+                const errorMessage =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Failed to approve user";
+
+                if (this.$toast) {
+                    this.$toast.add({
+                        severity: "error",
+                        summary: "Error",
+                        detail: errorMessage,
+                        life: 5000,
+                    });
+                } else {
+                    alert(errorMessage);
+                }
             } finally {
-                this.$delete(this.processingUsers, user.id);
+                // Vue 3 compatible: Use delete operator
+                delete this.processingUsers[user.id];
             }
         },
 
@@ -408,23 +509,61 @@ export default {
                 return;
             }
 
-            this.$set(this.processingUsers, user.id, true);
+            // Vue 3 compatible: Use reactive object assignment
+            this.processingUsers[user.id] = true;
 
             try {
-                await axios.post(`/admin/users/${user.id}/revoke`);
-
-                // Update local state
-                const userIndex = this.users.findIndex((u) => u.id === user.id);
-                if (userIndex !== -1) {
-                    this.$set(this.users[userIndex], "is_approved", false);
+                if (!this.setupAxiosToken()) {
+                    throw new Error("No authentication token found");
                 }
 
-                this.$toast.success(`Approval revoked for ${user.name}`);
+                const response = await axios.post(
+                    `/api/admin/users/${user.id}/revoke`
+                );
+
+                if (response.data.success) {
+                    // Update local state - Vue 3 compatible
+                    const userIndex = this.users.findIndex(
+                        (u) => u.id === user.id
+                    );
+                    if (userIndex !== -1) {
+                        this.users[userIndex].is_approved = false;
+                    }
+
+                    // Show success toast if available
+                    if (this.$toast) {
+                        this.$toast.add({
+                            severity: "success",
+                            summary: "Success",
+                            detail: `Approval revoked for ${user.name}`,
+                            life: 3000,
+                        });
+                    }
+                } else {
+                    throw new Error(
+                        response.data.message || "Failed to revoke approval"
+                    );
+                }
             } catch (error) {
                 console.error("Error revoking approval:", error);
-                this.$toast.error("Failed to revoke approval");
+                const errorMessage =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Failed to revoke approval";
+
+                if (this.$toast) {
+                    this.$toast.add({
+                        severity: "error",
+                        summary: "Error",
+                        detail: errorMessage,
+                        life: 5000,
+                    });
+                } else {
+                    alert(errorMessage);
+                }
             } finally {
-                this.$delete(this.processingUsers, user.id);
+                // Vue 3 compatible: Use delete operator
+                delete this.processingUsers[user.id];
             }
         },
 
@@ -449,8 +588,8 @@ export default {
         },
     },
 
-    mounted() {
-        this.fetchUsers();
+    async mounted() {
+        await this.fetchUsers();
     },
 };
 </script>

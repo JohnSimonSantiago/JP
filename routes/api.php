@@ -161,14 +161,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware(['admin'])->prefix('admin')->group(function () {
         
     // User approval management
-    Route::get('/users', [AdminUserController::class, 'index']);
+  Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
     Route::post('/users/{user}/approve', [AdminUserController::class, 'approve']);
     Route::post('/users/{user}/revoke', [AdminUserController::class, 'revoke']);
     Route::post('/users/bulk-approve', [AdminUserController::class, 'bulkApprove']);
     
-
-
         // Shop Management
   Route::get('/shops', [ShopController::class, 'adminIndex']); // All shops (including inactive)
     Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);

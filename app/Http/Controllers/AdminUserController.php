@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Auth;
 
 class AdminUserController extends Controller
 {
@@ -47,28 +47,62 @@ class AdminUserController extends Controller
     public function approve(User $user)
     {
         try {
+            // Add debugging
+            Log::info('Starting user approval process', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'current_approval_status' => $user->is_approved,
+                'admin_user_id' => Auth::guard('sanctum')->id(),
+                'admin_user_name' => Auth::guard('sanctum')->user()?->name
+            ]);
+
             if ($user->is_approved) {
+                Log::warning('User already approved', ['user_id' => $user->id]);
                 return response()->json([
                     'success' => false,
                     'message' => 'User is already approved'
                 ], 400);
             }
 
-            $user->update(['is_approved' => true]);
+            // Update user approval status
+            $updateResult = $user->update(['is_approved' => true]);
+            Log::info('User update result', [
+                'user_id' => $user->id,
+                'update_successful' => $updateResult,
+                'new_approval_status' => $user->fresh()->is_approved
+            ]);
 
-            Log::info("User {$user->name} (ID: {$user->id}) approved by admin " . auth()->user()->name);
+            // Get admin info safely
+            $adminUser = Auth::guard('sanctum')->user();
+            $adminName = $adminUser ? $adminUser->name : 'Unknown Admin';
+            
+            Log::info("User {$user->name} (ID: {$user->id}) approved by admin {$adminName}");
+
+            // Get fresh user data
+            $freshUser = $user->fresh(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image']);
+            
+            Log::info('Returning success response', [
+                'user_id' => $user->id,
+                'fresh_user_approved' => $freshUser->is_approved
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => "User {$user->name} has been approved",
-                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image'])
+                'user' => $freshUser
             ]);
+
         } catch (\Exception $e) {
-            Log::error('Error approving user: ' . $e->getMessage());
+            Log::error('Error approving user: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to approve user'
+                'message' => 'Failed to approve user',
+                'debug' => app()->environment('local') ? $e->getMessage() : null
             ], 500);
         }
     }
@@ -79,6 +113,12 @@ class AdminUserController extends Controller
     public function revoke(User $user)
     {
         try {
+            Log::info('Starting user revoke process', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'current_approval_status' => $user->is_approved
+            ]);
+
             if (!$user->is_approved) {
                 return response()->json([
                     'success' => false,
@@ -99,7 +139,10 @@ class AdminUserController extends Controller
             // Revoke all tokens for the user so they're immediately logged out
             $user->tokens()->delete();
 
-            Log::info("User {$user->name} (ID: {$user->id}) approval revoked by admin " . auth()->user()->name);
+            $adminUser = Auth::guard('sanctum')->user();
+            $adminName = $adminUser ? $adminUser->name : 'Unknown Admin';
+            
+            Log::info("User {$user->name} (ID: {$user->id}) approval revoked by admin {$adminName}");
 
             return response()->json([
                 'success' => true,
@@ -107,7 +150,11 @@ class AdminUserController extends Controller
                 'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image'])
             ]);
         } catch (\Exception $e) {
-            Log::error('Error revoking user approval: ' . $e->getMessage());
+            Log::error('Error revoking user approval: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -136,7 +183,10 @@ class AdminUserController extends Controller
             $users = User::whereIn('id', $userIds)->get(['id', 'name']);
             $userNames = $users->pluck('name')->join(', ');
 
-            Log::info("Bulk approval of {$updatedCount} users by admin " . auth()->user()->name . ": {$userNames}");
+            $adminUser = Auth::guard('sanctum')->user();
+            $adminName = $adminUser ? $adminUser->name : 'Unknown Admin';
+
+            Log::info("Bulk approval of {$updatedCount} users by admin {$adminName}: {$userNames}");
 
             return response()->json([
                 'success' => true,
@@ -144,7 +194,10 @@ class AdminUserController extends Controller
                 'updated_count' => $updatedCount
             ]);
         } catch (\Exception $e) {
-            Log::error('Error in bulk approval: ' . $e->getMessage());
+            Log::error('Error in bulk approval: ' . $e->getMessage(), [
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
@@ -172,7 +225,11 @@ class AdminUserController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching user details: ' . $e->getMessage());
+            Log::error('Error fetching user details: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
