@@ -3,26 +3,38 @@
         <div
             class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
         >
-            <a
-                href="#"
-                class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white gap-1"
-            >
-                <img
-                    src="../../../public/runnrs.jpg"
-                    alt=""
-                    class="w-10 h-10"
-                />
-                JP
-            </a>
+            <!-- Enhanced Logo Section -->
+            <div class="flex flex-col items-center mb-8">
+                <div
+                    class="flex items-center justify-center w-28 h-28 mb-4 bg-blue-100 dark:bg-blue-900 rounded-full"
+                >
+                    <img
+                        src="../../../public/logo.png"
+                        alt="JP Logo"
+                        class="w-20 h-20 rounded-full"
+                    />
+                </div>
+                <h1
+                    class="text-3xl font-bold text-gray-900 dark:text-white text-center"
+                >
+                    Welcome to JP
+                </h1>
+                <p
+                    class="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center"
+                >
+                    Create your account to get started
+                </p>
+            </div>
+
             <div
                 class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700"
             >
                 <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-                    <h1
+                    <h2
                         class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white text-center"
                     >
                         Create an account
-                    </h1>
+                    </h2>
 
                     <!-- Admin Approval Notice -->
                     <div
@@ -72,7 +84,7 @@
                                 id="name"
                                 placeholder="Username"
                                 required
-                                class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             />
                         </div>
                         <div>
@@ -90,7 +102,7 @@
                                     id="password"
                                     placeholder="••••••••"
                                     required
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 />
                                 <button
                                     type="button"
@@ -175,7 +187,7 @@
                                     id="confirm_password"
                                     placeholder="••••••••"
                                     required
-                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                                 />
                                 <button
                                     type="button"
@@ -241,17 +253,17 @@
                         <button
                             type="submit"
                             :disabled="!isFormValid"
-                            class="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors"
+                            class="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200"
                             :class="
                                 isFormValid
-                                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300'
+                                    ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'
                                     : 'bg-gray-400 cursor-not-allowed'
                             "
                         >
                             Create an account
                         </button>
                         <p
-                            class="text-sm font-light text-gray-500 dark:text-gray-400"
+                            class="text-sm font-light text-gray-500 dark:text-gray-400 text-center"
                         >
                             Already have an account?
                             <RouterLink

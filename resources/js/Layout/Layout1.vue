@@ -2,15 +2,23 @@
     <div class="h-screen bg-gray-50">
         <!-- Top Header -->
         <div
-            class="bg-white shadow-md z-50 flex items-center justify-between px-6 py-3 fixed w-full h-16"
+            class="bg-white shadow-lg border-b border-gray-100 z-50 flex items-center justify-between px-6 py-3 fixed w-full h-16"
         >
-            <div class="flex items-center gap-3">
+            <!-- Enhanced Logo Section -->
+            <div class="flex items-center gap-4">
                 <img
-                    src="../../../public/runnrs.jpg"
-                    alt="Logo"
-                    class="w-10 h-10 rounded-lg"
+                    src="../../../public/logo.png"
+                    alt="Level Up Logo"
+                    class="w-12 h-12 rounded-full"
                 />
-                <span class="text-xl font-bold text-gray-800">JP Gaming</span>
+                <div class="flex flex-col">
+                    <span class="text-xl font-bold text-gray-800 leading-none"
+                        >Level Up</span
+                    >
+                    <span class="text-xs text-gray-500 leading-none"
+                        >Your Journey Starts Here</span
+                    >
+                </div>
             </div>
 
             <!-- User info section with expanded stats -->

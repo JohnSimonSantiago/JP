@@ -3,26 +3,38 @@
         <div
             class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
         >
-            <a
-                href="#"
-                class="flex items-center mb-6 text-2xl font-semibold text-gray-900 dark:text-white gap-1"
-            >
-                <img
-                    src="../../../public/runnrs.jpg"
-                    alt=""
-                    class="w-10 h-10"
-                />
-                JP
-            </a>
+            <!-- Enhanced Logo Section -->
+            <div class="flex flex-col items-center mb-8">
+                <div
+                    class="flex items-center justify-center w-28 h-28 mb-4 bg-blue-100 dark:bg-blue-900 rounded-full"
+                >
+                    <img
+                        src="../../../public/logo.png"
+                        alt="Level Up Logo"
+                        class="w-20 h-20 rounded-full"
+                    />
+                </div>
+                <h1
+                    class="text-3xl font-bold text-gray-900 dark:text-white text-center"
+                >
+                    Welcome to Level Up
+                </h1>
+                <p
+                    class="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center"
+                >
+                    Sign in to continue your journey
+                </p>
+            </div>
+
             <div
                 class="w-full bg-white rounded-lg shadow dark:border md:mt-0 sm:max-w-md xl:p-0 dark:bg-gray-800 dark:border-gray-700"
             >
                 <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
-                    <h1
-                        class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white"
+                    <h2
+                        class="text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white text-center"
                     >
                         Sign in to your account
-                    </h1>
+                    </h2>
 
                     <!-- Error Messages with different styling for approval pending -->
                     <div
@@ -159,14 +171,14 @@
 
                         <button
                             type="submit"
-                            class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
+                            class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                             :disabled="isLoading"
                         >
                             {{ isLoading ? "Signing in..." : "Sign in" }}
                         </button>
 
                         <p
-                            class="text-sm font-light text-gray-500 dark:text-gray-400"
+                            class="text-sm font-light text-gray-500 dark:text-gray-400 text-center"
                         >
                             <RouterLink to="/signup">
                                 Don't have an account yet?

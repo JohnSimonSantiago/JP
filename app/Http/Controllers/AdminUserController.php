@@ -78,8 +78,10 @@ class AdminUserController extends Controller
             
             Log::info("User {$user->name} (ID: {$user->id}) approved by admin {$adminName}");
 
-            // Get fresh user data
-            $freshUser = $user->fresh(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image']);
+            // FIXED: Get fresh user data with only() method instead of fresh() with fields
+            $freshUser = User::where('id', $user->id)
+                ->select(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image', 'level', 'points'])
+                ->first();
             
             Log::info('Returning success response', [
                 'user_id' => $user->id,
@@ -144,10 +146,15 @@ class AdminUserController extends Controller
             
             Log::info("User {$user->name} (ID: {$user->id}) approval revoked by admin {$adminName}");
 
+            // FIXED: Get fresh user data with select() instead of fresh() with fields
+            $freshUser = User::where('id', $user->id)
+                ->select(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image'])
+                ->first();
+
             return response()->json([
                 'success' => true,
                 'message' => "Approval revoked for {$user->name}",
-                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image'])
+                'user' => $freshUser
             ]);
         } catch (\Exception $e) {
             Log::error('Error revoking user approval: ' . $e->getMessage(), [
