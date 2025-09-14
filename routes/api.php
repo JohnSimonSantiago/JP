@@ -165,6 +165,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
     Route::post('/users/{user}/approve', [AdminUserController::class, 'approve']);
     Route::post('/users/{user}/revoke', [AdminUserController::class, 'revoke']);
+    Route::post('/users/{user}/update-role', [AdminUserController::class, 'updateRole']); // NEW ROUTE
     Route::post('/users/bulk-approve', [AdminUserController::class, 'bulkApprove']);
     
         // Shop Management

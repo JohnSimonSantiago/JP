@@ -262,7 +262,11 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
+                                <!-- Role display for pending users or non-admin users -->
                                 <span
+                                    v-if="
+                                        !user.is_approved || !isCurrentUserAdmin
+                                    "
                                     :class="getRoleColor(user.role)"
                                     class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                 >
@@ -274,6 +278,54 @@
                                             : "User"
                                     }}
                                 </span>
+
+                                <!-- Role dropdown for approved users (admin only) -->
+                                <div v-else class="relative">
+                                    <select
+                                        v-model="user.role"
+                                        @change="updateUserRole(user)"
+                                        :disabled="
+                                            processingUsers[user.id] ||
+                                            user.id === currentUserId
+                                        "
+                                        :class="[
+                                            getRoleColor(user.role),
+                                            processingUsers[user.id]
+                                                ? 'opacity-50'
+                                                : '',
+                                            user.id === currentUserId
+                                                ? 'cursor-not-allowed'
+                                                : 'cursor-pointer',
+                                        ]"
+                                        class="inline-flex px-2 py-1 text-xs font-semibold rounded-full border-0 bg-transparent appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                    >
+                                        <option value="user">User</option>
+                                        <option value="shop_owner">
+                                            Shop Owner
+                                        </option>
+                                        <option value="admin">
+                                            Administrator
+                                        </option>
+                                    </select>
+                                    <!-- Custom dropdown arrow -->
+                                    <div
+                                        class="absolute inset-y-0 right-0 flex items-center pr-1 pointer-events-none"
+                                    >
+                                        <svg
+                                            class="w-3 h-3 text-gray-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M19 9l-7 7-7-7"
+                                            ></path>
+                                        </svg>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span
@@ -371,6 +423,8 @@ export default {
             isLoading: false,
             error: null,
             processingUsers: {}, // Track which users are being processed
+            currentUserId: null,
+            isCurrentUserAdmin: false,
         };
     },
     computed: {
@@ -403,6 +457,14 @@ export default {
                 return true;
             }
             return false;
+        },
+
+        initializeCurrentUser() {
+            const user = JSON.parse(localStorage.getItem("user") || "null");
+            if (user) {
+                this.currentUserId = user.id;
+                this.isCurrentUserAdmin = user.role === "admin";
+            }
         },
 
         async fetchUsers() {
@@ -439,6 +501,101 @@ export default {
             } finally {
                 this.isLoading = false;
             }
+        },
+
+        async updateUserRole(user) {
+            // Prevent changing own role
+            if (user.id === this.currentUserId) {
+                if (this.$toast) {
+                    this.$toast.add({
+                        severity: "warn",
+                        summary: "Warning",
+                        detail: "You cannot change your own role",
+                        life: 3000,
+                    });
+                } else {
+                    alert("You cannot change your own role");
+                }
+                return;
+            }
+
+            // Store original role in case we need to revert
+            const originalRole = this.users.find((u) => u.id === user.id).role;
+
+            this.processingUsers[user.id] = true;
+
+            try {
+                if (!this.setupAxiosToken()) {
+                    throw new Error("No authentication token found");
+                }
+
+                const response = await axios.post(
+                    `/api/admin/users/${user.id}/update-role`,
+                    { role: user.role }
+                );
+
+                if (response.data.success) {
+                    // Update local state
+                    const userIndex = this.users.findIndex(
+                        (u) => u.id === user.id
+                    );
+                    if (userIndex !== -1) {
+                        this.users[userIndex].role = user.role;
+                    }
+
+                    // Show success toast if available
+                    if (this.$toast) {
+                        this.$toast.add({
+                            severity: "success",
+                            summary: "Success",
+                            detail: `${
+                                user.name
+                            }'s role updated to ${this.getRoleDisplayName(
+                                user.role
+                            )}`,
+                            life: 3000,
+                        });
+                    }
+                } else {
+                    // Revert role change on failure
+                    user.role = originalRole;
+                    throw new Error(
+                        response.data.message || "Failed to update user role"
+                    );
+                }
+            } catch (error) {
+                console.error("Error updating user role:", error);
+
+                // Revert role change on error
+                user.role = originalRole;
+
+                const errorMessage =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Failed to update user role";
+
+                if (this.$toast) {
+                    this.$toast.add({
+                        severity: "error",
+                        summary: "Error",
+                        detail: errorMessage,
+                        life: 5000,
+                    });
+                } else {
+                    alert(errorMessage);
+                }
+            } finally {
+                delete this.processingUsers[user.id];
+            }
+        },
+
+        getRoleDisplayName(role) {
+            const roleNames = {
+                admin: "Administrator",
+                shop_owner: "Shop Owner",
+                user: "User",
+            };
+            return roleNames[role] || "User";
         },
 
         async approveUser(user) {
@@ -589,7 +746,30 @@ export default {
     },
 
     async mounted() {
+        this.initializeCurrentUser();
         await this.fetchUsers();
     },
 };
 </script>
+
+<style scoped>
+/* Custom select styling */
+select {
+    background-image: none;
+}
+
+select:focus {
+    outline: none;
+}
+
+/* Hide default arrow in Firefox */
+select {
+    -moz-appearance: none;
+}
+
+/* Hide default arrow in Chrome/Safari */
+select {
+    -webkit-appearance: none;
+    appearance: none;
+}
+</style>

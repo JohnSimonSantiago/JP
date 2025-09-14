@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class AdminUserController extends Controller
 {
@@ -42,12 +43,78 @@ class AdminUserController extends Controller
     }
 
     /**
+     * Update user role (admin only)
+     */
+    public function updateRole(Request $request, User $user)
+    {
+        try {
+            // Validate the role
+            $request->validate([
+                'role' => ['required', Rule::in(['user', 'shop_owner', 'admin'])]
+            ]);
+
+            $currentUser = Auth::guard('sanctum')->user();
+            
+            // Prevent users from changing their own role
+            if ($currentUser->id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot change your own role'
+                ], 403);
+            }
+
+            // Log the role change attempt
+            Log::info('Admin attempting to change user role', [
+                'admin_id' => $currentUser->id,
+                'admin_name' => $currentUser->name,
+                'target_user_id' => $user->id,
+                'target_user_name' => $user->name,
+                'current_role' => $user->role,
+                'new_role' => $request->role
+            ]);
+
+            $oldRole = $user->role;
+            $newRole = $request->role;
+
+            // Update the user's role
+            $user->update(['role' => $newRole]);
+
+            Log::info("User role updated", [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'old_role' => $oldRole,
+                'new_role' => $newRole,
+                'admin_id' => $currentUser->id,
+                'admin_name' => $currentUser->name
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => "User role updated from {$oldRole} to {$newRole}",
+                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved'])
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updating user role: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'requested_role' => $request->role ?? 'unknown',
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update user role'
+            ], 500);
+        }
+    }
+
+    /**
      * Approve a user
      */
     public function approve(User $user)
     {
         try {
-            // Add debugging
             Log::info('Starting user approval process', [
                 'user_id' => $user->id,
                 'user_name' => $user->name,
@@ -78,7 +145,7 @@ class AdminUserController extends Controller
             
             Log::info("User {$user->name} (ID: {$user->id}) approved by admin {$adminName}");
 
-            // FIXED: Get fresh user data with only() method instead of fresh() with fields
+            // Get fresh user data
             $freshUser = User::where('id', $user->id)
                 ->select(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image', 'level', 'points'])
                 ->first();
@@ -143,18 +210,13 @@ class AdminUserController extends Controller
 
             $adminUser = Auth::guard('sanctum')->user();
             $adminName = $adminUser ? $adminUser->name : 'Unknown Admin';
-            
-            Log::info("User {$user->name} (ID: {$user->id}) approval revoked by admin {$adminName}");
 
-            // FIXED: Get fresh user data with select() instead of fresh() with fields
-            $freshUser = User::where('id', $user->id)
-                ->select(['id', 'name', 'email', 'role', 'is_approved', 'created_at', 'profile_image'])
-                ->first();
+            Log::info("Approval revoked for user {$user->name} (ID: {$user->id}) by admin {$adminName}");
 
             return response()->json([
                 'success' => true,
                 'message' => "Approval revoked for {$user->name}",
-                'user' => $freshUser
+                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved'])
             ]);
         } catch (\Exception $e) {
             Log::error('Error revoking user approval: ' . $e->getMessage(), [
@@ -171,23 +233,30 @@ class AdminUserController extends Controller
     }
 
     /**
-     * Bulk approve multiple users
+     * Bulk approve users
      */
     public function bulkApprove(Request $request)
     {
-        $request->validate([
-            'user_ids' => 'required|array',
-            'user_ids.*' => 'exists:users,id'
-        ]);
-
         try {
+            $request->validate([
+                'user_ids' => 'required|array',
+                'user_ids.*' => 'integer|exists:users,id'
+            ]);
+
             $userIds = $request->user_ids;
+            $users = User::whereIn('id', $userIds)->where('is_approved', false)->get();
             
+            if ($users->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No pending users found to approve'
+                ], 400);
+            }
+
             $updatedCount = User::whereIn('id', $userIds)
                 ->where('is_approved', false)
                 ->update(['is_approved' => true]);
 
-            $users = User::whereIn('id', $userIds)->get(['id', 'name']);
             $userNames = $users->pluck('name')->join(', ');
 
             $adminUser = Auth::guard('sanctum')->user();
