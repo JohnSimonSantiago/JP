@@ -9,7 +9,7 @@
                     class="flex items-center justify-center w-28 h-28 mb-4 bg-blue-100 dark:bg-blue-900 rounded-full"
                 >
                     <img
-                        src="../../../public/logo.png"
+                        src="../../../public/logotemp.png"
                         alt="JP Logo"
                         class="w-20 h-20 rounded-full"
                     />
@@ -17,7 +17,7 @@
                 <h1
                     class="text-3xl font-bold text-gray-900 dark:text-white text-center"
                 >
-                    Welcome to JP
+                    Welcome to Suki Me
                 </h1>
                 <p
                     class="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center"
