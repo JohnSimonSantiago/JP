@@ -132,7 +132,10 @@
                         </div>
 
                         <!-- Notification Categories Tabs -->
-                        <div class="flex border-b border-gray-200">
+                        <div
+                            class="flex border-b border-gray-200"
+                            v-if="notificationTabs.length > 0"
+                        >
                             <button
                                 v-for="tab in notificationTabs"
                                 :key="tab.key"
@@ -247,7 +250,44 @@
                                 </div>
                             </div>
 
-                            <!-- Trade Requests -->
+                            <!-- Loyalty Rewards -->
+                            <div
+                                v-for="loyalty in currentNotifications"
+                                :key="`loyalty-${loyalty.id}`"
+                                v-if="activeNotificationTab === 'loyalty'"
+                                class="px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                @click="
+                                    handleNotificationClick('loyalty', loyalty)
+                                "
+                            >
+                                <div class="flex items-start gap-3">
+                                    <div
+                                        class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0"
+                                    >
+                                        <i
+                                            class="pi pi-gift text-green-600 text-xs"
+                                        ></i>
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p
+                                            class="text-sm font-medium text-gray-900 truncate"
+                                        >
+                                            {{
+                                                loyalty.message ||
+                                                "Loyalty Reward"
+                                            }}
+                                        </p>
+                                        <p
+                                            class="text-xs text-gray-500 truncate"
+                                        >
+                                            Check your shop dashboard
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- COMMENTED OUT - Trade Requests -->
+                            <!-- 
                             <div
                                 v-for="trade in currentNotifications"
                                 :key="`trade-${trade.id}`"
@@ -301,8 +341,10 @@
                                     </div>
                                 </div>
                             </div>
+                            -->
 
-                            <!-- Bet Requests -->
+                            <!-- COMMENTED OUT - Bet Requests -->
+                            <!--
                             <div
                                 v-for="bet in currentNotifications"
                                 :key="`bet-${bet.id}`"
@@ -352,8 +394,10 @@
                                     </div>
                                 </div>
                             </div>
+                            -->
 
-                            <!-- Referee Requests -->
+                            <!-- COMMENTED OUT - Referee Requests -->
+                            <!--
                             <div
                                 v-for="referee in currentNotifications"
                                 :key="`referee-${referee.id}`"
@@ -405,6 +449,7 @@
                                     </div>
                                 </div>
                             </div>
+                            -->
                         </div>
 
                         <!-- Footer -->
@@ -490,7 +535,9 @@
                             <span class="font-medium">Dashboard</span>
                         </router-link>
 
-                        <!-- <router-link
+                        <!-- COMMENTED OUT - Leaderboards -->
+                        <!-- 
+                        <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/leaderboards"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
@@ -499,9 +546,12 @@
                                 class="pi pi-chart-bar text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Leaderboards</span>
-                        </router-link> -->
+                        </router-link>
+                        -->
 
-                        <!-- <router-link
+                        <!-- COMMENTED OUT - Trade -->
+                        <!--
+                        <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/trade"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
@@ -520,7 +570,8 @@
                                         : totalTradeNotifications
                                 }}
                             </div>
-                        </router-link> -->
+                        </router-link>
+                        -->
 
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
@@ -533,8 +584,9 @@
                             <span class="font-medium">Profile</span>
                         </router-link>
 
-                        <!-- Matches/Bets with notification indicator -->
-                        <!-- <router-link
+                        <!-- COMMENTED OUT - Matches/Bets -->
+                        <!--
+                        <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/bet"
                             class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
@@ -553,7 +605,8 @@
                                         : totalBetNotifications
                                 }}
                             </div>
-                        </router-link> -->
+                        </router-link>
+                        -->
 
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
@@ -593,7 +646,6 @@
                             >
                                 {{ user.role === "admin" ? "Admin" : "Owner" }}
                             </span>
-                            <!-- FIXED: Use totalShopNotifications instead of pendingOrdersCount -->
                             <div
                                 v-if="totalShopNotifications > 0"
                                 class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse"
@@ -687,10 +739,6 @@ export default {
     components: {
         Button,
     },
-    // Fix your data section in Layout.vue
-    // Fix your Layout.vue - Here are the specific changes needed:
-
-    // 1. ADD these properties to your data section:
     data() {
         return {
             user: {
@@ -724,16 +772,18 @@ export default {
 
             // Notification counts
             pendingOrdersCount: 0,
-            tradeRequestsCount: 0,
-            tradeSentCount: 0,
-            betRequestsCount: 0,
-            betsSentCount: 0,
-            refereeRequestsCount: 0,
+            // COMMENTED OUT - Trade notification counts
+            // tradeRequestsCount: 0,
+            // tradeSentCount: 0,
+            // COMMENTED OUT - Bet notification counts
+            // betRequestsCount: 0,
+            // betsSentCount: 0,
+            // refereeRequestsCount: 0,
 
-            // ADD THESE MISSING PROPERTIES:
+            // Shop notification counts
             shopOrdersCount: 0,
             shopLoyaltyCount: 0,
-            pendingApprovalCount: 0, // <-- THIS WAS MISSING!
+            pendingApprovalCount: 0,
 
             // Polling
             notificationPollingInterval: null,
@@ -761,53 +811,59 @@ export default {
             return this.shopOrdersCount + this.shopLoyaltyCount;
         },
 
-        // UPDATE: Include shop notifications in total count
+        // UPDATE: Include only shop notifications in total count (excluding trades, bets, referee)
         totalNotificationsCount() {
             return (
                 this.pendingOrdersCount +
-                this.tradeRequestsCount +
-                this.tradeSentCount +
-                this.betRequestsCount +
-                this.betsSentCount +
-                this.refereeRequestsCount +
-                this.totalShopNotifications // ADD THIS LINE
+                // COMMENTED OUT - Trade notifications
+                // this.tradeRequestsCount +
+                // this.tradeSentCount +
+                // COMMENTED OUT - Bet notifications
+                // this.betRequestsCount +
+                // this.betsSentCount +
+                // COMMENTED OUT - Referee notifications
+                // this.refereeRequestsCount +
+                this.totalShopNotifications // Only shop notifications remain active
             );
         },
 
-        // Total trade notifications (sent + received)
-        totalTradeNotifications() {
-            return this.tradeRequestsCount + this.tradeSentCount;
-        },
+        // COMMENTED OUT - Total trade notifications (sent + received)
+        // totalTradeNotifications() {
+        //     return this.tradeRequestsCount + this.tradeSentCount;
+        // },
 
-        // Total bet notifications (incoming + sent + referee)
-        totalBetNotifications() {
-            return (
-                this.betRequestsCount +
-                this.betsSentCount +
-                this.refereeRequestsCount
-            );
-        },
+        // COMMENTED OUT - Total bet notifications (incoming + sent + referee)
+        // totalBetNotifications() {
+        //     return (
+        //         this.betRequestsCount +
+        //         this.betsSentCount +
+        //         this.refereeRequestsCount
+        //     );
+        // },
 
         notificationTabs() {
             const tabs = [
-                {
-                    key: "trades",
-                    label: "Trades",
-                    icon: "pi pi-arrow-right-arrow-left",
-                    count: this.tradeRequestsCount,
-                },
-                {
-                    key: "bets",
-                    label: "Bets",
-                    icon: "pi pi-ticket",
-                    count: this.betRequestsCount,
-                },
-                {
-                    key: "referee",
-                    label: "Referee",
-                    icon: "pi pi-balance-scale",
-                    count: this.refereeRequestsCount,
-                },
+                // COMMENTED OUT - Trade notifications
+                // {
+                //     key: "trades",
+                //     label: "Trades",
+                //     icon: "pi pi-arrow-right-arrow-left",
+                //     count: this.tradeRequestsCount,
+                // },
+                // COMMENTED OUT - Bet notifications
+                // {
+                //     key: "bets",
+                //     label: "Bets",
+                //     icon: "pi pi-ticket",
+                //     count: this.betRequestsCount,
+                // },
+                // COMMENTED OUT - Referee notifications
+                // {
+                //     key: "referee",
+                //     label: "Referee",
+                //     icon: "pi pi-balance-scale",
+                //     count: this.refereeRequestsCount,
+                // },
             ];
 
             // Only show orders tab for shop owners/admins
@@ -846,12 +902,13 @@ export default {
                               },
                           ]
                         : [];
-                case "trades":
-                    return this.tradeRequests.slice(0, 5);
-                case "bets":
-                    return this.betRequests.slice(0, 5);
-                case "referee":
-                    return this.refereeRequests.slice(0, 5);
+                // COMMENTED OUT - Trade notifications
+                // case "trades":
+                //     return this.tradeRequests.slice(0, 5);
+                // case "bets":
+                //     return this.betRequests.slice(0, 5);
+                // case "referee":
+                //     return this.refereeRequests.slice(0, 5);
                 default:
                     return [];
             }
@@ -876,35 +933,36 @@ export default {
             }
         },
 
+        // COMMENTED OUT - Fetch notifications method (only keeping shop-related parts)
         async fetchNotifications() {
             if (!this.user.id || this.loading) return;
 
             try {
                 this.loading = true;
 
-                // Fetch user notifications (trades, bets, referee)
-                const response = await axios.get("/api/notifications");
+                // COMMENTED OUT - Fetch user notifications (trades, bets, referee)
+                // const response = await axios.get("/api/notifications");
 
-                if (response.data.success) {
-                    const data = response.data;
+                // if (response.data.success) {
+                //     const data = response.data;
 
-                    // Update notification data
-                    this.pendingOrders = data.pending_orders || [];
-                    this.tradeRequests = data.trade_requests || [];
-                    this.tradeSent = data.trade_sent || [];
-                    this.betRequests = data.bet_requests || [];
-                    this.betsSent = data.bets_sent || [];
-                    this.refereeRequests = data.referee_requests || [];
+                //     // Update notification data
+                //     this.pendingOrders = data.pending_orders || [];
+                //     this.tradeRequests = data.trade_requests || [];
+                //     this.tradeSent = data.trade_sent || [];
+                //     this.betRequests = data.bet_requests || [];
+                //     this.betsSent = data.bets_sent || [];
+                //     this.refereeRequests = data.referee_requests || [];
 
-                    // Update counts
-                    this.pendingOrdersCount = data.pending_orders_count || 0;
-                    this.tradeRequestsCount = data.trade_requests_count || 0;
-                    this.tradeSentCount = data.trade_sent_count || 0;
-                    this.betRequestsCount = data.bet_requests_count || 0;
-                    this.betsSentCount = data.bets_sent_count || 0;
-                    this.refereeRequestsCount =
-                        data.referee_requests_count || 0;
-                }
+                //     // Update counts
+                //     this.pendingOrdersCount = data.pending_orders_count || 0;
+                //     this.tradeRequestsCount = data.trade_requests_count || 0;
+                //     this.tradeSentCount = data.trade_sent_count || 0;
+                //     this.betRequestsCount = data.bet_requests_count || 0;
+                //     this.betsSentCount = data.bets_sent_count || 0;
+                //     this.refereeRequestsCount =
+                //         data.referee_requests_count || 0;
+                // }
             } catch (error) {
                 this.notificationError = "Failed to load notifications";
                 console.error("Error fetching notifications:", error);
@@ -912,7 +970,6 @@ export default {
                 this.loading = false;
             }
         },
-        // Add this method to your Layout.vue methods section
 
         async fetchShopNotifications() {
             if (!this.hasShop) return;
@@ -1024,18 +1081,18 @@ export default {
                     promises.push(this.fetchPendingOrders());
                 }
 
-                // Fetch trade requests
-                promises.push(this.fetchTradeRequests());
+                // COMMENTED OUT - Fetch trade requests
+                // promises.push(this.fetchTradeRequests());
 
-                // Fetch bet requests and referee requests
-                promises.push(this.fetchBetRequests());
+                // COMMENTED OUT - Fetch bet requests and referee requests
+                // promises.push(this.fetchBetRequests());
 
                 // Fetch shop notifications (orders + loyalty counts)
                 if (this.isShopOwnerOrAdmin) {
                     promises.push(this.fetchShopNotifications());
                 }
 
-                // ADD THIS: Fetch pending approval count for admins
+                // Fetch pending approval count for admins
                 if (this.isAdmin) {
                     promises.push(this.fetchPendingApprovalCount());
                 }
@@ -1048,6 +1105,7 @@ export default {
                 this.loading = false;
             }
         },
+
         async fetchPendingOrders() {
             try {
                 let response;
@@ -1111,71 +1169,73 @@ export default {
             }
         },
 
-        async fetchTradeRequests() {
-            try {
-                const response = await axios.get("/api/trades");
+        // COMMENTED OUT - Fetch trade requests
+        // async fetchTradeRequests() {
+        //     try {
+        //         const response = await axios.get("/api/trades");
 
-                if (response.data.success) {
-                    // Get all trades and filter by user involvement and status
-                    const allTrades = response.data.trades || [];
+        //         if (response.data.success) {
+        //             // Get all trades and filter by user involvement and status
+        //             const allTrades = response.data.trades || [];
 
-                    // Incoming trades (received and pending)
-                    this.tradeRequests = allTrades.filter(
-                        (trade) =>
-                            trade.receiver_id === this.user.id &&
-                            trade.status === "pending"
-                    );
-                    this.tradeRequestsCount = this.tradeRequests.length;
+        //             // Incoming trades (received and pending)
+        //             this.tradeRequests = allTrades.filter(
+        //                 (trade) =>
+        //                     trade.receiver_id === this.user.id &&
+        //                     trade.status === "pending"
+        //             );
+        //             this.tradeRequestsCount = this.tradeRequests.length;
 
-                    // Sent trades (sent and still pending)
-                    this.tradeSent = allTrades.filter(
-                        (trade) =>
-                            trade.sender_id === this.user.id &&
-                            trade.status === "pending"
-                    );
-                    this.tradeSentCount = this.tradeSent.length;
-                }
-            } catch (error) {
-                console.error("Failed to fetch trade requests:", error);
-                this.tradeRequests = [];
-                this.tradeSent = [];
-                this.tradeRequestsCount = 0;
-                this.tradeSentCount = 0;
-            }
-        },
+        //             // Sent trades (sent and still pending)
+        //             this.tradeSent = allTrades.filter(
+        //                 (trade) =>
+        //                     trade.sender_id === this.user.id &&
+        //                     trade.status === "pending"
+        //             );
+        //             this.tradeSentCount = this.tradeSent.length;
+        //         }
+        //     } catch (error) {
+        //         console.error("Failed to fetch trade requests:", error);
+        //         this.tradeRequests = [];
+        //         this.tradeSent = [];
+        //         this.tradeRequestsCount = 0;
+        //         this.tradeSentCount = 0;
+        //     }
+        // },
 
-        async fetchBetRequests() {
-            try {
-                const response = await axios.get("/api/bets");
+        // COMMENTED OUT - Fetch bet requests
+        // async fetchBetRequests() {
+        //     try {
+        //         const response = await axios.get("/api/bets");
 
-                if (response.data.success) {
-                    // Incoming bet requests
-                    this.betRequests = response.data.incoming_bets || [];
-                    this.betRequestsCount = this.betRequests.length;
+        //         if (response.data.success) {
+        //             // Incoming bet requests
+        //             this.betRequests = response.data.incoming_bets || [];
+        //             this.betRequestsCount = this.betRequests.length;
 
-                    // Sent bets (my pending bets where I'm the creator)
-                    const myBets = response.data.my_bets || [];
-                    this.betsSent = myBets.filter(
-                        (bet) =>
-                            bet.creator_id === this.user.id &&
-                            bet.status === "pending"
-                    );
-                    this.betsSentCount = this.betsSent.length;
+        //             // Sent bets (my pending bets where I'm the creator)
+        //             const myBets = response.data.my_bets || [];
+        //             this.betsSent = myBets.filter(
+        //                 (bet) =>
+        //                     bet.creator_id === this.user.id &&
+        //                     bet.status === "pending"
+        //             );
+        //             this.betsSentCount = this.betsSent.length;
 
-                    // Referee requests
-                    this.refereeRequests = response.data.referee_bets || [];
-                    this.refereeRequestsCount = this.refereeRequests.length;
-                }
-            } catch (error) {
-                console.error("Failed to fetch bet requests:", error);
-                this.betRequests = [];
-                this.betsSent = [];
-                this.refereeRequests = [];
-                this.betRequestsCount = 0;
-                this.betsSentCount = 0;
-                this.refereeRequestsCount = 0;
-            }
-        },
+        //             // Referee requests
+        //             this.refereeRequests = response.data.referee_bets || [];
+        //             this.refereeRequestsCount = this.refereeRequests.length;
+        //         }
+        //     } catch (error) {
+        //         console.error("Failed to fetch bet requests:", error);
+        //         this.betRequests = [];
+        //         this.betsSent = [];
+        //         this.refereeRequests = [];
+        //         this.betRequestsCount = 0;
+        //         this.betsSentCount = 0;
+        //         this.refereeRequestsCount = 0;
+        //     }
+        // },
 
         async refreshNotifications() {
             await this.fetchAllNotifications();
@@ -1202,19 +1262,23 @@ export default {
             this.showNotifications = !this.showNotifications;
             if (this.showNotifications) {
                 // Set default active tab based on what notifications exist
-                if (this.hasShop && this.pendingOrdersCount > 0) {
+                if (this.hasShop && this.shopOrdersCount > 0) {
                     this.activeNotificationTab = "orders";
-                } else if (this.tradeRequestsCount > 0) {
-                    this.activeNotificationTab = "trades";
-                } else if (this.betRequestsCount > 0) {
-                    this.activeNotificationTab = "bets";
-                } else if (this.refereeRequestsCount > 0) {
-                    this.activeNotificationTab = "referee";
+                } else if (this.hasShop && this.shopLoyaltyCount > 0) {
+                    this.activeNotificationTab = "loyalty";
                 } else {
-                    // Default to first available tab
+                    // Default to first available tab (should be orders or loyalty for shop owners)
                     this.activeNotificationTab =
-                        this.notificationTabs[0]?.key || "trades";
+                        this.notificationTabs[0]?.key || "orders";
                 }
+
+                // COMMENTED OUT - No longer checking for trade/bet/referee notifications
+                // } else if (this.tradeRequestsCount > 0) {
+                //     this.activeNotificationTab = "trades";
+                // } else if (this.betRequestsCount > 0) {
+                //     this.activeNotificationTab = "bets";
+                // } else if (this.refereeRequestsCount > 0) {
+                //     this.activeNotificationTab = "referee";
             }
         },
 
@@ -1225,15 +1289,21 @@ export default {
                 case "order":
                     this.$router.push("/my-shop?tab=orders");
                     break;
-                case "trade":
-                    this.$router.push("/trade?tab=incoming");
+                case "loyalty":
+                    this.$router.push("/my-shop?tab=loyalty");
                     break;
-                case "bet":
-                    this.$router.push("/bet?tab=incoming");
-                    break;
-                case "referee":
-                    this.$router.push("/bet?tab=referee");
-                    break;
+                // COMMENTED OUT - Trade navigation
+                // case "trade":
+                //     this.$router.push("/trade?tab=incoming");
+                //     break;
+                // COMMENTED OUT - Bet navigation
+                // case "bet":
+                //     this.$router.push("/bet?tab=incoming");
+                //     break;
+                // COMMENTED OUT - Referee navigation
+                // case "referee":
+                //     this.$router.push("/bet?tab=referee");
+                //     break;
             }
         },
 
