@@ -23,6 +23,7 @@ use App\Http\Controllers\AdminUserController;
 
 // Public routes (no authentication needed)
 Route::post('/logout', [LoginController::class, 'logout']);
+Route::post('/login', [LoginController::class, 'login']);
 
 // Public shop routes
 Route::prefix('shops')->group(function () {
