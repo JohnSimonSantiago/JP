@@ -21,6 +21,11 @@ Route::get("/checkUser", [LoginController::class, "checkLogin"]);
 Route::post("/logout", [LoginController::class, "logout"]);
 Route::post("/signup", [UserController::class, "signUp"]);
 
+Route::get('/delete-account', function () {
+    return view('delete-account');
+});
+    
+// SPA Routes
 // SPA Routes - All return the main Vue.js app
 // Remove middleware since authorization is handled in Vue.js and API
 Route::get('/shops', function () {
