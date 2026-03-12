@@ -31,7 +31,14 @@ class MembershipController extends Controller
             return response()->json(['success' => false, 'message' => 'Membership is not pending'], 400);
         }
 
-        $membership->update(['status' => 'approved']);
+$start = now();
+        $end = $membership->type === 'monthly' ? $start->copy()->addMonth() : $start->copy()->addYear();
+
+        $membership->update([
+            'status' => 'approved',
+            'start_date' => $start,
+            'end_date' => $end,
+        ]);
         $membership->user->update(['is_premium' => true]);
 
         return response()->json([
