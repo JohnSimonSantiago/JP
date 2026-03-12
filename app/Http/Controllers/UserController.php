@@ -335,9 +335,9 @@ public function getProfile()
             ];
 
             // Add name validation with unique check (excluding current user)
-            if ($request->has('name')) {
-                $rules['name'] = 'required|string|max:255|unique:users,name,' . $user->id;
-            }
+if ($request->has('username')) {
+    $rules['username'] = 'sometimes|nullable|string|max:255|unique:users,username,' . $user->id;
+}
 
             $validator = Validator::make($request->all(), $rules, [
                 'name.unique' => 'This username is already taken by another user. Please choose a different one.',
@@ -363,8 +363,7 @@ public function getProfile()
             ]);
 
             // Update the user - ADDED bio to the fillable fields
-            $user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
-
+            $user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));$user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
             // Refresh the user from database to get updated values
             $user->refresh();
 
@@ -373,8 +372,9 @@ public function getProfile()
                 'message' => 'Profile updated successfully',
                 'user' => [
                     'id' => $user->id,
-                    'name' => $user->name,
-                    'bio' => $user->bio, // ADDED: Include bio in response
+'name' => $user->name,
+'username' => $user->username,
+'bio' => $user->bio,
                     'level' => $user->level,
                     'stars' => $user->stars,
                     'points' => $user->points,

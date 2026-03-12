@@ -14,6 +14,7 @@ use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\PointShopController;
 use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\AdminUserController;
+use App\Http\Controllers\MembershipController;
 
 /*
 |--------------------------------------------------------------------------
@@ -195,10 +196,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/point-orders/{id}/reject', [AdminPricingController::class, 'rejectPointOrder']); // Reject point order
 
     // Point shop statistics
-    Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointShopStatistics']);
+Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointShopStatistics']);
+
+    // Membership management
+    Route::get('/memberships', [MembershipController::class, 'adminIndex']);
+    Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
+    Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
     });
 });
-
 Route::prefix('point-shop')->group(function () {
     Route::get('/', [PointShopController::class, 'index']); // List all point shop items
 });
