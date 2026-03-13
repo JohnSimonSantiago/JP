@@ -32,14 +32,18 @@ class MembershipController extends Controller
         }
 
 $start = now();
-        $end = $membership->type === 'monthly' ? $start->copy()->addMonth() : $start->copy()->addYear();
+        $end = $start->copy()->addMonth();
 
         $membership->update([
             'status' => 'approved',
             'start_date' => $start,
             'end_date' => $end,
         ]);
-        $membership->user->update(['is_premium' => true]);
+        $levelMap = ['level_2' => 2, 'level_3' => 3];
+$membership->user->update([
+    'is_premium' => true,
+    'level' => $levelMap[$membership->type] ?? 1,
+]);
 
         return response()->json([
             'success' => true,
@@ -64,4 +68,18 @@ $start = now();
             'membership' => $membership->fresh('user')
         ]);
     }
+    public function expireOldMemberships()
+{
+    $expired = Membership::with('user')
+        ->where('status', 'approved')
+        ->where('end_date', '<', Carbon::now())
+        ->get();
+
+    foreach ($expired as $m) {
+        $m->update(['status' => 'expired']);
+        $m->user->update(['is_premium' => false, 'level' => 1]);
+    }
+
+    return response()->json(['success' => true, 'expired' => $expired->count()]);
+}
 }
