@@ -179,6 +179,39 @@ class AdminUserController extends Controller
     /**
      * Revoke user approval
      */
+public function changePassword(Request $request, User $user)
+    {
+        try {
+            $request->validate([
+                'password' => 'required|string|min:8|confirmed',
+            ]);
+
+            $currentAdmin = Auth::guard('sanctum')->user();
+
+            if ($user->role === 'admin' && $currentAdmin->id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot change password of another admin',
+                ], 403);
+            }
+
+            $user->update(['password' => bcrypt($request->password)]);
+
+            Log::info("Password changed for user {$user->name} (ID: {$user->id}) by admin {$currentAdmin->name}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "Password updated for {$user->name}",
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error changing user password: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change password',
+            ], 500);
+        }
+    }
+
     public function revoke(User $user)
     {
         try {
