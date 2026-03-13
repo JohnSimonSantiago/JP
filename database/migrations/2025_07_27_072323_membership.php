@@ -16,7 +16,7 @@ Schema::create('memberships', function (Blueprint $table) {
     $table->foreignId('user_id')->constrained()->onDelete('cascade');
     $table->date('start_date');
     $table->date('end_date');
-    $table->enum('type', ['monthly', 'annual'])->default('monthly');
+    $table->enum('type', ['level_2', 'level_3'])->default('level_2');
     $table->enum('status', ['pending', 'approved', 'rejected', 'expired'])->default('pending');
     $table->timestamps();
 });
