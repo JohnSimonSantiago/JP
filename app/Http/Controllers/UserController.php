@@ -437,8 +437,7 @@ if ($request->has('username')) {
     {
         try {
             $validator = Validator::make($request->all(), [
-                'type' => 'required|in:monthly,annual',
-                'start_date' => 'required|date|after_or_equal:today',
+'type' => 'required|in:level_2,level_3',
             ]);
 
             if ($validator->fails()) {
@@ -465,10 +464,8 @@ if ($request->has('username')) {
             }
 
             // Calculate end date based on type
-            $startDate = Carbon::parse($request->start_date);
-            $endDate = $request->type === 'monthly' 
-                ? $startDate->copy()->addMonth()
-                : $startDate->copy()->addYear();
+$startDate = Carbon::now();
+$endDate = $startDate->copy()->addMonth();
 
             $membership = Membership::create([
                 'user_id' => $user->id,
