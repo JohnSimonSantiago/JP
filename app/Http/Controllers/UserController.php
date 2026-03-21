@@ -108,22 +108,32 @@ class UserController extends Controller
         }
     }
 
-    public function signUp(Request $request)
+public function signUp(Request $request)
 {
     $request->validate([
         'name' => 'required|string|max:255|unique:users,name',
-        'password' => 'required|string|min:6|confirmed',
+        'password' => 'required|string|min:8|confirmed',
+        'full_name' => 'required|string|max:255',
+        'valid_id' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
     ], [
         'name.unique' => 'This username is already taken.',
         'name.required' => 'Username is required.',
         'password.required' => 'Password is required.',
-        'password.min' => 'Password must be at least 6 characters.',
+        'password.min' => 'Password must be at least 8 characters.',
         'password.confirmed' => 'Password confirmation does not match.',
+        'full_name.required' => 'Full name is required.',
+        'valid_id.required' => 'A valid ID is required.',
+        'valid_id.mimes' => 'Valid ID must be a JPG, PNG, or PDF.',
+        'valid_id.max' => 'Valid ID must be under 5MB.',
     ]);
 
     try {
+        $validIdPath = $request->file('valid_id')->store('valid_ids', 'public');
+
         $newUser = new User();
         $newUser->name = $request->name;
+        $newUser->full_name = $request->full_name;
+        $newUser->valid_id = $validIdPath;
         $newUser->password = Hash::make($request->password);
         $newUser->level = 1;
         $newUser->stars = 100; // FIXED: Use stars instead of points

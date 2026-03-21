@@ -25,6 +25,7 @@ use App\Http\Controllers\MembershipController;
 // Public routes (no authentication needed)
 Route::post('/logout', [LoginController::class, 'logout']);
 Route::post('/login', [LoginController::class, 'login']);
+Route::post('/signup', [UserController::class, 'signUp']);
 
 // Public shop routes
 Route::prefix('shops')->group(function () {
