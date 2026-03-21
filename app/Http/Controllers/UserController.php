@@ -515,7 +515,7 @@ $endDate = $startDate->copy()->addMonth();
             $users = User::orderBy('stars', 'desc')
                         ->orderBy('level', 'desc')
                         ->orderBy('created_at', 'asc') // Earlier users win ties
-                        ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday']) // ADDED bio
+                       ->select(['id', 'name', 'username', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday'])
                         ->get();
 
             return response()->json([
