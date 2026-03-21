@@ -729,7 +729,7 @@ class ShopItemController extends Controller
     /**
      * Shop Owner: Download monthly sales report as CSV
      */
-    public function salesReport(Request $request, Shop $shop)
+public function salesReport(Request $request, Shop $shop)
     {
         $user = Auth::user();
 
@@ -748,28 +748,60 @@ class ShopItemController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        $rows[] = ['Date', 'Item', 'Quantity', 'Price Paid', 'Total', 'Customer', 'Payment Method'];
+        // ─── Summary calculations ───────────────────────────────────────────
+        $totalOrders   = $purchases->count();
+        $totalRevenue  = $purchases->sum(fn($p) => $p->price_paid * $p->quantity);
+        $totalItems    = $purchases->sum('quantity');
+        $walkInCount   = $purchases->where('customer_type', 'walk_in')->count();
+        $memberCount   = $purchases->where('customer_type', 'user')->count();
 
+        $topItems = $purchases
+            ->groupBy(fn($p) => $p->shopItem->name ?? 'Unknown')
+            ->map(fn($group) => $group->sum('quantity'))
+            ->sortDesc()
+            ->take(3);
+
+        $monthLabel = \Carbon\Carbon::createFromDate($year, $month, 1)->format('F Y');
+
+        // ─── Build CSV ──────────────────────────────────────────────────────
+        $handle = fopen('php://temp', 'r+');
+
+        // Summary section
+        fputcsv($handle, ["SALES SUMMARY — {$shop->name} — {$monthLabel}"]);
+        fputcsv($handle, []);
+        fputcsv($handle, ['Total Orders',   $totalOrders]);
+        fputcsv($handle, ['Total Revenue',  '₱' . number_format($totalRevenue, 2)]);
+        fputcsv($handle, ['Total Items Sold', $totalItems]);
+        fputcsv($handle, ['Walk-in Orders', $walkInCount]);
+        fputcsv($handle, ['Member Orders',  $memberCount]);
+        fputcsv($handle, []);
+        fputcsv($handle, ['TOP 3 ITEMS']);
+        foreach ($topItems as $name => $qty) {
+            fputcsv($handle, [$name, "{$qty} sold"]);
+        }
+        fputcsv($handle, []);
+
+        // Detail section
+        fputcsv($handle, ['--- ORDER DETAILS ---']);
+        fputcsv($handle, ['Date', 'Item', 'Quantity', 'Unit Price', 'Total', 'Customer']);
         foreach ($purchases as $p) {
-            $rows[] = [
+            fputcsv($handle, [
                 $p->created_at->format('Y-m-d H:i'),
                 $p->shopItem->name ?? 'N/A',
                 $p->quantity,
-                $p->price_paid,
-                $p->price_paid * $p->quantity,
-                $p->customer_type === 'walk_in' ? ($p->walk_in_name ?? 'Walk-in') : ($p->user->name ?? 'Member'),
-                $p->payment_method,
-            ];
+                number_format($p->price_paid, 2),
+                number_format($p->price_paid * $p->quantity, 2),
+                $p->customer_type === 'walk_in'
+                    ? ($p->walk_in_name ?? 'Walk-in')
+                    : ($p->user->name ?? 'Member'),
+            ]);
         }
 
-        $filename = "sales-{$year}-{$month}.csv";
-        $handle = fopen('php://temp', 'r+');
-        foreach ($rows as $row) {
-            fputcsv($handle, $row);
-        }
         rewind($handle);
         $csv = stream_get_contents($handle);
         fclose($handle);
+
+        $filename = "sales-{$shop->name}-{$year}-{$month}.csv";
 
         return response($csv, 200, [
             'Content-Type'        => 'text/csv',
