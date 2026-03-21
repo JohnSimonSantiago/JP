@@ -16,7 +16,7 @@ class LeaderboardController extends Controller
             $users = User::orderBy('stars', 'desc')
                 ->orderBy('level', 'desc')
                 ->orderBy('name', 'asc')
-                ->select(['id', 'name', 'level', 'stars', 'is_premium', 'profile_image']) // FIXED: Use stars
+                ->select(['id', 'name', 'username', 'level', 'stars', 'is_premium', 'profile_image'])
                 ->get();
 
             // Get current season info
