@@ -657,6 +657,125 @@ class ShopItemController extends Controller
     }
 }
 
+/**
+     * Shop Owner: Create a walk-in or cash order at the counter
+     */
+    public function walkInOrder(Request $request, Shop $shop)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'items'                => 'required|array|min:1',
+            'items.*.shop_item_id' => 'required|exists:shop_items,id',
+            'items.*.quantity'     => 'required|integer|min:1',
+            'customer_type'        => 'required|in:user,walk_in',
+            'walk_in_name'         => 'nullable|string|max:100',
+            'user_id'              => 'nullable|exists:users,id',
+            'payment_method'       => 'required|in:balance,cash',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $shop) {
+                foreach ($request->items as $orderItem) {
+                    $item = ShopItem::findOrFail($orderItem['shop_item_id']);
+                    $quantity = $orderItem['quantity'];
+
+                    // Check stock
+                    if ($item->stock !== null && $item->stock < $quantity) {
+                        throw new \Exception("Insufficient stock for item: {$item->name}");
+                    }
+
+                    // Deduct stock
+                    if ($item->stock !== null) {
+                        $item->decrement('stock', $quantity);
+                    }
+
+                    // If paying via balance, deduct from user
+                    if ($request->payment_method === 'balance' && $request->user_id) {
+                        $customer = \App\Models\User::findOrFail($request->user_id);
+                        $cost = $item->cash_price * $quantity;
+                        if ($customer->cash < $cost) {
+                            throw new \Exception("Insufficient balance for user.");
+                        }
+                        $customer->decrement('cash', $cost);
+                    }
+
+                    Purchase::create([
+                        'shop_id'       => $shop->id,
+                        'shop_item_id'  => $item->id,
+                        'user_id'       => $request->user_id ?? null,
+                        'customer_type' => $request->customer_type,
+                        'walk_in_name'  => $request->walk_in_name ?? null,
+                        'payment_method'=> $request->payment_method,
+                        'price_paid'    => $item->cash_price,
+                        'quantity'      => $quantity,
+                        'currency_type' => 'cash',
+                        'status'        => 'completed',
+                    ]);
+                }
+            });
+
+            return response()->json(['success' => true, 'message' => 'Order recorded successfully']);
+
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Shop Owner: Download monthly sales report as CSV
+     */
+    public function salesReport(Request $request, Shop $shop)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $month = $request->get('month', now()->month);
+        $year  = $request->get('year', now()->year);
+
+        $purchases = Purchase::where('shop_id', $shop->id)
+            ->where('status', 'completed')
+            ->whereMonth('created_at', $month)
+            ->whereYear('created_at', $year)
+            ->with(['shopItem:id,name', 'user:id,name'])
+            ->orderBy('created_at')
+            ->get();
+
+        $rows[] = ['Date', 'Item', 'Quantity', 'Price Paid', 'Total', 'Customer', 'Payment Method'];
+
+        foreach ($purchases as $p) {
+            $rows[] = [
+                $p->created_at->format('Y-m-d H:i'),
+                $p->shopItem->name ?? 'N/A',
+                $p->quantity,
+                $p->price_paid,
+                $p->price_paid * $p->quantity,
+                $p->customer_type === 'walk_in' ? ($p->walk_in_name ?? 'Walk-in') : ($p->user->name ?? 'Member'),
+                $p->payment_method,
+            ];
+        }
+
+        $filename = "sales-{$year}-{$month}.csv";
+        $handle = fopen('php://temp', 'r+');
+        foreach ($rows as $row) {
+            fputcsv($handle, $row);
+        }
+        rewind($handle);
+        $csv = stream_get_contents($handle);
+        fclose($handle);
+
+        return response($csv, 200, [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename={$filename}",
+        ]);
+    }
     /**
      * Admin: Get all pending purchases from all shops
      */

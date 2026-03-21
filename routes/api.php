@@ -136,9 +136,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{shopItem}', [ShopItemController::class, 'destroy']); // Delete item
             
             // Order Management
-            Route::get('/purchases/pending', [ShopItemController::class, 'getPendingPurchases']);
-            Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
-            Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+Route::get('/purchases/pending', [ShopItemController::class, 'getPendingPurchases']);
+Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
+Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
+Route::post('/walk-in-order', [ShopItemController::class, 'walkInOrder']);
+Route::get('/sales-report', [ShopItemController::class, 'salesReport']);
         });
     });
     
