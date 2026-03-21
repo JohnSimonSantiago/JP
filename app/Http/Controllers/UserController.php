@@ -374,7 +374,7 @@ if ($request->has('username')) {
             ]);
 
             // Update the user - ADDED bio to the fillable fields
-            $user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));$user->update($request->only(['name', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
+           $user->update($request->only(['username', 'bio', 'level', 'stars', 'points', 'gender', 'birthday', 'address', 'privacy_settings']));
             // Refresh the user from database to get updated values
             $user->refresh();
 
