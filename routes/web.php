@@ -51,6 +51,10 @@ Route::get('/admin/purchases', function () {
 });
 
 // Catch-all route for Vue.js SPA (this should be last)
+Route::get('/', function(){
+    return view('landing');
+});
+
 Route::get('/{vue?}', function(){
     return view('app');
 })->where('vue', '[\/\w\.-]*');
