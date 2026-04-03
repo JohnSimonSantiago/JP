@@ -55,6 +55,11 @@ Route::get('/', function(){
     return view('landing');
 });
 
+Route::get('/googled7242b43151e07d2.html', function(){
+    return response('google-site-verification: googled7242b43151e07d2.html')
+        ->header('Content-Type', 'text/html');
+});
+
 Route::get('/{vue?}', function(){
     return view('app');
 })->where('vue', '[\/\w\.-]*');
