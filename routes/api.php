@@ -214,6 +214,10 @@ Route::prefix('point-shop')->group(function () {
 
 // Point Shop Purchase Routes (Authenticated users)
 Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/push-token', function (\Illuminate\Http\Request $request) {
+        $request->user()->update(['push_token' => $request->token]);
+        return response()->json(['success' => true]);
+    });
     // Point Shop Purchases
     Route::prefix('point-shop')->group(function () {
         Route::post('/{item}/purchase', [PointShopController::class, 'purchase']); // Purchase point shop item
