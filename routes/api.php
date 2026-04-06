@@ -218,7 +218,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('point-shop')->group(function () {
         Route::post('/{item}/purchase', [PointShopController::class, 'purchase']); // Purchase point shop item
     });
-    
+    Route::get('/notifications', [UserController::class, 'getNotifications']);
     Route::get('/my-shop/notifications', [ShopController::class, 'getShopNotifications']);
     
     // Update existing purchases route to support shop filtering
