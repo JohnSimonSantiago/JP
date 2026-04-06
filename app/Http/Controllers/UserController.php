@@ -704,4 +704,39 @@ $endDate = $startDate->copy()->addMonth();
             ], 500);
         }
     }
+    public function getNotifications(Request $request)
+{
+    $user = $request->user();
+
+    // Trades
+    $trades = \App\Models\Trade::where('sender_id', $user->id)
+        ->orWhere('receiver_id', $user->id)
+        ->where('status', 'pending')
+        ->get();
+
+    $tradeRequestsCount = $trades->where('receiver_id', $user->id)->count();
+    $tradeSentCount = $trades->where('sender_id', $user->id)->count();
+
+    // Bets
+    $incomingBets = \App\Models\Bet::where('opponent_id', $user->id)
+        ->where('status', 'pending')
+        ->get();
+
+    $myBets = \App\Models\Bet::where('creator_id', $user->id)
+        ->where('status', 'pending')
+        ->get();
+
+    $refereeBets = \App\Models\Bet::where('referee_id', $user->id)
+        ->where('status', 'ongoing')
+        ->get();
+
+    return response()->json([
+        'success' => true,
+        'trade_requests_count' => $tradeRequestsCount,
+        'trade_sent_count' => $tradeSentCount,
+        'bet_requests_count' => $incomingBets->count(),
+        'bets_sent_count' => $myBets->count(),
+        'referee_requests_count' => $refereeBets->count(),
+    ]);
+}
 }
