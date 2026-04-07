@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trade;
 use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -11,15 +12,11 @@ use Illuminate\Support\Facades\Validator;
 
 class TradeController extends Controller
 {
-    /**
-     * Get all trades for the authenticated user
-     */
     public function index()
     {
         try {
             $user = Auth::user();
             
-            // Get all trades where user is either sender or receiver
             $trades = Trade::with(['sender', 'receiver'])
                 ->where(function ($query) use ($user) {
                     $query->where('sender_id', $user->id)
@@ -43,9 +40,6 @@ class TradeController extends Controller
         }
     }
 
-    /**
-     * Create a new trade offer
-     */
     public function store(Request $request)
     {
         try {
@@ -70,7 +64,6 @@ class TradeController extends Controller
             $sender = Auth::user();
             $receiver = User::findOrFail($request->receiver_id);
 
-            // Check if sender is trying to trade with themselves
             if ($sender->id === $receiver->id) {
                 return response()->json([
                     'success' => false,
@@ -78,7 +71,6 @@ class TradeController extends Controller
                 ], 400);
             }
 
-            // Validate trade amounts
             $sendAmount = $request->send_amount;
             $receiveAmount = $request->receive_amount;
 
@@ -89,7 +81,6 @@ class TradeController extends Controller
                 ], 400);
             }
 
-            // Check if sender has enough points to send
             if ($sendAmount > 0 && $sender->points < $sendAmount) {
                 return response()->json([
                     'success' => false,
@@ -97,7 +88,6 @@ class TradeController extends Controller
                 ], 400);
             }
 
-            // Check if receiver has enough points to send back
             if ($receiveAmount > 0 && $receiver->points < $receiveAmount) {
                 return response()->json([
                     'success' => false,
@@ -105,7 +95,6 @@ class TradeController extends Controller
                 ], 400);
             }
 
-            // Check for existing pending trade between these users
             $existingTrade = Trade::where('sender_id', $sender->id)
                 ->where('receiver_id', $receiver->id)
                 ->where('status', 'pending')
@@ -118,7 +107,6 @@ class TradeController extends Controller
                 ], 400);
             }
 
-            // Create the trade
             $trade = Trade::create([
                 'sender_id' => $sender->id,
                 'receiver_id' => $receiver->id,
@@ -127,8 +115,13 @@ class TradeController extends Controller
                 'status' => 'pending'
             ]);
 
-            // Load relationships
             $trade->load(['sender', 'receiver']);
+
+            PushNotificationService::send(
+                $receiver->push_token,
+                'New Trade Offer',
+                $sender->name . ' wants to trade with you!'
+            );
 
             return response()->json([
                 'success' => true,
@@ -145,9 +138,6 @@ class TradeController extends Controller
         }
     }
 
-    /**
-     * Respond to a trade offer (accept/reject)
-     */
     public function update(Request $request, $id)
     {
         try {
@@ -166,7 +156,6 @@ class TradeController extends Controller
             $user = Auth::user();
             $trade = Trade::with(['sender', 'receiver'])->findOrFail($id);
 
-            // Check if user is the receiver of this trade
             if ($trade->receiver_id !== $user->id) {
                 return response()->json([
                     'success' => false,
@@ -174,7 +163,6 @@ class TradeController extends Controller
                 ], 403);
             }
 
-            // Check if trade is still pending
             if ($trade->status !== 'pending') {
                 return response()->json([
                     'success' => false,
@@ -186,9 +174,8 @@ class TradeController extends Controller
 
             try {
                 if ($request->status === 'accepted') {
-                    // Check if both parties still have enough points
                     $sender = $trade->sender;
-                    $receiver = $trade->receiver; // This is the current user
+                    $receiver = $trade->receiver;
                     
                     if ($trade->send_amount > 0 && $sender->points < $trade->send_amount) {
                         DB::rollBack();
@@ -206,8 +193,6 @@ class TradeController extends Controller
                         ], 400);
                     }
 
-                    // Perform the point transfer
-                    // Sender loses send_amount and gains receive_amount
                     if ($trade->send_amount > 0) {
                         $sender->decrement('points', $trade->send_amount);
                     }
@@ -215,7 +200,6 @@ class TradeController extends Controller
                         $sender->increment('points', $trade->receive_amount);
                     }
                     
-                    // Receiver (current user) gains send_amount and loses receive_amount
                     if ($trade->send_amount > 0) {
                         $receiver->increment('points', $trade->send_amount);
                     }
@@ -224,8 +208,15 @@ class TradeController extends Controller
                     }
                 }
 
-                // Update trade status
                 $trade->update(['status' => $request->status]);
+
+                $statusLabel = $request->status === 'accepted' ? 'accepted' : 'rejected';
+
+                PushNotificationService::send(
+                    $trade->sender->push_token,
+                    'Trade ' . ucfirst($statusLabel),
+                    $user->name . ' has ' . $statusLabel . ' your trade offer.'
+                );
 
                 DB::commit();
 
@@ -251,16 +242,12 @@ class TradeController extends Controller
         }
     }
 
-    /**
-     * Cancel a trade offer (only sender can cancel pending trades)
-     */
     public function destroy($id)
     {
         try {
             $user = Auth::user();
             $trade = Trade::findOrFail($id);
 
-            // Check if user is the sender of this trade
             if ($trade->sender_id !== $user->id) {
                 return response()->json([
                     'success' => false,
@@ -268,7 +255,6 @@ class TradeController extends Controller
                 ], 403);
             }
 
-            // Check if trade is still pending
             if ($trade->status !== 'pending') {
                 return response()->json([
                     'success' => false,
@@ -292,9 +278,6 @@ class TradeController extends Controller
         }
     }
 
-    /**
-     * Get trade statistics for the authenticated user
-     */
     public function getStats()
     {
         try {

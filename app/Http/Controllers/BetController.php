@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Bet;
 use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +33,6 @@ class BetController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Add ongoing bets (accepted bets where user is creator or opponent)
         $ongoingBets = Bet::where('status', 'accepted')
             ->where(function ($query) use ($userId) {
                 $query->where('creator_id', $userId)
@@ -68,7 +68,6 @@ class BetController extends Controller
 
         $user = Auth::user();
 
-        // Check if user has enough stars
         if ($user->stars < $request->stars_amount) {
             return response()->json([
                 'success' => false,
@@ -76,7 +75,6 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Check if users are not the same as creator
         if ($request->opponent_id == $user->id || $request->referee_id == $user->id) {
             return response()->json([
                 'success' => false,
@@ -84,7 +82,6 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Check if opponent has enough stars
         $opponent = User::find($request->opponent_id);
         if ($opponent->stars < $request->stars_amount) {
             return response()->json([
@@ -103,6 +100,18 @@ class BetController extends Controller
             ]);
 
             $bet->load(['opponent', 'referee']);
+
+            PushNotificationService::send(
+                $bet->opponent->push_token,
+                'New Bet Challenge',
+                $user->name . ' has challenged you to a bet!'
+            );
+
+            PushNotificationService::send(
+                $bet->referee->push_token,
+                'Referee Request',
+                $user->name . ' has assigned you as referee for a bet.'
+            );
 
             return response()->json([
                 'success' => true,
@@ -137,7 +146,6 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Check if opponent still has enough stars
         if ($user->stars < $bet->stars_amount) {
             return response()->json([
                 'success' => false,
@@ -146,10 +154,18 @@ class BetController extends Controller
         }
 
         try {
+            $bet->load('creator');
+
             $bet->update([
                 'status' => 'accepted',
                 'accepted_at' => now()
             ]);
+
+            PushNotificationService::send(
+                $bet->creator->push_token,
+                'Bet Accepted',
+                $user->name . ' has accepted your bet!'
+            );
 
             return response()->json([
                 'success' => true,
@@ -183,7 +199,15 @@ class BetController extends Controller
         }
 
         try {
+            $bet->load('creator');
+
             $bet->update(['status' => 'rejected']);
+
+            PushNotificationService::send(
+                $bet->creator->push_token,
+                'Bet Rejected',
+                $user->name . ' has rejected your bet.'
+            );
 
             return response()->json([
                 'success' => true,
@@ -254,7 +278,6 @@ class BetController extends Controller
             ], 400);
         }
 
-        // Validate that winner is either creator or opponent
         if ($request->winner_id !== $bet->creator_id && $request->winner_id !== $bet->opponent_id) {
             return response()->json([
                 'success' => false,
@@ -264,22 +287,31 @@ class BetController extends Controller
 
         try {
             DB::transaction(function () use ($bet, $request) {
-                // Update bet status
                 $bet->update([
                     'status' => 'completed',
                     'winner_id' => $request->winner_id,
                     'completed_at' => now()
                 ]);
 
-                // Transfer stars
                 $winner = User::find($request->winner_id);
-                $loser = $request->winner_id === $bet->creator_id 
-                    ? User::find($bet->opponent_id) 
+                $loser = $request->winner_id === $bet->creator_id
+                    ? User::find($bet->opponent_id)
                     : User::find($bet->creator_id);
 
-                // Winner gets the bet amount, loser loses the bet amount
                 $winner->increment('stars', $bet->stars_amount);
                 $loser->decrement('stars', $bet->stars_amount);
+
+                PushNotificationService::send(
+                    $winner->push_token,
+                    'You Won the Bet! 🏆',
+                    'Congratulations! You won ' . $bet->stars_amount . ' stars.'
+                );
+
+                PushNotificationService::send(
+                    $loser->push_token,
+                    'Bet Result',
+                    'You lost ' . $bet->stars_amount . ' stars. Better luck next time!'
+                );
             });
 
             return response()->json([
