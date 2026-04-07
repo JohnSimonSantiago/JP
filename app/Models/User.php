@@ -31,7 +31,8 @@ class User extends Authenticatable
         'gender',          // NEW
         'birthday',        // NEW
         'address',         // NEW
-        'privacy_settings', // NEW
+'privacy_settings', // NEW
+        'push_token',
     ];
 
     /**
