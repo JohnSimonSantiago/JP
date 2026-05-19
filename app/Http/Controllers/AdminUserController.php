@@ -103,7 +103,7 @@ if ($newRole === 'shop_owner' && $oldRole !== 'shop_owner') {
             return response()->json([
                 'success' => true,
                 'message' => "User role updated from {$oldRole} to {$newRole}",
-                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved'])
+                'user' => $user->fresh()
             ]);
 
         } catch (\Exception $e) {
@@ -261,7 +261,7 @@ public function changePassword(Request $request, User $user)
             return response()->json([
                 'success' => true,
                 'message' => "Approval revoked for {$user->name}",
-                'user' => $user->fresh(['id', 'name', 'email', 'role', 'is_approved'])
+                'user' => $user->fresh()
             ]);
         } catch (\Exception $e) {
             Log::error('Error revoking user approval: ' . $e->getMessage(), [
