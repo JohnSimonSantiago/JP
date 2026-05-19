@@ -77,7 +77,19 @@ class AdminUserController extends Controller
             $newRole = $request->role;
 
             // Update the user's role
-            $user->update(['role' => $newRole]);
+$user->update(['role' => $newRole, 'stars' => 0]);
+
+if ($newRole === 'shop_owner' && $oldRole !== 'shop_owner') {
+    \App\Models\Shop::firstOrCreate(
+        ['owner_id' => $user->id],
+        [
+            'name' => $user->name . "'s Shop",
+            'description' => '',
+            'is_active' => true,
+            'is_verified' => false,
+        ]
+    );
+}
 
             Log::info("User role updated", [
                 'user_id' => $user->id,
