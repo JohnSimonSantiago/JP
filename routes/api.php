@@ -15,6 +15,7 @@ use App\Http\Controllers\PointShopController;
 use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\MembershipController;
+use App\Http\Controllers\LoungeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -207,6 +208,20 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
     Route::post('/memberships/gift', [MembershipController::class, 'gift']);
+
+    // Lounge pricing (admin only)
+    Route::get('/lounge/pricing', [LoungeController::class, 'getPricing']);
+    Route::put('/lounge/pricing', [LoungeController::class, 'updatePricing']);
+    });
+
+    // Lounge routes (admin + staff)
+    Route::get('/lounge/my-stats', [LoungeController::class, 'myStats']);
+
+    Route::middleware(['staff_or_admin'])->prefix('lounge')->group(function () {
+        Route::post('/check-in', [LoungeController::class, 'checkIn']);
+        Route::get('/active-sessions', [LoungeController::class, 'activeSessions']);
+        Route::post('/check-out/{id}', [LoungeController::class, 'checkOut']);
+        Route::get('/session-history', [LoungeController::class, 'sessionHistory']);
     });
 });
 Route::prefix('point-shop')->group(function () {

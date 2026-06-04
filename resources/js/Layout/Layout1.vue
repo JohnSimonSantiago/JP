@@ -499,7 +499,9 @@
                                     ? "Administrator"
                                     : user.role === "shop_owner"
                                       ? "Shop Owner"
-                                      : "Member"
+                                      : user.role === "staff"
+                                        ? "Staff"
+                                        : "Member"
                             }}
                         </div>
                     </div>
@@ -510,15 +512,15 @@
         <div class="flex pt-16">
             <!-- Left Sidebar -->
             <div
-                class="w-64 bg-white shadow-lg fixed left-0 top-16 bottom-0 sidebar overflow-y-auto"
+                class="w-72 bg-white shadow-lg fixed left-0 top-16 bottom-0 sidebar overflow-y-auto"
             >
-                <div class="p-6">
-                    <nav class="space-y-2">
+                <div class="p-4">
+                    <nav class="space-y-1">
                         <!-- Dashboard -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/dashboard"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-th-large text-lg group-hover:scale-110 transition-transform"
@@ -526,10 +528,22 @@
                             <span class="font-medium">Dashboard</span>
                         </router-link>
 
+                        <!-- Promos -->
+                        <router-link
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/promos"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-megaphone text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Promos</span>
+                        </router-link>
+
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/leaderboards"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-chart-bar text-lg group-hover:scale-110 transition-transform"
@@ -540,7 +554,7 @@
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/trade"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
                         >
                             <i
                                 class="pi pi-arrow-right-arrow-left text-lg group-hover:scale-110 transition-transform"
@@ -561,7 +575,7 @@
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/profile"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-user text-lg group-hover:scale-110 transition-transform"
@@ -572,7 +586,7 @@
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/bet"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group relative"
                         >
                             <i
                                 class="pi pi-ticket text-lg group-hover:scale-110 transition-transform"
@@ -593,7 +607,7 @@
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/shops"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-money-bill text-lg group-hover:scale-110 transition-transform"
@@ -604,7 +618,7 @@
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/point-shop"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-prime text-lg group-hover:scale-110 transition-transform"
@@ -612,19 +626,46 @@
                             <span class="font-medium">Point Shop</span>
                         </router-link>
 
+                        <!-- Admin Section Divider -->
+                        <div v-if="isAdmin || isStaff" class="pt-2 pb-1">
+                            <p
+                                class="px-3 text-xs font-semibold text-gray-400 uppercase tracking-wider"
+                            >
+                                Admin
+                            </p>
+                        </div>
+
+                        <!-- Lounge (Admin + Staff) -->
+                        <router-link
+                            v-if="isAdmin || isStaff"
+                            active-class="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
+                            to="/lounge"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-home text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Lounge</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                            >
+                                {{ isAdmin ? "Admin" : "Staff" }}
+                            </span>
+                        </router-link>
+
                         <!-- My Shop (Shop Owners & Admins Only) -->
                         <router-link
                             v-if="isShopOwnerOrAdmin"
                             active-class="bg-purple-50 text-purple-700 border-r-2 border-purple-600"
                             to="/my-shop"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 group relative"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-purple-50 hover:text-purple-700 transition-all duration-200 group relative"
                         >
                             <i
                                 class="pi pi-shopping-bag text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">My Shop</span>
                             <span
-                                class="ml-auto px-2 py-0.5 text-xs bg-purple-100 text-purple-700 rounded-full"
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
                             >
                                 {{ user.role === "admin" ? "Admin" : "Owner" }}
                             </span>
@@ -643,9 +684,9 @@
                         <!-- Admin Point Pricing (Admins Only) -->
                         <router-link
                             v-if="isAdmin"
-                            active-class="bg-orange-50 text-orange-700 border-r-2 border-orange-600"
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/admin/point-pricing"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-orange-50 hover:text-orange-700 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-tags text-lg group-hover:scale-110 transition-transform"
@@ -654,7 +695,7 @@
                                 >Point Shop Dashboard</span
                             >
                             <span
-                                class="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full"
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
                             >
                                 Admin
                             </span>
@@ -663,16 +704,16 @@
                         <!-- Admin Gift Membership (Admins Only) -->
                         <router-link
                             v-if="isAdmin"
-                            active-class="bg-yellow-50 text-yellow-700 border-r-2 border-yellow-600"
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/admin/gift-membership"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-gift text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Gift Membership</span>
                             <span
-                                class="ml-auto px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full"
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
                             >
                                 Admin
                             </span>
@@ -681,19 +722,36 @@
                         <!-- Admin Store Management (Admins Only) -->
                         <router-link
                             v-if="isAdmin"
-                            active-class="bg-teal-50 text-teal-700 border-r-2 border-teal-600"
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/admin/shops"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-700 transition-all duration-200 group"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group"
                         >
                             <i
                                 class="pi pi-building text-lg group-hover:scale-110 transition-transform"
                             ></i>
                             <span class="font-medium">Store Management</span>
                             <span
-                                class="ml-auto px-2 py-0.5 text-xs bg-teal-100 text-teal-700 rounded-full"
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
                             >
                                 Admin
                             </span>
+                        </router-link>
+
+                        <!-- Lounge Settings (Admin Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
+                            to="/admin/lounge-settings"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-sliders-h text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Lounge Settings</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                                >Admin</span
+                            >
                         </router-link>
 
                         <!-- Admin User Approval (Admins Only) -->
@@ -701,7 +759,7 @@
                             v-if="isAdmin"
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
                             to="/admin/users"
-                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group relative"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group relative"
                         >
                             <i
                                 class="pi pi-users text-lg group-hover:scale-110 transition-transform"
@@ -743,7 +801,7 @@
             </div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 ml-64 p-6 overflow-y-auto">
+            <div class="flex-1 ml-72 p-6 overflow-y-auto">
                 <slot />
             </div>
         </div>
@@ -820,7 +878,15 @@ export default {
         },
 
         isAdmin() {
-            return this.user.role === "admin";
+            if (this.user.role === "admin") return true;
+            const stored = JSON.parse(localStorage.getItem("user") || "null");
+            return stored?.role === "admin";
+        },
+
+        isStaff() {
+            if (this.user.role === "staff") return true;
+            const stored = JSON.parse(localStorage.getItem("user") || "null");
+            return stored?.role === "staff";
         },
 
         totalShopNotifications() {

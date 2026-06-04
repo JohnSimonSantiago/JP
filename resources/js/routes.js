@@ -1,5 +1,6 @@
 import Signup from "@/pages/Signup.vue";
 import Dashboard from "./pages/Dashboard.vue";
+import Promos from "./pages/Promos.vue";
 import Leaderboards from "./pages/Leaderboards.vue";
 import Profile from "./pages/Profile.vue";
 import UserProfile from "./pages/UserProfile.vue"; // NEW: For viewing other users
@@ -14,7 +15,8 @@ import PointShop from "./pages/PointShop.vue";
 import AdminUserApproval from "./pages/AdminUserApproval.vue";
 import AdminShopManagement from "./pages/AdminShopManagement.vue";
 import AdminGiftMembership from "./pages/AdminGiftMembership.vue";
-
+import LoungeSessionsDashboard from "./pages/LoungeSessionsDashboard.vue";
+import LoungeSettings from "./pages/LoungeSettings.vue";
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -36,25 +38,30 @@ const requiresShopOwner = (to, from, next) => {
 };
 
 const requiresAdmin = (to, from, next) => {
-    // Get user from localStorage or your auth store
     const user = JSON.parse(localStorage.getItem("user") || "null");
-
     if (!user) {
-        // Not logged in, redirect to login
         next("/");
         return;
     }
-
     if (user.role !== "admin") {
-        // Not an admin, redirect to dashboard
         next("/dashboard");
         return;
     }
-
-    // User is admin, allow access
     next();
 };
 
+const requiresStaffOrAdmin = (to, from, next) => {
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    if (!user) {
+        next("/");
+        return;
+    }
+    if (!["admin", "staff"].includes(user.role)) {
+        next("/dashboard");
+        return;
+    }
+    next();
+};
 export const routes = [
     {
         path: "/",
@@ -70,6 +77,11 @@ export const routes = [
         path: "/dashboard",
         name: "dashboard",
         component: Dashboard,
+    },
+    {
+        path: "/promos",
+        name: "promos",
+        component: Promos,
     },
     {
         path: "/leaderboards",
@@ -148,6 +160,18 @@ export const routes = [
         path: "/admin/users",
         name: "admin-user-approval",
         component: AdminUserApproval,
-        beforeEnter: requiresAdmin, // Admin only access
+        beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/lounge",
+        name: "lounge",
+        component: LoungeSessionsDashboard,
+        beforeEnter: requiresStaffOrAdmin,
+    },
+    {
+        path: "/admin/lounge-settings",
+        name: "lounge-settings",
+        component: LoungeSettings,
+        beforeEnter: requiresAdmin,
     },
 ];
