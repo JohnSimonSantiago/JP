@@ -216,6 +216,7 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
 
     // Lounge routes (admin + staff)
     Route::get('/lounge/my-stats', [LoungeController::class, 'myStats']);
+Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
 
     Route::middleware(['staff_or_admin'])->prefix('lounge')->group(function () {
         Route::post('/check-in', [LoungeController::class, 'checkIn']);

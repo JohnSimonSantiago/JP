@@ -200,4 +200,13 @@ class LoungeController extends Controller
 
         return response()->json(['success' => true, 'sessions' => $sessions]);
     }
+
+    public function myActiveSession(Request $request)
+{
+    $session = LoungeSession::where('user_id', Auth::id())
+        ->where('status', 'active')
+        ->first();
+
+    return response()->json(['success' => true, 'session' => $session]);
+}
 }

@@ -48,12 +48,22 @@
                         </p>
                     </div>
                 </div>
-                <p
+                <div
                     v-if="!loungeSession.is_free"
-                    class="text-xs text-indigo-400 mt-2 text-center"
+                    class="flex items-center gap-2 mt-3 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2"
                 >
-                    ⏱ 10-minute grace period applies per hour
-                </p>
+                    <i
+                        class="pi pi-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
+                    ></i>
+                    <p class="text-xs text-yellow-700">
+                        <span class="font-semibold">10-Minute Grace Period</span
+                        ><br />
+                        Every hour, you get a 10-minute buffer. For example, if
+                        you've been here for 1 hour and 8 minutes, you'll only
+                        be charged for 1 hour — not 2. But if you stay past 10
+                        minutes, the full next hour is charged.
+                    </p>
+                </div>
             </div>
 
             <!-- Profile + Membership Row -->
@@ -363,12 +373,9 @@ export default {
 
         async fetchLoungeSession() {
             try {
-                const res = await axios.get("/api/lounge/active-sessions");
+                const res = await axios.get("/api/lounge/my-session");
                 if (res.data.success) {
-                    const session = res.data.sessions.find(
-                        (s) => s.user_id === this.user.id,
-                    );
-                    this.loungeSession = session || null;
+                    this.loungeSession = res.data.session || null;
                 }
             } catch (e) {
                 this.loungeSession = null;
