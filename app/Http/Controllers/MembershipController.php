@@ -13,7 +13,6 @@ class MembershipController extends Controller
     public function adminIndex()
     {
         $memberships = Membership::with('user:id,name,email,profile_image')
-            ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -68,6 +67,39 @@ $membership->user->update([
             'membership' => $membership->fresh('user')
         ]);
     }
+    public function gift(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'type'    => 'required|in:level_2,level_3',
+            'days'    => 'required|integer|min:1|max:3650',
+        ]);
+
+        $user  = User::findOrFail($request->user_id);
+        $start = now();
+        $end   = $start->copy()->addDays($request->days);
+
+        $membership = Membership::create([
+            'user_id'    => $user->id,
+            'type'       => $request->type,
+            'status'     => 'approved',
+            'start_date' => $start,
+            'end_date'   => $end,
+        ]);
+
+        $levelMap = ['level_2' => 2, 'level_3' => 3];
+        $user->update([
+            'is_premium' => true,
+            'level'      => $levelMap[$request->type],
+        ]);
+
+        return response()->json([
+            'success'    => true,
+            'message'    => "Membership gifted to {$user->name} for {$request->days} days",
+            'membership' => $membership->fresh('user'),
+        ]);
+    }
+
     public function expireOldMemberships()
 {
     $expired = Membership::with('user')

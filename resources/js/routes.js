@@ -12,6 +12,8 @@ import MyShop from "./pages/MyShop.vue"; // Shop owner dashboard
 import AdminPointPricing from "./pages/AdminPointPricing.vue"; // Admin point pricing management
 import PointShop from "./pages/PointShop.vue";
 import AdminUserApproval from "./pages/AdminUserApproval.vue";
+import AdminShopManagement from "./pages/AdminShopManagement.vue";
+import AdminGiftMembership from "./pages/AdminGiftMembership.vue";
 
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
@@ -129,6 +131,18 @@ export const routes = [
         path: "/point-shop",
         name: "PointShop",
         component: PointShop,
+    },
+    {
+        path: "/admin/shops",
+        name: "admin-shop-management",
+        component: AdminShopManagement,
+        beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/admin/gift-membership",
+        name: "admin-gift-membership",
+        component: AdminGiftMembership,
+        beforeEnter: requiresAdmin,
     },
     {
         path: "/admin/users",

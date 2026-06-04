@@ -206,6 +206,7 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::get('/memberships', [MembershipController::class, 'adminIndex']);
     Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
+    Route::post('/memberships/gift', [MembershipController::class, 'gift']);
     });
 });
 Route::prefix('point-shop')->group(function () {

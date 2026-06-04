@@ -510,7 +510,7 @@
         <div class="flex pt-16">
             <!-- Left Sidebar -->
             <div
-                class="w-64 bg-white shadow-lg h-screen fixed left-0 top-16 sidebar"
+                class="w-64 bg-white shadow-lg fixed left-0 top-16 bottom-0 sidebar overflow-y-auto"
             >
                 <div class="p-6">
                     <nav class="space-y-2">
@@ -655,6 +655,42 @@
                             >
                             <span
                                 class="ml-auto px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded-full"
+                            >
+                                Admin
+                            </span>
+                        </router-link>
+
+                        <!-- Admin Gift Membership (Admins Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-yellow-50 text-yellow-700 border-r-2 border-yellow-600"
+                            to="/admin/gift-membership"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-gift text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Gift Membership</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded-full"
+                            >
+                                Admin
+                            </span>
+                        </router-link>
+
+                        <!-- Admin Store Management (Admins Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-teal-50 text-teal-700 border-r-2 border-teal-600"
+                            to="/admin/shops"
+                            class="flex items-center gap-3 px-4 py-3 text-gray-700 rounded-lg hover:bg-teal-50 hover:text-teal-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-building text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Store Management</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-teal-100 text-teal-700 rounded-full"
                             >
                                 Admin
                             </span>
