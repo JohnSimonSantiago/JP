@@ -61,8 +61,8 @@ class ShopItemController extends Controller
             // Notify shop owner
             $item->load('shop.owner');
             $shopOwner = $item->shop->owner ?? null;
-            if ($shopOwner) {
-                PushNotificationService::send(
+            if ($shopOwner && $shopOwner->push_token) {
+    PushNotificationService::send(
                     $shopOwner->push_token,
                     'New Order Received',
                     $user->name . ' placed an order for ' . $item->name . '.'

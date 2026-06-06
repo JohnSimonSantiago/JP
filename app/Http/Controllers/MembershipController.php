@@ -76,6 +76,19 @@ $membership->user->update([
         ]);
 
         $user  = User::findOrFail($request->user_id);
+
+        $existing = Membership::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('end_date', '>', now())
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => "User already has an active membership until " . Carbon::parse($existing->end_date)->format('M d, Y') . ".",
+            ], 422);
+        }
+
         $start = now();
         $end   = $start->copy()->addDays($request->days);
 
