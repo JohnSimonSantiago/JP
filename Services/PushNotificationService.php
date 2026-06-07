@@ -10,12 +10,13 @@ class PushNotificationService
     {
         if (!$pushToken) return;
 
-        Http::post('https://exp.host/--/api/v2/push/send', [
+        $response = Http::post('https://exp.host/--/api/v2/push/send', [
             'to'    => $pushToken,
             'title' => $title,
             'body'  => $body,
             'data'  => $data,
             'sound' => 'default',
         ]);
+        \Log::info('Expo push response', ['status' => $response->status(), 'body' => $response->json()]);
     }
 }
