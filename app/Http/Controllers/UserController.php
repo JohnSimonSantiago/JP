@@ -31,9 +31,6 @@ class UserController extends Controller
         $membership = $user->memberships()->latest()->first();
 
         $rank = User::where('stars', '>', $user->stars)
-    ->orWhere(function($q) use ($user) {
-        $q->where('stars', $user->stars)->where('level', '>', $user->level);
-    })
     ->count() + 1;
 
 return response()->json([
