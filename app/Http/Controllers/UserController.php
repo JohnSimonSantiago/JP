@@ -30,11 +30,17 @@ class UserController extends Controller
         // Get membership if it exists
         $membership = $user->memberships()->latest()->first();
 
-        return response()->json([
-            'success' => true,
-            'user' => [
-                'id' => $user->id,
-'name' => $user->name,
+        $rank = User::where('stars', '>', $user->stars)
+    ->orWhere(function($q) use ($user) {
+        $q->where('stars', $user->stars)->where('level', '>', $user->level);
+    })
+    ->count() + 1;
+
+return response()->json([
+    'success' => true,
+    'user' => [
+        'id' => $user->id,
+        'name' => $user->name,
 'username' => $user->username,
 'valid_id' => $user->valid_id,
 'bio' => $user->bio,
@@ -49,8 +55,9 @@ class UserController extends Controller
                 'address' => $user->address,
                 'privacy_settings' => $user->privacy_settings,
                 'role' => $user->role,
-                'created_at' => $user->created_at,  // Add this line
-                'member_since' => $user->created_at  // Add this line as alias
+'rank' => $rank,
+'created_at' => $user->created_at,
+'member_since' => $user->created_at
             ],
             'membership' => $membership
         ]);
