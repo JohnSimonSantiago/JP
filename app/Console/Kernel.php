@@ -31,7 +31,7 @@ protected function schedule(Schedule $schedule)
 
             // Hourly reminder (fires at the 0-minute mark of each new hour, after the first)
             if ($minutesIntoCurrentHour === 0 && $elapsedMinutes > 0) {
-                $hours = $elapsedMinutes / 60;
+                $hours = (int) ($elapsedMinutes / 60);
                 \App\Services\PushNotificationService::send(
                     $session->user->push_token,
                     'Still in the Lounge? ☕',
