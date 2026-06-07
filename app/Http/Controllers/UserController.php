@@ -113,12 +113,13 @@ class UserController extends Controller
 public function signUp(Request $request)
 {
     $request->validate([
-        'name' => 'required|string|max:255|unique:users,name',
+        'name' => 'required|string|min:3|max:255|unique:users,name',
         'password' => 'required|string|min:8|confirmed',
         'full_name' => 'required|string|max:255',
         'valid_id' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
     ], [
         'name.unique' => 'This username is already taken.',
+'name.min' => 'Username must be at least 3 characters.',
         'name.required' => 'Username is required.',
         'password.required' => 'Password is required.',
         'password.min' => 'Password must be at least 8 characters.',
