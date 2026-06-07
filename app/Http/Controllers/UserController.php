@@ -214,7 +214,8 @@ public function getProfile()
             ->first();
 
         // Update is_premium status based on membership
-        $isPremium = false;
+        $rank = User::where('stars', '>', $user->stars)->count() + 1;
+$isPremium = false; 
         if ($membership && $membership->status === 'approved') {
             $now = Carbon::now();
             $endDate = Carbon::parse($membership->end_date);
@@ -251,8 +252,9 @@ public function getProfile()
                 'address' => $user->address,
                 'privacy_settings' => $user->privacy_settings,
                 'role' => $user->role ?? 'user',
-                'created_at' => $user->created_at,        // ADD THIS LINE
-                'member_since' => $user->created_at       // ADD THIS LINE
+'rank' => $rank,
+'created_at' => $user->created_at,
+'member_since' => $user->created_at
             ],
             'membership' => $membership ? [
                 'id' => $membership->id,
