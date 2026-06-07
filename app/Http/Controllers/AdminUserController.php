@@ -18,7 +18,7 @@ class AdminUserController extends Controller
         try {
             $users = User::select([
                 'id', 'name', 'email', 'role', 'is_approved', 
-                'created_at', 'profile_image', 'level', 'points', 'stars'
+                'created_at', 'profile_image', 'level', 'points', 'stars', 'valid_id'
             ])
             ->orderBy('created_at', 'desc')
             ->get();
