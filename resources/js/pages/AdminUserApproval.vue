@@ -274,8 +274,8 @@
                                         user.role === "admin"
                                             ? "Administrator"
                                             : user.role === "shop_owner"
-                                            ? "Shop Owner"
-                                            : "User"
+                                              ? "Shop Owner"
+                                              : "User"
                                     }}
                                 </span>
 
@@ -348,6 +348,13 @@
                             >
                                 <div class="flex gap-2">
                                     <button
+                                        v-if="user.valid_id"
+                                        @click="idModalUser = user"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                    >
+                                        View ID
+                                    </button>
+                                    <button
                                         v-if="!user.is_approved"
                                         @click="approveUser(user)"
                                         :disabled="processingUsers[user.id]"
@@ -409,6 +416,33 @@
                     }}
                 </p>
             </div>
+            <!-- Valid ID Modal -->
+            <div
+                v-if="idModalUser"
+                class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+                @click.self="idModalUser = null"
+            >
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4"
+                >
+                    <h3
+                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                    >
+                        Valid ID — {{ idModalUser.name }}
+                    </h3>
+                    <img
+                        :src="`/storage/${idModalUser.valid_id}`"
+                        alt="Valid ID"
+                        class="w-full rounded-lg object-contain max-h-80"
+                    />
+                    <button
+                        @click="idModalUser = null"
+                        class="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
         </div>
     </Layout>
 </template>
@@ -422,7 +456,8 @@ export default {
             activeTab: "pending",
             isLoading: false,
             error: null,
-            processingUsers: {}, // Track which users are being processed
+            processingUsers: {},
+            idModalUser: null,
             currentUserId: null,
             isCurrentUserAdmin: false,
         };
@@ -451,9 +486,8 @@ export default {
         setupAxiosToken() {
             const token = localStorage.getItem("auth-token");
             if (token) {
-                axios.defaults.headers.common[
-                    "Authorization"
-                ] = `Bearer ${token}`;
+                axios.defaults.headers.common["Authorization"] =
+                    `Bearer ${token}`;
                 return true;
             }
             return false;
@@ -482,7 +516,7 @@ export default {
                     this.users = response.data.users || [];
                 } else {
                     throw new Error(
-                        response.data.message || "Failed to fetch users"
+                        response.data.message || "Failed to fetch users",
                     );
                 }
             } catch (error) {
@@ -531,13 +565,13 @@ export default {
 
                 const response = await axios.post(
                     `/api/admin/users/${user.id}/update-role`,
-                    { role: user.role }
+                    { role: user.role },
                 );
 
                 if (response.data.success) {
                     // Update local state
                     const userIndex = this.users.findIndex(
-                        (u) => u.id === user.id
+                        (u) => u.id === user.id,
                     );
                     if (userIndex !== -1) {
                         this.users[userIndex].role = user.role;
@@ -551,7 +585,7 @@ export default {
                             detail: `${
                                 user.name
                             }'s role updated to ${this.getRoleDisplayName(
-                                user.role
+                                user.role,
                             )}`,
                             life: 3000,
                         });
@@ -560,7 +594,7 @@ export default {
                     // Revert role change on failure
                     user.role = originalRole;
                     throw new Error(
-                        response.data.message || "Failed to update user role"
+                        response.data.message || "Failed to update user role",
                     );
                 }
             } catch (error) {
@@ -608,13 +642,13 @@ export default {
                 }
 
                 const response = await axios.post(
-                    `/api/admin/users/${user.id}/approve`
+                    `/api/admin/users/${user.id}/approve`,
                 );
 
                 if (response.data.success) {
                     // Update local state - Vue 3 compatible
                     const userIndex = this.users.findIndex(
-                        (u) => u.id === user.id
+                        (u) => u.id === user.id,
                     );
                     if (userIndex !== -1) {
                         this.users[userIndex].is_approved = true;
@@ -631,7 +665,7 @@ export default {
                     }
                 } else {
                     throw new Error(
-                        response.data.message || "Failed to approve user"
+                        response.data.message || "Failed to approve user",
                     );
                 }
             } catch (error) {
@@ -660,7 +694,7 @@ export default {
         async revokeApproval(user) {
             if (
                 !confirm(
-                    `Are you sure you want to revoke approval for ${user.name}? They will no longer be able to log in.`
+                    `Are you sure you want to revoke approval for ${user.name}? They will no longer be able to log in.`,
                 )
             ) {
                 return;
@@ -675,13 +709,13 @@ export default {
                 }
 
                 const response = await axios.post(
-                    `/api/admin/users/${user.id}/revoke`
+                    `/api/admin/users/${user.id}/revoke`,
                 );
 
                 if (response.data.success) {
                     // Update local state - Vue 3 compatible
                     const userIndex = this.users.findIndex(
-                        (u) => u.id === user.id
+                        (u) => u.id === user.id,
                     );
                     if (userIndex !== -1) {
                         this.users[userIndex].is_approved = false;
@@ -698,7 +732,7 @@ export default {
                     }
                 } else {
                     throw new Error(
-                        response.data.message || "Failed to revoke approval"
+                        response.data.message || "Failed to revoke approval",
                     );
                 }
             } catch (error) {

@@ -9,7 +9,7 @@
                     class="flex items-center justify-center w-28 h-28 mb-4 bg-blue-100 dark:bg-blue-900 rounded-full"
                 >
                     <img
-                        src="../../../public/logotemp.png"
+                        src="../../../public/MainIcon.png"
                         alt="Level Up Logo"
                         class="w-20 h-20 rounded-full"
                     />
@@ -17,7 +17,7 @@
                 <h1
                     class="text-3xl font-bold text-gray-900 dark:text-white text-center"
                 >
-                    Welcome to Suki Me
+                    Welcome to Level Lounge
                 </h1>
                 <p
                     class="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center"
@@ -232,13 +232,12 @@ export default {
                     localStorage.setItem("user", JSON.stringify(user));
 
                     // Set axios default header for future requests
-                    axios.defaults.headers.common[
-                        "Authorization"
-                    ] = `Bearer ${token}`;
+                    axios.defaults.headers.common["Authorization"] =
+                        `Bearer ${token}`;
 
                     console.log(
                         "✅ Token stored successfully with key 'auth-token':",
-                        token
+                        token,
                     );
                     console.log("✅ User role:", user.role);
 

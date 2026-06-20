@@ -1,7 +1,7 @@
 <template>
     <section class="flex bg-gray-50 dark:bg-gray-900">
         <div
-            class="flex flex-col items-center justify-center px-6 py-8 mx-auto md:h-screen lg:py-0"
+            class="flex flex-col items-center justify-center px-6 py-8 mx-auto min-h-screen"
         >
             <!-- Enhanced Logo Section -->
             <div class="flex flex-col items-center mb-8">
@@ -9,7 +9,7 @@
                     class="flex items-center justify-center w-28 h-28 mb-4 bg-blue-100 dark:bg-blue-900 rounded-full"
                 >
                     <img
-                        src="../../../public/logotemp.png"
+                        src="../../../public/MainIcon.png"
                         alt="JP Logo"
                         class="w-20 h-20 rounded-full"
                     />
@@ -17,7 +17,7 @@
                 <h1
                     class="text-3xl font-bold text-gray-900 dark:text-white text-center"
                 >
-                    Welcome to Suki Me
+                    Welcome to Level Lounge
                 </h1>
                 <p
                     class="text-sm text-gray-600 dark:text-gray-400 mt-2 text-center"
@@ -89,6 +89,23 @@
                         </div>
                         <div>
                             <label
+                                for="full_name"
+                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                            >
+                                Full Name
+                            </label>
+                            <input
+                                v-model="full_name"
+                                type="text"
+                                name="full_name"
+                                id="full_name"
+                                placeholder="Your full legal name"
+                                required
+                                class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                            />
+                        </div>
+                        <div>
+                            <label
                                 for="password"
                                 class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                             >
@@ -153,16 +170,16 @@
                             </div>
                             <p
                                 v-if="
-                                    password.length > 0 && password.length < 6
+                                    password.length > 0 && password.length < 8
                                 "
                                 class="mt-1 text-sm text-red-600 dark:text-red-400"
                             >
-                                Password must be at least 6 characters ({{
+                                Password must be at least 8 characters ({{
                                     password.length
-                                }}/6)
+                                }}/8)
                             </p>
                             <p
-                                v-else-if="password.length >= 6"
+                                v-else-if="password.length >= 8"
                                 class="mt-1 text-sm text-green-600 dark:text-green-400"
                             >
                                 Password length is valid ✓
@@ -250,6 +267,32 @@
                                 Passwords do not match
                             </p>
                         </div>
+                        <div>
+                            <label
+                                class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                            >
+                                Valid ID
+                            </label>
+                            <label
+                                class="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
+                            >
+                                <span
+                                    class="text-sm text-gray-500 dark:text-gray-400"
+                                >
+                                    {{
+                                        validIdName
+                                            ? "✓ " + validIdName
+                                            : "Click to upload (JPG, PNG)"
+                                    }}
+                                </span>
+                                <input
+                                    type="file"
+                                    accept="image/jpeg,image/png"
+                                    class="hidden"
+                                    @change="onFileChange"
+                                />
+                            </label>
+                        </div>
                         <button
                             type="submit"
                             :disabled="!isFormValid"
@@ -287,43 +330,62 @@ export default {
     data() {
         return {
             name: "",
+            full_name: "",
             password: "",
             confirmPassword: "",
             showPassword: false,
             showConfirmPassword: false,
+            validId: null,
+            validIdName: "",
         };
     },
     computed: {
         isFormValid() {
             return (
                 this.name.trim() !== "" &&
-                this.password.length >= 6 &&
-                this.password === this.confirmPassword
+                this.full_name.trim() !== "" &&
+                this.password.length >= 8 &&
+                this.password === this.confirmPassword &&
+                this.validId !== null
             );
         },
     },
     methods: {
+        onFileChange(e) {
+            const file = e.target.files[0];
+            if (file) {
+                this.validId = file;
+                this.validIdName = file.name;
+            }
+        },
         signup() {
-            // Client-side validation
             if (this.password !== this.confirmPassword) {
                 alert("Passwords do not match!");
                 return;
             }
-
-            if (this.password.length < 6) {
-                alert("Password must be at least 6 characters long!");
+            if (this.password.length < 8) {
+                alert("Password must be at least 8 characters!");
+                return;
+            }
+            if (!this.validId) {
+                alert("Please upload a valid ID.");
                 return;
             }
 
+            const data = new FormData();
+            data.append("name", this.name);
+            data.append("full_name", this.full_name);
+            data.append("password", this.password);
+            data.append("password_confirmation", this.confirmPassword);
+            data.append("valid_id", this.validId);
+
             axios
-                .post("/signup", {
-                    name: this.name,
-                    password: this.password,
-                    password_confirmation: this.confirmPassword,
+                .post("/signup", data, {
+                    headers: { "Content-Type": "multipart/form-data" },
                 })
                 .then(() => {
                     alert(
-                        "Account created successfully! Please wait for admin approval before you can access the system."
+                        "Account created successfully! Please wait for admin approval before you can access the system.",
                     );
                     this.$router.push("/");
                 })

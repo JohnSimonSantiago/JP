@@ -7,13 +7,13 @@
             <!-- Enhanced Logo Section -->
             <div class="flex items-center gap-4">
                 <img
-                    src="../../../public/logotemp.png"
+                    src="../../../public/MainIcon.png"
                     alt="Level Up Logo"
                     class="w-12 h-12 rounded-full"
                 />
                 <div class="flex flex-col">
                     <span class="text-xl font-bold text-gray-800 leading-none"
-                        >Suki Me</span
+                        >Level Lounge</span
                     >
                     <span class="text-xs text-gray-500 leading-none"
                         >Digital Membership</span
