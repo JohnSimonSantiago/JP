@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Membership;
+use App\Services\PushNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -151,6 +152,21 @@ $newUser->name = $request->name;
         $newUser->is_approved = false; // NEW: Set to false - needs admin approval
 
         $newUser->save();
+
+        // Notify the main admin (user id 1) of the new registration
+        try {
+            $admin = User::find(1);
+            if ($admin && $admin->push_token) {
+                PushNotificationService::send(
+                    $admin->push_token,
+                    'New User Registration',
+                    "{$newUser->name} just registered and is awaiting approval.",
+                    ['type' => 'new_user', 'user_id' => $newUser->id]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('New-user push failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Account created successfully! Your registration is pending approval. You will be able to log in once an administrator has reviewed and approved your account.',
@@ -496,6 +512,21 @@ $endDate = $startDate->copy()->addMonth();
                 'end_date' => $endDate,
                 'status' => 'pending'
             ]);
+
+            // Notify the main admin of the new application
+            try {
+                $admin = User::find(1);
+                if ($admin && $admin->push_token) {
+                    PushNotificationService::send(
+                        $admin->push_token,
+                        'New Premium Application',
+                        "{$user->name} applied for {$request->type} membership.",
+                        ['type' => 'membership_application', 'membership_id' => $membership->id]
+                    );
+                }
+            } catch (\Exception $e) {
+                \Log::error('Membership application push failed: ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,

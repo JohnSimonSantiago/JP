@@ -42,6 +42,7 @@ class LoungeController extends Controller
             'customer_name'  => 'required|string|max:255',
             'user_id'        => 'nullable|exists:users,id',
             'customer_type'  => 'required|in:member,walk_in',
+            'group_id'       => 'nullable|string',
         ]);
 
         $userLevel = 1;
@@ -58,6 +59,7 @@ class LoungeController extends Controller
             'user_id'        => $request->user_id,
             'customer_type'  => $request->customer_type,
             'user_level'     => $userLevel,
+            'group_id'       => $request->group_id,
             'checked_in_at'  => now(),
             'status'         => 'active',
             'is_free'        => $isFree,
@@ -95,44 +97,84 @@ class LoungeController extends Controller
 
         $isPreview = $request->query('preview') === '1';
         $checkedOutAt = now();
-        $totalBill = 0;
-        $billBreakdown = null;
+        $pricing = LoungePricing::first();
 
-        if (!$session->is_free) {
-            $pricing = LoungePricing::first();
-            $elapsedMinutes = Carbon::parse($session->checked_in_at)->diffInMinutes($checkedOutAt);
+        // "solo=1" forces just this one person, even if they're in a group.
+        $soloOut = $request->query('solo') === '1';
 
-            $rawHours = $elapsedMinutes / 60;
-            $floorHours = floor($rawHours);
-            $remainingMins = $elapsedMinutes - ($floorHours * 60);
-            $billableHours = $remainingMins <= 10 ? $floorHours : $floorHours + 1;
-            $billableHours = max(1, $billableHours);
+        // Gather everyone at this "table". Solo session = group of one.
+        $sessions = ($session->group_id && !$soloOut)
+            ? LoungeSession::where('group_id', $session->group_id)
+                ->where('status', 'active')->get()
+            : collect([$session]);
 
-            $result = $this->calculateBill($billableHours, $pricing);
-            $totalBill = $result['total'];
-            $billBreakdown = $result['breakdown'];
+        $lineItems = [];
+        $computedTotal = 0;
+
+        foreach ($sessions as $s) {
+            $line = [
+                'id'            => $s->id,
+                'customer_name' => $s->customer_name,
+                'is_free'       => (bool) $s->is_free,
+                'duration'      => null,
+                'bill'          => 0,
+                'breakdown'     => null,
+            ];
+
+            $elapsedMinutes = Carbon::parse($s->checked_in_at)->diffInMinutes($checkedOutAt);
+            $h = floor($elapsedMinutes / 60);
+            $m = $elapsedMinutes % 60;
+            $line['duration'] = $h > 0 ? "{$h}h {$m}m" : "{$m}m";
+
+            if (!$s->is_free) {
+                $floorHours = floor($elapsedMinutes / 60);
+                $remainingMins = $elapsedMinutes - ($floorHours * 60);
+                $billableHours = $remainingMins <= 10 ? $floorHours : $floorHours + 1;
+                $billableHours = max(1, $billableHours);
+
+                $result = $this->calculateBill($billableHours, $pricing);
+                $line['bill'] = $result['total'];
+                $line['breakdown'] = $result['breakdown'];
+                $computedTotal += $result['total'];
+            }
+
+            $lineItems[] = $line;
         }
 
-        // Preview mode — just return the bill without saving
+        // Admin override — final amount the operator actually charges
+        $finalTotal = $request->has('override_total') && $request->override_total !== null
+            ? (float) $request->override_total
+            : $computedTotal;
+
         if ($isPreview) {
             return response()->json([
-                'success'        => true,
-                'total_bill'     => $totalBill,
-                'bill_breakdown' => $billBreakdown,
+                'success'         => true,
+                'line_items'      => $lineItems,
+                'computed_total'  => $computedTotal,
+                'total_bill'      => $finalTotal,
+                'is_group'        => $sessions->count() > 1,
             ]);
         }
 
-        $session->update([
-            'checked_out_at' => $checkedOutAt,
-            'status'         => 'completed',
-            'total_bill'     => $totalBill,
-        ]);
+        // Distribute the final total: if overridden, scale each paid line proportionally
+        $payable = $computedTotal > 0 ? $computedTotal : 1;
+        foreach ($sessions as $s) {
+            $line = collect($lineItems)->firstWhere('id', $s->id);
+            $share = $s->is_free
+                ? 0
+                : round(($line['bill'] / $payable) * $finalTotal, 2);
+
+            $s->update([
+                'checked_out_at' => $checkedOutAt,
+                'status'         => 'completed',
+                'total_bill'     => $share,
+            ]);
+        }
 
         return response()->json([
-            'success'        => true,
-            'session'        => $session,
-            'total_bill'     => $totalBill,
-            'bill_breakdown' => $billBreakdown,
+            'success'    => true,
+            'total_bill' => $finalTotal,
+            'line_items' => $lineItems,
         ]);
     }
 
@@ -209,4 +251,16 @@ class LoungeController extends Controller
 
     return response()->json(['success' => true, 'session' => $session]);
 }
+
+    // ─── Assign a session to a group ────────────────────────────────────────────
+
+    public function assignGroup(Request $request, $id)
+    {
+        $request->validate(['group_id' => 'required|string']);
+
+        $session = LoungeSession::findOrFail($id);
+        $session->update(['group_id' => $request->group_id]);
+
+        return response()->json(['success' => true, 'session' => $session]);
+    }
 }

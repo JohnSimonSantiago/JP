@@ -12,14 +12,14 @@
                     </p>
                 </div>
                 <button
-                    @click="showCheckIn = true"
+                    @click="openCheckIn()"
                     class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                 >
                     <i class="pi pi-plus"></i> Check In
                 </button>
             </div>
 
-            <!-- Active Session Cards -->
+            <!-- Loading / empty -->
             <div v-if="loadingSessions" class="text-center py-12 text-gray-400">
                 <i class="pi pi-spin pi-spinner text-2xl"></i>
             </div>
@@ -34,16 +34,17 @@
                 </p>
             </div>
 
+            <!-- Cards: solo sessions + group cards -->
             <div
                 v-else
                 class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8"
             >
+                <!-- ── Solo session card ── -->
                 <div
-                    v-for="session in activeSessions"
+                    v-for="session in soloSessions"
                     :key="session.id"
                     class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
                 >
-                    <!-- Customer Info -->
                     <div class="flex items-center justify-between mb-3">
                         <div>
                             <p class="font-semibold text-gray-800">
@@ -75,7 +76,6 @@
                         <i class="pi pi-user text-gray-300 text-2xl"></i>
                     </div>
 
-                    <!-- Timer -->
                     <div
                         class="bg-gray-50 rounded-lg px-4 py-3 mb-3 text-center"
                     >
@@ -88,7 +88,6 @@
                         </p>
                     </div>
 
-                    <!-- Grace period disclaimer (non-free only) -->
                     <p
                         v-if="!session.is_free"
                         class="text-xs text-gray-400 mb-3 text-center"
@@ -96,13 +95,98 @@
                         ⏱ 10-min grace period per hour applies
                     </p>
 
-                    <!-- Checkout Button -->
-                    <button
-                        @click="openCheckout(session)"
-                        class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-lg text-sm transition-colors"
-                    >
-                        Check Out
-                    </button>
+                    <div class="flex gap-2">
+                        <button
+                            @click="startGroupFrom(session)"
+                            class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium py-2 rounded-lg text-sm transition-colors"
+                        >
+                            + Add to group
+                        </button>
+                        <button
+                            @click="openCheckout(session)"
+                            class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-lg text-sm transition-colors"
+                        >
+                            Check Out
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Group card ── -->
+                <div
+                    v-for="(group, idx) in groupedSessions"
+                    :key="group.group_id"
+                    class="bg-white rounded-xl shadow-sm border border-indigo-100 p-5 md:col-span-2 lg:col-span-1"
+                >
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span
+                                class="text-xs bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full font-semibold"
+                            >
+                                Group {{ groupLabel(idx) }}
+                            </span>
+                            <span class="text-xs text-gray-400">
+                                {{ group.members.length }} people
+                            </span>
+                        </div>
+                        <i class="pi pi-users text-indigo-300 text-2xl"></i>
+                    </div>
+
+                    <!-- Member rows with individual timers -->
+                    <div class="space-y-2 mb-3">
+                        <div
+                            v-for="m in group.members"
+                            :key="m.id"
+                            class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                        >
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">
+                                    {{ m.customer_name }}
+                                </p>
+                                <span
+                                    v-if="m.is_free"
+                                    class="text-xs text-yellow-600 font-medium"
+                                    >Lv{{ m.user_level }} — Free</span
+                                >
+                                <span
+                                    v-else-if="m.customer_type === 'walk_in'"
+                                    class="text-xs text-gray-400"
+                                    >Walk-in</span
+                                >
+                                <span v-else class="text-xs text-blue-600"
+                                    >Lv{{ m.user_level }}</span
+                                >
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <p
+                                    class="font-mono font-bold text-indigo-600 text-sm"
+                                >
+                                    {{ getElapsed(m) }}
+                                </p>
+                                <button
+                                    @click="openCheckout(m, true)"
+                                    title="Check out just this person"
+                                    class="text-red-400 hover:text-red-600 text-xs px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                >
+                                    Out
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2">
+                        <button
+                            @click="addToExistingGroup(group.group_id)"
+                            class="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-600 font-medium py-2 rounded-lg text-sm transition-colors"
+                        >
+                            + Add person
+                        </button>
+                        <button
+                            @click="openGroupCheckout(group)"
+                            class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-lg text-sm transition-colors"
+                        >
+                            Check Out All
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -209,9 +293,47 @@
                 <div
                     class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
                 >
-                    <h3 class="text-lg font-bold text-gray-800 mb-4">
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">
                         Check In Customer
                     </h3>
+                    <p
+                        v-if="checkInForm.group_id && !groupMode"
+                        class="text-xs text-indigo-500 mb-4"
+                    >
+                        Adding to a group
+                    </p>
+                    <p v-else class="text-sm text-gray-400 mb-4">
+                        Check in one person or a whole group.
+                    </p>
+
+                    <!-- Single vs Group toggle (hidden when joining an existing group) -->
+                    <div
+                        v-if="!checkInForm.group_id || groupMode"
+                        class="grid grid-cols-2 gap-2 mb-4 bg-gray-100 p-1 rounded-lg"
+                    >
+                        <button
+                            @click="setGroupMode(false)"
+                            :class="
+                                !groupMode
+                                    ? 'bg-white shadow-sm text-indigo-600'
+                                    : 'text-gray-500'
+                            "
+                            class="py-1.5 rounded-md text-sm font-medium transition-all"
+                        >
+                            Single
+                        </button>
+                        <button
+                            @click="setGroupMode(true)"
+                            :class="
+                                groupMode
+                                    ? 'bg-white shadow-sm text-indigo-600'
+                                    : 'text-gray-500'
+                            "
+                            class="py-1.5 rounded-md text-sm font-medium transition-all"
+                        >
+                            Group
+                        </button>
+                    </div>
 
                     <div class="space-y-4">
                         <!-- Customer Type -->
@@ -226,6 +348,7 @@
                                         checkInForm.customer_type = 'walk_in';
                                         checkInForm.user_id = null;
                                         checkInForm.customer_name = '';
+                                        selectedUser = null;
                                     "
                                     :class="
                                         checkInForm.customer_type === 'walk_in'
@@ -258,7 +381,7 @@
                             </div>
                         </div>
 
-                        <!-- Walk-in: just a name -->
+                        <!-- Walk-in name -->
                         <div v-if="checkInForm.customer_type === 'walk_in'">
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -272,7 +395,7 @@
                             />
                         </div>
 
-                        <!-- Member: search user -->
+                        <!-- Member search -->
                         <div v-if="checkInForm.customer_type === 'member'">
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -320,11 +443,42 @@
                         </div>
                     </div>
 
+                    <!-- Pending group queue -->
+                    <div v-if="pendingGroup.length > 0" class="mt-4">
+                        <p class="text-xs font-medium text-gray-500 mb-1">
+                            In this group ({{ pendingGroup.length }}):
+                        </p>
+                        <div class="space-y-1">
+                            <div
+                                v-for="(p, i) in pendingGroup"
+                                :key="i"
+                                class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-1.5 text-sm"
+                            >
+                                <span>{{ p.customer_name }}</span>
+                                <button
+                                    @click="pendingGroup.splice(i, 1)"
+                                    class="text-gray-300 hover:text-red-400"
+                                >
+                                    <i class="pi pi-times text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
                     <div v-if="checkInError" class="text-red-500 text-sm mt-3">
                         {{ checkInError }}
                     </div>
 
-                    <div class="flex gap-3 mt-6">
+                    <!-- Add another person (group mode only) -->
+                    <button
+                        v-if="groupMode || checkInForm.group_id"
+                        @click="addPersonToQueue"
+                        class="w-full mt-4 border border-dashed border-indigo-300 text-indigo-600 py-2 rounded-lg text-sm hover:bg-indigo-50 transition-colors"
+                    >
+                        + Add this person to group
+                    </button>
+
+                    <div class="flex gap-3 mt-4">
                         <button
                             @click="
                                 showCheckIn = false;
@@ -339,7 +493,11 @@
                             :disabled="checkingIn"
                             class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                         >
-                            {{ checkingIn ? "Checking in..." : "Check In" }}
+                            {{
+                                checkingIn
+                                    ? "Checking in..."
+                                    : checkInButtonLabel
+                            }}
                         </button>
                     </div>
                 </div>
@@ -357,44 +515,81 @@
                         Check Out
                     </h3>
                     <p class="text-sm text-gray-500 mb-4">
-                        {{ checkoutSession?.customer_name }}
+                        {{ checkoutTitle }}
                     </p>
 
                     <div v-if="checkoutResult">
-                        <div
-                            v-if="checkoutResult.is_free"
-                            class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center mb-4"
-                        >
-                            <p class="text-yellow-700 font-semibold text-lg">
-                                Free Access
-                            </p>
-                            <p class="text-yellow-600 text-sm">
-                                Level {{ checkoutSession.user_level }} member —
-                                no charge
-                            </p>
-                        </div>
-                        <div v-else class="bg-gray-50 rounded-lg p-4 mb-4">
-                            <div class="flex justify-between text-sm mb-2">
-                                <span class="text-gray-500">Duration</span>
-                                <span class="font-medium">{{
-                                    checkoutDuration
-                                }}</span>
-                            </div>
-                            <div class="flex justify-between text-sm mb-2">
-                                <span class="text-gray-500">Billing</span>
-                                <span class="font-medium text-gray-700">{{
-                                    checkoutResult.bill_breakdown
-                                }}</span>
-                            </div>
+                        <!-- Per-person line items -->
+                        <div class="bg-gray-50 rounded-lg p-4 mb-4 space-y-2">
                             <div
-                                class="border-t border-gray-200 mt-3 pt-3 flex justify-between"
+                                v-for="line in checkoutResult.line_items"
+                                :key="line.id"
+                                class="flex justify-between items-start text-sm"
+                            >
+                                <div>
+                                    <p class="font-medium text-gray-700">
+                                        {{ line.customer_name }}
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        {{ line.duration }}
+                                        <span v-if="line.breakdown"
+                                            >· {{ line.breakdown }}</span
+                                        >
+                                    </p>
+                                </div>
+                                <span
+                                    class="font-semibold"
+                                    :class="
+                                        line.is_free
+                                            ? 'text-yellow-600'
+                                            : 'text-gray-800'
+                                    "
+                                >
+                                    {{
+                                        line.is_free ? "Free" : "₱" + line.bill
+                                    }}
+                                </span>
+                            </div>
+
+                            <div
+                                class="border-t border-gray-200 mt-2 pt-3 flex justify-between items-center"
                             >
                                 <span class="font-semibold text-gray-700"
                                     >Total</span
                                 >
                                 <span class="text-xl font-bold text-indigo-600"
-                                    >₱{{ checkoutResult.total_bill }}</span
+                                    >₱{{ displayTotal }}</span
                                 >
+                            </div>
+                        </div>
+
+                        <!-- Override toggle (paid sessions only) -->
+                        <div
+                            v-if="checkoutResult.computed_total > 0"
+                            class="mb-4"
+                        >
+                            <label
+                                class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer"
+                            >
+                                <input
+                                    type="checkbox"
+                                    v-model="overrideOn"
+                                    class="rounded text-indigo-600 focus:ring-indigo-300"
+                                />
+                                Override total (waive minutes / discount)
+                            </label>
+                            <div
+                                v-if="overrideOn"
+                                class="mt-2 flex items-center gap-2"
+                            >
+                                <span class="text-gray-500">₱</span>
+                                <input
+                                    v-model.number="overrideTotal"
+                                    type="number"
+                                    min="0"
+                                    :placeholder="checkoutResult.computed_total"
+                                    class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                />
                             </div>
                         </div>
                     </div>
@@ -405,9 +600,14 @@
 
                     <button
                         @click="confirmCheckout"
-                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition-colors mt-2"
+                        :disabled="confirmingCheckout"
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition-colors mt-2 disabled:opacity-50"
                     >
-                        Confirm & Close Session
+                        {{
+                            confirmingCheckout
+                                ? "Closing..."
+                                : "Confirm & Close"
+                        }}
                     </button>
                     <button
                         @click="
@@ -445,7 +645,10 @@ export default {
                 customer_name: "",
                 customer_type: "walk_in",
                 user_id: null,
+                group_id: null,
             },
+            pendingGroup: [], // queued people to check in together
+            groupMode: false, // true when building a group
             userSearch: "",
             userResults: [],
             selectedUser: null,
@@ -453,10 +656,64 @@ export default {
 
             // Check out
             showCheckOut: false,
-            checkoutSession: null,
+            checkoutSession: null, // for solo
+            checkoutGroup: null, // for group
+            checkoutSolo: false, // force-checkout one group member
             checkoutResult: null,
-            checkoutDuration: "",
+            confirmingCheckout: false,
+            overrideOn: false,
+            overrideTotal: null,
         };
+    },
+
+    computed: {
+        // Sessions with no group_id
+        soloSessions() {
+            return this.activeSessions.filter((s) => !s.group_id);
+        },
+        // Grouped by group_id, ordered by when the group first formed (stable labels)
+        groupedSessions() {
+            const groups = {};
+            this.activeSessions
+                .filter((s) => s.group_id)
+                .forEach((s) => {
+                    if (!groups[s.group_id]) {
+                        groups[s.group_id] = {
+                            group_id: s.group_id,
+                            members: [],
+                            firstCheckIn: s.checked_in_at,
+                        };
+                    }
+                    groups[s.group_id].members.push(s);
+                    // Track the earliest check-in as the group's "birth time"
+                    if (s.checked_in_at < groups[s.group_id].firstCheckIn) {
+                        groups[s.group_id].firstCheckIn = s.checked_in_at;
+                    }
+                });
+            // Sort by birth time so A is always the oldest group
+            return Object.values(groups).sort(
+                (a, b) => new Date(a.firstCheckIn) - new Date(b.firstCheckIn),
+            );
+        },
+        checkInButtonLabel() {
+            // Count queued people, plus the form only if a name is filled
+            const formHasPerson = this.checkInForm.customer_name ? 1 : 0;
+            const total = this.pendingGroup.length + formHasPerson;
+            if (total <= 1) return "Check In";
+            return `Check In ${total} people`;
+        },
+        checkoutTitle() {
+            if (this.checkoutGroup) {
+                return `${this.checkoutGroup.members.length} people`;
+            }
+            return this.checkoutSession?.customer_name || "";
+        },
+        displayTotal() {
+            if (this.overrideOn && this.overrideTotal !== null) {
+                return this.overrideTotal;
+            }
+            return this.checkoutResult?.computed_total ?? 0;
+        },
     },
 
     async mounted() {
@@ -475,9 +732,22 @@ export default {
         token() {
             return localStorage.getItem("auth-token");
         },
-
         headers() {
             return { Authorization: `Bearer ${this.token()}` };
+        },
+
+        // Generates a unique "table number"
+        newGroupId() {
+            return (
+                "grp_" +
+                Date.now() +
+                "_" +
+                Math.random().toString(36).slice(2, 7)
+            );
+        },
+
+        groupLabel(idx) {
+            return String.fromCharCode(65 + idx); // 0 -> A, 1 -> B...
         },
 
         async fetchSessions() {
@@ -510,7 +780,7 @@ export default {
         },
 
         getElapsed(session) {
-            void this.tick; // reactivity trigger
+            void this.tick;
             const diff = Math.floor(
                 (Date.now() - new Date(session.checked_in_at).getTime()) / 1000,
             );
@@ -571,12 +841,84 @@ export default {
             this.userSearch = u.name;
         },
 
+        // ── Check-in flows ──
+        openCheckIn(groupId = null) {
+            this.resetCheckIn();
+            this.checkInForm.group_id = groupId;
+            this.groupMode = !!groupId; // adding to existing group starts in group mode
+            this.showCheckIn = true;
+        },
+
+        setGroupMode(on) {
+            this.groupMode = on;
+            this.checkInError = null;
+            if (!on) {
+                // Switching back to single clears any queued people
+                this.pendingGroup = [];
+                this.checkInForm.group_id = null;
+            }
+        },
+
+        // From a solo card: convert it into a group by starting a fresh group_id,
+        // then open check-in pre-stamped with that group so the next person joins it.
+        async startGroupFrom(session) {
+            const gid = this.newGroupId();
+            try {
+                await axios.post(
+                    `/api/lounge/assign-group/${session.id}`,
+                    { group_id: gid },
+                    { headers: this.headers() },
+                );
+                await this.fetchSessions();
+                this.openCheckIn(gid);
+            } catch (e) {
+                console.error(e);
+            }
+        },
+
+        // From an existing group card
+        addToExistingGroup(groupId) {
+            this.openCheckIn(groupId);
+        },
+
+        // Clears the single-person form fields (keeps group_id + queue)
+        clearPersonFields() {
+            this.checkInForm.customer_name = "";
+            this.checkInForm.customer_type = "walk_in";
+            this.checkInForm.user_id = null;
+            this.userSearch = "";
+            this.userResults = [];
+            this.selectedUser = null;
+        },
+
+        // Push current form person into the queue, then clear fields for the next
+        addPersonToQueue() {
+            this.checkInError = null;
+            if (!this.checkInForm.customer_name) {
+                this.checkInError = "Enter a name before adding another.";
+                return;
+            }
+            // First time queuing turns this into a group
+            if (!this.checkInForm.group_id) {
+                this.checkInForm.group_id = this.newGroupId();
+            }
+            this.pendingGroup.push({
+                customer_name: this.checkInForm.customer_name,
+                customer_type: this.checkInForm.customer_type,
+                user_id: this.checkInForm.user_id,
+            });
+            this.clearPersonFields();
+        },
+
         resetCheckIn() {
             this.checkInForm = {
                 customer_name: "",
                 customer_type: "walk_in",
                 user_id: null,
+                group_id: null,
             };
+            this.pendingGroup = [];
+            this.groupMode = false;
             this.userSearch = "";
             this.userResults = [];
             this.selectedUser = null;
@@ -585,22 +927,35 @@ export default {
 
         async submitCheckIn() {
             this.checkInError = null;
-            if (!this.checkInForm.customer_name) {
-                this.checkInError = "Please enter a name.";
+
+            // Build the full list: queued people + the one currently in the form (if filled)
+            const people = [...this.pendingGroup];
+            if (this.checkInForm.customer_name) {
+                people.push({
+                    customer_name: this.checkInForm.customer_name,
+                    customer_type: this.checkInForm.customer_type,
+                    user_id: this.checkInForm.user_id,
+                });
+            }
+
+            if (people.length === 0) {
+                this.checkInError = "Please enter at least one name.";
                 return;
             }
+
             this.checkingIn = true;
             try {
-                const res = await axios.post(
-                    "/api/lounge/check-in",
-                    this.checkInForm,
-                    { headers: this.headers() },
-                );
-                if (res.data.success) {
-                    this.showCheckIn = false;
-                    this.resetCheckIn();
-                    await this.fetchSessions();
+                // Check each person in, all sharing the same group_id (may be null for solo)
+                for (const person of people) {
+                    await axios.post(
+                        "/api/lounge/check-in",
+                        { ...person, group_id: this.checkInForm.group_id },
+                        { headers: this.headers() },
+                    );
                 }
+                this.showCheckIn = false;
+                this.resetCheckIn();
+                await this.fetchSessions();
             } catch (e) {
                 this.checkInError =
                     e.response?.data?.message || "Check-in failed.";
@@ -609,24 +964,42 @@ export default {
             }
         },
 
-        async openCheckout(session) {
+        // ── Checkout flows ──
+        // soloOut = true forces just this person even if they're in a group
+        async openCheckout(session, soloOut = false) {
             this.checkoutSession = session;
+            this.checkoutGroup = null;
             this.checkoutResult = null;
+            this.checkoutSolo = soloOut;
+            this.overrideOn = false;
+            this.overrideTotal = null;
             this.showCheckOut = true;
+            await this.loadCheckoutPreview(session.id, soloOut);
+        },
 
-            // Pre-compute bill preview
+        async openGroupCheckout(group) {
+            this.checkoutGroup = group;
+            this.checkoutSession = null;
+            this.checkoutResult = null;
+            this.checkoutSolo = false;
+            this.overrideOn = false;
+            this.overrideTotal = null;
+            this.showCheckOut = true;
+            // Any member id works — backend gathers the whole group from group_id
+            await this.loadCheckoutPreview(group.members[0].id);
+        },
+
+        async loadCheckoutPreview(sessionId, soloOut = false) {
             try {
+                const soloParam = soloOut ? "&solo=1" : "";
                 const res = await axios.post(
-                    `/api/lounge/check-out/${session.id}?preview=1`,
+                    `/api/lounge/check-out/${sessionId}?preview=1${soloParam}`,
                     {},
                     { headers: this.headers() },
                 );
                 if (res.data.success) {
                     this.checkoutResult = res.data;
-                    this.checkoutResult.is_free = session.is_free;
-                    this.checkoutDuration = this.getDurationFromNow(
-                        session.checked_in_at,
-                    );
+                    this._checkoutId = sessionId;
                 }
             } catch (e) {
                 console.error(e);
@@ -634,10 +1007,16 @@ export default {
         },
 
         async confirmCheckout() {
+            this.confirmingCheckout = true;
+            const payload = {};
+            if (this.overrideOn && this.overrideTotal !== null) {
+                payload.override_total = this.overrideTotal;
+            }
             try {
+                const soloParam = this.checkoutSolo ? "?solo=1" : "";
                 await axios.post(
-                    `/api/lounge/check-out/${this.checkoutSession.id}`,
-                    {},
+                    `/api/lounge/check-out/${this._checkoutId}${soloParam}`,
+                    payload,
                     { headers: this.headers() },
                 );
                 this.showCheckOut = false;
@@ -646,16 +1025,9 @@ export default {
                 await this.fetchHistory();
             } catch (e) {
                 console.error(e);
+            } finally {
+                this.confirmingCheckout = false;
             }
-        },
-
-        getDurationFromNow(checkedInAt) {
-            const mins = Math.floor(
-                (Date.now() - new Date(checkedInAt).getTime()) / 60000,
-            );
-            const h = Math.floor(mins / 60);
-            const m = mins % 60;
-            return h > 0 ? `${h}h ${m}m` : `${m}m`;
         },
     },
 };

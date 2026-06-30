@@ -17,6 +17,7 @@ class LoungeSession extends Model
         'total_bill',
         'is_free',
         'checked_in_by',
+        'group_id',
     ];
 
     protected $casts = [

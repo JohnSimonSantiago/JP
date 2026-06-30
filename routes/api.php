@@ -223,6 +223,7 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
         Route::get('/active-sessions', [LoungeController::class, 'activeSessions']);
         Route::post('/check-out/{id}', [LoungeController::class, 'checkOut']);
         Route::get('/session-history', [LoungeController::class, 'sessionHistory']);
+        Route::post('/assign-group/{id}', [LoungeController::class, 'assignGroup']);
     });
 });
 Route::prefix('point-shop')->group(function () {

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Membership;
 use App\Models\User;
+use App\Services\PushNotificationService;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
@@ -13,6 +14,7 @@ class MembershipController extends Controller
     public function adminIndex()
     {
         $memberships = Membership::with('user:id,name,email,profile_image')
+            ->where('status', 'pending')
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -44,6 +46,20 @@ $membership->user->update([
     'level' => $levelMap[$membership->type] ?? 1,
 ]);
 
+        // Notify the user their membership was approved
+        try {
+            if ($membership->user->push_token) {
+                PushNotificationService::send(
+                    $membership->user->push_token,
+                    'Premium Approved 🎉',
+                    "Your {$membership->type} membership is now active. Enjoy!",
+                    ['type' => 'membership_approved', 'membership_id' => $membership->id]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Membership approved push failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => "Membership approved for {$membership->user->name}",
@@ -60,6 +76,20 @@ $membership->user->update([
         }
 
         $membership->update(['status' => 'rejected']);
+
+        // Notify the user their application was rejected
+        try {
+            if ($membership->user->push_token) {
+                PushNotificationService::send(
+                    $membership->user->push_token,
+                    'Membership Update',
+                    "Your {$membership->type} application wasn't approved this time. Contact support for details.",
+                    ['type' => 'membership_rejected', 'membership_id' => $membership->id]
+                );
+            }
+        } catch (\Exception $e) {
+            \Log::error('Membership rejected push failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'success' => true,
