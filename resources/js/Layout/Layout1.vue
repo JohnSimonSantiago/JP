@@ -754,6 +754,23 @@
                             >
                         </router-link>
 
+                        <!-- Buy Consumable Time (Admin Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
+                            to="/admin/lounge-buy-time"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 group"
+                        >
+                            <i
+                                class="pi pi-clock text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Buy Time</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                                >Admin</span
+                            >
+                        </router-link>
+
                         <!-- Admin User Approval (Admins Only) -->
                         <router-link
                             v-if="isAdmin"

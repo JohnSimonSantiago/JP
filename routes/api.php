@@ -224,6 +224,9 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
         Route::post('/check-out/{id}', [LoungeController::class, 'checkOut']);
         Route::get('/session-history', [LoungeController::class, 'sessionHistory']);
         Route::post('/assign-group/{id}', [LoungeController::class, 'assignGroup']);
+        Route::get('/consumable/search', [LoungeController::class, 'searchLevel1Users']);
+        Route::post('/consumable/buy', [LoungeController::class, 'buyConsumableTime']);
+        Route::get('/consumable/history', [LoungeController::class, 'consumableHistory']);
     });
 });
 Route::prefix('point-shop')->group(function () {

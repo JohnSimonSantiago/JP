@@ -43,7 +43,12 @@
                 <div
                     v-for="session in soloSessions"
                     :key="session.id"
-                    class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
+                    class="bg-white rounded-xl shadow-sm p-5"
+                    :class="
+                        isCountdownNegative(session)
+                            ? 'border-2 border-red-300'
+                            : 'border border-gray-100'
+                    "
                 >
                     <div class="flex items-center justify-between mb-3">
                         <div>
@@ -79,7 +84,14 @@
                     <div
                         class="bg-gray-50 rounded-lg px-4 py-3 mb-3 text-center"
                     >
-                        <p class="text-2xl font-mono font-bold text-indigo-600">
+                        <p
+                            class="text-2xl font-mono font-bold"
+                            :class="
+                                isCountdownNegative(session)
+                                    ? 'text-red-600'
+                                    : 'text-indigo-600'
+                            "
+                        >
                             {{ getElapsed(session) }}
                         </p>
                         <p class="text-xs text-gray-400 mt-0.5">
@@ -89,7 +101,22 @@
                     </div>
 
                     <p
-                        v-if="!session.is_free"
+                        v-if="session.billing_mode === 'consumable'"
+                        class="text-xs mb-3 text-center"
+                        :class="
+                            isCountdownNegative(session)
+                                ? 'text-red-500 font-medium'
+                                : 'text-gray-400'
+                        "
+                    >
+                        ⏳ Consumable time
+                        {{
+                            isCountdownNegative(session) ? "— over balance" : ""
+                        }}
+                    </p>
+
+                    <p
+                        v-else-if="!session.is_free"
                         class="text-xs text-gray-400 mb-3 text-center"
                     >
                         ⏱ 10-min grace period per hour applies
@@ -136,7 +163,12 @@
                         <div
                             v-for="m in group.members"
                             :key="m.id"
-                            class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                            class="flex items-center justify-between rounded-lg px-3 py-2"
+                            :class="
+                                isCountdownNegative(m)
+                                    ? 'bg-red-50 border border-red-200'
+                                    : 'bg-gray-50'
+                            "
                         >
                             <div>
                                 <p class="text-sm font-medium text-gray-800">
@@ -158,7 +190,12 @@
                             </div>
                             <div class="flex items-center gap-2">
                                 <p
-                                    class="font-mono font-bold text-indigo-600 text-sm"
+                                    class="font-mono font-bold text-sm"
+                                    :class="
+                                        isCountdownNegative(m)
+                                            ? 'text-red-600'
+                                            : 'text-indigo-600'
+                                    "
                                 >
                                     {{ getElapsed(m) }}
                                 </p>
@@ -440,6 +477,75 @@
                                     }}
                                 </span>
                             </div>
+
+                            <!-- Billing mode toggle (Level 1 members only) -->
+                            <div
+                                v-if="selectedUser && selectedUser.level === 1"
+                                class="mt-3"
+                            >
+                                <label
+                                    class="block text-xs font-medium text-gray-500 mb-1"
+                                    >Billing</label
+                                >
+                                <div
+                                    class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-lg"
+                                >
+                                    <button
+                                        type="button"
+                                        @click="
+                                            checkInForm.billing_mode = 'hourly'
+                                        "
+                                        :class="
+                                            checkInForm.billing_mode ===
+                                            'hourly'
+                                                ? 'bg-white shadow-sm text-indigo-600'
+                                                : 'text-gray-500'
+                                        "
+                                        class="py-1.5 rounded-md text-sm font-medium transition-all"
+                                    >
+                                        Pay by Hour
+                                    </button>
+                                    <button
+                                        type="button"
+                                        @click="
+                                            checkInForm.billing_mode =
+                                                'consumable'
+                                        "
+                                        :class="
+                                            checkInForm.billing_mode ===
+                                            'consumable'
+                                                ? 'bg-white shadow-sm text-indigo-600'
+                                                : 'text-gray-500'
+                                        "
+                                        class="py-1.5 rounded-md text-sm font-medium transition-all"
+                                    >
+                                        Use Consumable Time
+                                    </button>
+                                </div>
+                                <p
+                                    class="text-xs mt-1"
+                                    :class="
+                                        (selectedUser.consumable_minutes ??
+                                            0) <= 0
+                                            ? 'text-red-500'
+                                            : 'text-gray-400'
+                                    "
+                                >
+                                    Balance:
+                                    {{
+                                        formatMinutesBalance(
+                                            selectedUser.consumable_minutes,
+                                        )
+                                    }}
+                                    <span
+                                        v-if="
+                                            (selectedUser.consumable_minutes ??
+                                                0) <= 0
+                                        "
+                                        >— no time to use, buy time first</span
+                                    >
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -454,7 +560,29 @@
                                 :key="i"
                                 class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-1.5 text-sm"
                             >
-                                <span>{{ p.customer_name }}</span>
+                                <div class="flex items-center gap-2">
+                                    <span>{{ p.customer_name }}</span>
+                                    <span
+                                        v-if="p.customer_type === 'walk_in'"
+                                        class="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full"
+                                    >
+                                        Walk-in
+                                    </span>
+                                    <span
+                                        v-else-if="
+                                            p.billing_mode === 'consumable'
+                                        "
+                                        class="text-xs bg-indigo-100 text-indigo-600 px-1.5 py-0.5 rounded-full"
+                                    >
+                                        Member · Consumable
+                                    </span>
+                                    <span
+                                        v-else
+                                        class="text-xs bg-blue-100 text-blue-600 px-1.5 py-0.5 rounded-full"
+                                    >
+                                        Member · Hourly
+                                    </span>
+                                </div>
                                 <button
                                     @click="pendingGroup.splice(i, 1)"
                                     class="text-gray-300 hover:text-red-400"
@@ -646,6 +774,7 @@ export default {
                 customer_type: "walk_in",
                 user_id: null,
                 group_id: null,
+                billing_mode: "hourly",
             },
             pendingGroup: [], // queued people to check in together
             groupMode: false, // true when building a group
@@ -781,17 +910,40 @@ export default {
 
         getElapsed(session) {
             void this.tick;
-            const diff = Math.floor(
+            const elapsedSeconds = Math.floor(
                 (Date.now() - new Date(session.checked_in_at).getTime()) / 1000,
             );
-            const h = Math.floor(diff / 3600)
+
+            if (session.billing_mode === "consumable") {
+                const balanceSeconds =
+                    (session.user?.consumable_minutes ?? 0) * 60;
+                const remaining = balanceSeconds - elapsedSeconds;
+                return this.formatSeconds(remaining, true);
+            }
+
+            return this.formatSeconds(elapsedSeconds, false);
+        },
+
+        formatSeconds(totalSeconds, showSign) {
+            const sign = totalSeconds < 0 ? "-" : "";
+            const abs = Math.abs(totalSeconds);
+            const h = Math.floor(abs / 3600)
                 .toString()
                 .padStart(2, "0");
-            const m = Math.floor((diff % 3600) / 60)
+            const m = Math.floor((abs % 3600) / 60)
                 .toString()
                 .padStart(2, "0");
-            const s = (diff % 60).toString().padStart(2, "0");
-            return `${h}:${m}:${s}`;
+            const s = (abs % 60).toString().padStart(2, "0");
+            return `${showSign ? sign : ""}${h}:${m}:${s}`;
+        },
+
+        isCountdownNegative(session) {
+            if (session.billing_mode !== "consumable") return false;
+            const elapsedSeconds = Math.floor(
+                (Date.now() - new Date(session.checked_in_at).getTime()) / 1000,
+            );
+            const balanceSeconds = (session.user?.consumable_minutes ?? 0) * 60;
+            return balanceSeconds - elapsedSeconds < 0;
         },
 
         formatTime(dt) {
@@ -800,6 +952,15 @@ export default {
                 hour: "2-digit",
                 minute: "2-digit",
             });
+        },
+
+        formatMinutesBalance(mins) {
+            mins = mins ?? 0;
+            const sign = mins < 0 ? "-" : "";
+            const abs = Math.abs(mins);
+            const h = Math.floor(abs / 60);
+            const m = abs % 60;
+            return `${sign}${h}h ${m}m`;
         },
 
         getDuration(session) {
@@ -839,6 +1000,13 @@ export default {
             this.checkInForm.customer_name = u.name;
             this.userResults = [];
             this.userSearch = u.name;
+
+            // Default Level 1 members to consumable time if they have a balance
+            if (u.level === 1 && (u.consumable_minutes ?? 0) > 0) {
+                this.checkInForm.billing_mode = "consumable";
+            } else {
+                this.checkInForm.billing_mode = "hourly";
+            }
         },
 
         // ── Check-in flows ──
@@ -886,6 +1054,7 @@ export default {
             this.checkInForm.customer_name = "";
             this.checkInForm.customer_type = "walk_in";
             this.checkInForm.user_id = null;
+            this.checkInForm.billing_mode = "hourly";
             this.userSearch = "";
             this.userResults = [];
             this.selectedUser = null;
@@ -898,6 +1067,14 @@ export default {
                 this.checkInError = "Enter a name before adding another.";
                 return;
             }
+            if (
+                this.checkInForm.billing_mode === "consumable" &&
+                (this.selectedUser?.consumable_minutes ?? 0) <= 0
+            ) {
+                this.checkInError =
+                    "This member has no consumable time balance.";
+                return;
+            }
             // First time queuing turns this into a group
             if (!this.checkInForm.group_id) {
                 this.checkInForm.group_id = this.newGroupId();
@@ -906,6 +1083,7 @@ export default {
                 customer_name: this.checkInForm.customer_name,
                 customer_type: this.checkInForm.customer_type,
                 user_id: this.checkInForm.user_id,
+                billing_mode: this.checkInForm.billing_mode,
             });
             this.clearPersonFields();
         },
@@ -916,6 +1094,7 @@ export default {
                 customer_type: "walk_in",
                 user_id: null,
                 group_id: null,
+                billing_mode: "hourly",
             };
             this.pendingGroup = [];
             this.groupMode = false;
@@ -928,6 +1107,16 @@ export default {
         async submitCheckIn() {
             this.checkInError = null;
 
+            if (
+                this.checkInForm.customer_name &&
+                this.checkInForm.billing_mode === "consumable" &&
+                (this.selectedUser?.consumable_minutes ?? 0) <= 0
+            ) {
+                this.checkInError =
+                    "This member has no consumable time balance.";
+                return;
+            }
+
             // Build the full list: queued people + the one currently in the form (if filled)
             const people = [...this.pendingGroup];
             if (this.checkInForm.customer_name) {
@@ -935,6 +1124,7 @@ export default {
                     customer_name: this.checkInForm.customer_name,
                     customer_type: this.checkInForm.customer_type,
                     user_id: this.checkInForm.user_id,
+                    billing_mode: this.checkInForm.billing_mode,
                 });
             }
 

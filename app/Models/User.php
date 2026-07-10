@@ -33,6 +33,7 @@ class User extends Authenticatable
         'address',         // NEW
 'privacy_settings', // NEW
         'push_token',
+        'consumable_minutes',
     ];
 
     /**

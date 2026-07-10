@@ -587,7 +587,7 @@ $endDate = $startDate->copy()->addMonth();
             }
 
             $users = User::where('name', 'LIKE', '%' . $query . '%')
-                        ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday']) // ADDED bio
+                        ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday', 'consumable_minutes']) // ADDED bio
                         ->limit(10)
                         ->get();
 
