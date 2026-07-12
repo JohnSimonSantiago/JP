@@ -309,12 +309,20 @@
                                     :class="
                                         s.is_free
                                             ? 'text-yellow-600'
-                                            : 'text-gray-800'
+                                            : s.billing_mode === 'consumable'
+                                              ? 'text-indigo-600'
+                                              : 'text-gray-800'
                                     "
                                 >
-                                    {{
-                                        s.is_free ? "Free" : "₱" + s.total_bill
-                                    }}
+                                    <span v-if="s.is_free">Free</span>
+                                    <span
+                                        v-else-if="
+                                            s.billing_mode === 'consumable'
+                                        "
+                                    >
+                                        {{ getDuration(s) }} used
+                                    </span>
+                                    <span v-else>₱{{ s.total_bill }}</span>
                                 </td>
                             </tr>
                         </tbody>

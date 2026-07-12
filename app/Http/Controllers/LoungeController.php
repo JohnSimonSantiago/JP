@@ -152,7 +152,7 @@ class LoungeController extends Controller
 
         // Consumable mode only makes sense for Level 1 members with a positive balance
         if ($billingMode === 'consumable') {
-            if (!$request->user_id || $userLevel !== 1) {
+            if (!$request->user_id || $userLevel !== 1 || !isset($user)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Consumable time is only available for Level 1 members.',
@@ -250,7 +250,7 @@ class LoungeController extends Controller
 
             if ($s->billing_mode === 'consumable') {
                 $line['minutes_used'] = $elapsedMinutes;
-                $line['new_balance'] = ($s->user->consumable_minutes ?? 0) - $elapsedMinutes;
+                $line['new_balance'] = ($s->user?->consumable_minutes ?? 0) - $elapsedMinutes;
                 $line['breakdown'] = "{$elapsedMinutes} min deducted from consumable balance";
             } elseif (!$s->is_free) {
                 $floorHours = floor($elapsedMinutes / 60);
@@ -289,7 +289,9 @@ class LoungeController extends Controller
 
             if ($s->billing_mode === 'consumable') {
                 // Deduct elapsed minutes from the member's balance (can go negative, no cap)
-                $s->user->decrement('consumable_minutes', $line['minutes_used']);
+                if ($s->user) {
+                    $s->user->decrement('consumable_minutes', $line['minutes_used']);
+                }
 
                 $s->update([
                     'checked_out_at' => $checkedOutAt,

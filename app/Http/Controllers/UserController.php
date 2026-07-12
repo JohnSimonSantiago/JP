@@ -261,6 +261,7 @@ $isPremium = false;
 'stars' => $user->stars ?? $user->points ?? 100,
                 'points' => $user->points ?? $user->stars ?? 100,
                 'cash' => $user->cash ?? 0.00,
+                'consumable_minutes' => $user->consumable_minutes ?? 0,
                 'is_premium' => $isPremium,
                 'profile_image' => $user->profile_image,
                 'gender' => $user->gender,

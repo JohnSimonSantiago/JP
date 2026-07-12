@@ -34,7 +34,14 @@
                         </div>
                     </div>
                     <div class="text-right">
-                        <p class="text-2xl font-mono font-bold text-indigo-600">
+                        <p
+                            class="text-2xl font-mono font-bold"
+                            :class="
+                                isConsumableNegative
+                                    ? 'text-red-600'
+                                    : 'text-indigo-600'
+                            "
+                        >
                             {{ elapsedTime }}
                         </p>
                         <p
@@ -42,6 +49,23 @@
                             class="text-xs text-yellow-600 font-medium"
                         >
                             Free Access
+                        </p>
+                        <p
+                            v-else-if="
+                                loungeSession.billing_mode === 'consumable'
+                            "
+                            class="text-xs"
+                            :class="
+                                isConsumableNegative
+                                    ? 'text-red-500 font-medium'
+                                    : 'text-indigo-400'
+                            "
+                        >
+                            {{
+                                isConsumableNegative
+                                    ? "Over balance"
+                                    : "Consumable time"
+                            }}
                         </p>
                         <p v-else class="text-xs text-indigo-400">
                             Paid session
@@ -62,6 +86,69 @@
                         you've been here for 1 hour and 8 minutes, you'll only
                         be charged for 1 hour — not 2. But if you stay past 10
                         minutes, the full next hour is charged.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Consumable Time Balance (Level 1 members, always visible) -->
+            <div
+                v-if="user.level === 1"
+                class="rounded-xl p-4 mb-6 border"
+                :class="
+                    (user.consumable_minutes ?? 0) < 0
+                        ? 'bg-red-50 border-red-200'
+                        : 'bg-white border-gray-100 shadow-sm'
+                "
+            >
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 rounded-full flex items-center justify-center"
+                            :class="
+                                (user.consumable_minutes ?? 0) < 0
+                                    ? 'bg-red-100'
+                                    : 'bg-indigo-50'
+                            "
+                        >
+                            <i
+                                class="pi pi-hourglass"
+                                :class="
+                                    (user.consumable_minutes ?? 0) < 0
+                                        ? 'text-red-500'
+                                        : 'text-indigo-500'
+                                "
+                            ></i>
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-800">Time Left</p>
+                            <p class="text-xs text-gray-400">
+                                Consumable lounge time
+                            </p>
+                        </div>
+                    </div>
+                    <p
+                        class="text-xl font-mono font-bold"
+                        :class="
+                            (user.consumable_minutes ?? 0) < 0
+                                ? 'text-red-600'
+                                : 'text-indigo-600'
+                        "
+                    >
+                        {{ formatMinutesBalance(user.consumable_minutes) }}
+                    </p>
+                </div>
+                <div
+                    v-if="(user.consumable_minutes ?? 0) < 0"
+                    class="flex items-center gap-2 mt-3 bg-red-100 border border-red-200 rounded-lg px-3 py-2"
+                >
+                    <i
+                        class="pi pi-exclamation-triangle text-red-500 text-sm flex-shrink-0"
+                    ></i>
+                    <p class="text-xs text-red-700">
+                        <span class="font-semibold">Balance is negative</span
+                        ><br />
+                        You won't be able to check in on consumable time until
+                        this is settled. Please see staff to buy more time.
                     </p>
                 </div>
             </div>
@@ -298,6 +385,7 @@ export default {
                 stars: 0,
                 points: 0,
                 cash: 0,
+                consumable_minutes: 0,
                 is_premium: false,
                 profile_image: null,
                 role: "user",
@@ -314,6 +402,12 @@ export default {
     },
 
     computed: {
+        isConsumableNegative() {
+            return (
+                this.loungeSession?.billing_mode === "consumable" &&
+                this.elapsedTime.startsWith("-")
+            );
+        },
         roleLabel() {
             const map = {
                 admin: "Administrator",
@@ -432,19 +526,40 @@ export default {
 
         updateTimer() {
             if (!this.loungeSession) return;
-            const diff = Math.floor(
+            const elapsedSeconds = Math.floor(
                 (Date.now() -
                     new Date(this.loungeSession.checked_in_at).getTime()) /
                     1000,
             );
-            const h = Math.floor(diff / 3600)
+
+            let totalSeconds = elapsedSeconds;
+            let showSign = false;
+
+            if (this.loungeSession.billing_mode === "consumable") {
+                const balanceSeconds = (this.user.consumable_minutes ?? 0) * 60;
+                totalSeconds = balanceSeconds - elapsedSeconds;
+                showSign = true;
+            }
+
+            const sign = showSign && totalSeconds < 0 ? "-" : "";
+            const abs = Math.abs(totalSeconds);
+            const h = Math.floor(abs / 3600)
                 .toString()
                 .padStart(2, "0");
-            const m = Math.floor((diff % 3600) / 60)
+            const m = Math.floor((abs % 3600) / 60)
                 .toString()
                 .padStart(2, "0");
-            const s = (diff % 60).toString().padStart(2, "0");
-            this.elapsedTime = `${h}:${m}:${s}`;
+            const s = (abs % 60).toString().padStart(2, "0");
+            this.elapsedTime = `${sign}${h}:${m}:${s}`;
+        },
+
+        formatMinutesBalance(mins) {
+            mins = mins ?? 0;
+            const sign = mins < 0 ? "-" : "";
+            const abs = Math.abs(mins);
+            const h = Math.floor(abs / 60);
+            const m = abs % 60;
+            return `${sign}${h}h ${m}m`;
         },
 
         formatTime(dt) {
