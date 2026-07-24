@@ -358,9 +358,74 @@
                 v-show="activeTab === 'buy'"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mt-6"
             >
-                <h3 class="font-semibold text-gray-700 mb-4">
-                    Purchase History
-                </h3>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-baseline gap-3">
+                        <h3 class="font-semibold text-gray-700">
+                            Purchase History
+                        </h3>
+                        <span
+                            v-if="!loadingHistory && history.length > 0"
+                            class="text-sm"
+                        >
+                            <span class="text-gray-400">
+                                {{ rangeLabel }}:
+                            </span>
+                            <span class="font-bold text-green-600">
+                                ₱{{ totalAmount }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select
+                            v-model="rangePreset"
+                            @change="applyPreset"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        >
+                            <option value="today">Today</option>
+                            <option value="week">This week</option>
+                            <option value="month">This month</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <input
+                            v-model="fromDate"
+                            type="date"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            @change="onManualDateChange"
+                        />
+                        <span class="text-gray-400 text-sm">to</span>
+                        <input
+                            v-model="toDate"
+                            type="date"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            @change="onManualDateChange"
+                        />
+                    </div>
+                </div>
+
+                <!-- Range totals -->
+                <div
+                    v-if="!loadingHistory && history.length > 0"
+                    class="grid grid-cols-3 gap-3 mb-4"
+                >
+                    <div class="bg-green-50 rounded-lg p-3">
+                        <p class="text-xs text-green-400">Cash</p>
+                        <p class="text-lg font-bold text-green-600">
+                            ₱{{ totalCash }}
+                        </p>
+                    </div>
+                    <div class="bg-blue-50 rounded-lg p-3">
+                        <p class="text-xs text-blue-400">App Balance</p>
+                        <p class="text-lg font-bold text-blue-600">
+                            ₱{{ totalBalance }}
+                        </p>
+                    </div>
+                    <div class="bg-indigo-50 rounded-lg p-3">
+                        <p class="text-xs text-indigo-400">Hours Sold</p>
+                        <p class="text-lg font-bold text-indigo-700">
+                            {{ formatMinutes(totalMinutesSold) }}
+                        </p>
+                    </div>
+                </div>
 
                 <div
                     v-if="loadingHistory"
@@ -373,7 +438,7 @@
                     v-else-if="history.length === 0"
                     class="text-center py-6 text-gray-400 text-sm"
                 >
-                    No purchases yet.
+                    No purchases for this range.
                 </div>
 
                 <div v-else class="overflow-x-auto">
@@ -454,6 +519,14 @@ export default {
 
             history: [],
             loadingHistory: false,
+            fromDate: null,
+            toDate: null,
+            todayDate: null,
+            rangePreset: "today",
+            totalCash: 0,
+            totalBalance: 0,
+            totalAmount: 0,
+            totalMinutesSold: 0,
 
             activeTab: "buy",
             balances: [],
@@ -475,6 +548,14 @@ export default {
             if (blocks > 0) parts.push(`${blocks} × ₱100 (3h)`);
             if (extra > 0) parts.push(`${extra} × ₱40`);
             return parts.join(" + ");
+        },
+        rangeLabel() {
+            if (this.fromDate === this.toDate) {
+                return this.fromDate === this.todayDate ? "Today" : "That day";
+            }
+            if (this.rangePreset === "week") return "This week";
+            if (this.rangePreset === "month") return "This month";
+            return "Range";
         },
     },
     methods: {
@@ -505,14 +586,59 @@ export default {
             this.activeTab = "buy";
             this.selectUser(u);
         },
+        localDate(d) {
+            // Avoids the UTC shift that toISOString() causes in PH time
+            const off = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - off).toISOString().split("T")[0];
+        },
+
+        applyPreset() {
+            const now = new Date();
+
+            if (this.rangePreset === "today") {
+                this.fromDate = this.localDate(now);
+                this.toDate = this.localDate(now);
+            } else if (this.rangePreset === "week") {
+                // Monday as the start of the week
+                const day = now.getDay();
+                const diff = day === 0 ? 6 : day - 1;
+                const monday = new Date(now);
+                monday.setDate(now.getDate() - diff);
+                this.fromDate = this.localDate(monday);
+                this.toDate = this.localDate(now);
+            } else if (this.rangePreset === "month") {
+                const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                this.fromDate = this.localDate(first);
+                this.toDate = this.localDate(now);
+            } else {
+                return; // custom — leave dates alone
+            }
+
+            this.fetchHistory();
+        },
+
+        onManualDateChange() {
+            this.rangePreset = "custom";
+            this.fetchHistory();
+        },
+
         async fetchHistory() {
             this.loadingHistory = true;
             try {
                 const response = await axios.get(
                     "/api/lounge/consumable/history",
+                    {
+                        params: { from: this.fromDate, to: this.toDate },
+                    },
                 );
                 if (response.data.success) {
                     this.history = response.data.purchases;
+                    this.totalCash = Number(response.data.total_cash) || 0;
+                    this.totalBalance =
+                        Number(response.data.total_balance) || 0;
+                    this.totalAmount = Number(response.data.total_amount) || 0;
+                    this.totalMinutesSold =
+                        Number(response.data.total_minutes) || 0;
                 }
             } catch (error) {
                 console.error("Failed to fetch history:", error);
@@ -633,6 +759,10 @@ export default {
         },
     },
     mounted() {
+        const today = this.localDate(new Date());
+        this.fromDate = today;
+        this.toDate = today;
+        this.todayDate = today;
         this.fetchHistory();
     },
 };

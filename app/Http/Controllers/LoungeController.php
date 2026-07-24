@@ -140,12 +140,28 @@ class LoungeController extends Controller
 
     public function consumableHistory(Request $request)
     {
-        $purchases = ConsumablePurchase::with(['user:id,name', 'purchasedBy:id,name'])
-            ->orderBy('created_at', 'desc')
-            ->limit(50)
-            ->get();
+        $query = ConsumablePurchase::with(['user:id,name', 'purchasedBy:id,name'])
+            ->orderBy('created_at', 'desc');
 
-        return response()->json(['success' => true, 'purchases' => $purchases]);
+        // Timestamps are stored in UTC, but "a day" means a Manila calendar day
+        if ($request->from) {
+            $query->where('created_at', '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
+        }
+
+        if ($request->to) {
+            $query->where('created_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
+        }
+
+        $purchases = $query->limit(200)->get();
+
+        return response()->json([
+            'success'        => true,
+            'purchases'      => $purchases,
+            'total_cash'     => $purchases->where('payment_method', 'cash')->sum('amount'),
+            'total_balance'  => $purchases->where('payment_method', 'balance')->sum('amount'),
+            'total_amount'   => $purchases->sum('amount'),
+            'total_minutes'  => $purchases->sum('minutes_added'),
+        ]);
     }
 
     // ─── Check In ───────────────────────────────────────────────────────────────
