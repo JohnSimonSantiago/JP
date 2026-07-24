@@ -6,12 +6,18 @@
         >
             <!-- Enhanced Logo Section -->
             <div class="flex items-center gap-4">
+                <button
+                    @click="sidebarOpen = !sidebarOpen"
+                    class="lg:hidden p-2 -ml-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                    <i class="pi pi-bars text-xl"></i>
+                </button>
                 <img
                     src="../../../public/MainIcon.png"
                     alt="Level Up Logo"
                     class="w-12 h-12 rounded-full"
                 />
-                <div class="flex flex-col">
+                <div class="hidden sm:flex flex-col">
                     <span class="text-xl font-bold text-gray-800 leading-none"
                         >Level Lounge</span
                     >
@@ -23,7 +29,7 @@
 
             <!-- User info section with expanded stats -->
             <div class="flex items-center gap-4">
-                <div class="text-sm text-gray-600">
+                <div class="hidden xl:block text-sm text-gray-600">
                     Welcome back
                     <span class="font-medium text-gray-800">{{
                         user.name || "User"
@@ -32,7 +38,7 @@
                 </div>
 
                 <!-- User Stats Cards -->
-                <div class="flex items-center gap-3">
+                <div class="hidden md:flex items-center gap-3">
                     <!-- Cash Display -->
                     <div
                         class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-200"
@@ -483,7 +489,7 @@
                             <i class="pi pi-star text-white text-xs"></i>
                         </div>
                     </div>
-                    <div class="flex-1">
+                    <div class="hidden lg:block flex-1">
                         <div class="text-sm font-medium text-gray-900">
                             Level {{ user.level || 1 }}
                             <span
@@ -510,12 +516,20 @@
         </div>
 
         <div class="flex pt-16">
+            <!-- Mobile backdrop -->
+            <div
+                v-if="sidebarOpen"
+                @click="sidebarOpen = false"
+                class="lg:hidden fixed inset-0 top-16 bg-black bg-opacity-40 z-30"
+            ></div>
+
             <!-- Left Sidebar -->
             <div
-                class="w-72 bg-white shadow-lg fixed left-0 top-16 bottom-0 sidebar overflow-y-auto"
+                class="w-72 bg-white shadow-lg fixed left-0 top-16 bottom-0 sidebar overflow-y-auto z-40 transform transition-transform duration-200 lg:translate-x-0"
+                :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             >
                 <div class="p-4">
-                    <nav class="space-y-1">
+                    <nav class="space-y-1" @click="sidebarOpen = false">
                         <!-- Dashboard -->
                         <router-link
                             active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
@@ -818,7 +832,7 @@
             </div>
 
             <!-- Main Content Area -->
-            <div class="flex-1 ml-72 p-6 overflow-y-auto">
+            <div class="flex-1 lg:ml-72 p-4 lg:p-6 overflow-y-auto w-full">
                 <slot />
             </div>
         </div>
@@ -834,6 +848,7 @@ export default {
     },
     data() {
         return {
+            sidebarOpen: false,
             user: {
                 level: 1,
                 points: 0,

@@ -25,7 +25,7 @@ class NotifyConsumableTime extends Command
             $user = $session->user;
             if (!$user || !$user->push_token) continue;
 
-            $elapsed   = Carbon::parse($session->checked_in_at)->diffInMinutes(now());
+            $elapsed   = (int) Carbon::parse($session->checked_in_at)->diffInMinutes(now());
             $remaining = ($user->consumable_minutes ?? 0) - $elapsed;
 
             $sent = $session->notified_thresholds ?? [];

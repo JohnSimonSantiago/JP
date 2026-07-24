@@ -19,15 +19,16 @@ class LoungeSession extends Model
         'checked_in_by',
         'group_id',
         'billing_mode',
+        'notified_thresholds',
     ];
 
     protected $casts = [
-        'checked_in_at'  => 'datetime',
-        'checked_out_at' => 'datetime',
-        'is_free'        => 'boolean',
-        'total_bill'     => 'decimal:2',
+        'checked_in_at'        => 'datetime',
+        'checked_out_at'       => 'datetime',
+        'is_free'              => 'boolean',
+        'total_bill'           => 'decimal:2',
+        'notified_thresholds'  => 'array',
     ];
-
     public function user()
     {
         return $this->belongsTo(User::class);
