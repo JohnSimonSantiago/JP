@@ -227,6 +227,7 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
         Route::get('/consumable/search', [LoungeController::class, 'searchLevel1Users']);
         Route::post('/consumable/buy', [LoungeController::class, 'buyConsumableTime']);
         Route::get('/consumable/history', [LoungeController::class, 'consumableHistory']);
+        Route::get('/consumable/balances', [LoungeController::class, 'consumableBalances']);
     });
 });
 Route::prefix('point-shop')->group(function () {

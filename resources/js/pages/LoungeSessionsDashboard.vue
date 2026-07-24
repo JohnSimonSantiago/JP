@@ -232,13 +232,48 @@
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
             >
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="font-semibold text-gray-700">Session History</h3>
-                    <input
-                        v-model="historyDate"
-                        type="date"
-                        class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-                        @change="fetchHistory"
-                    />
+                    <div class="flex items-baseline gap-3">
+                        <h3 class="font-semibold text-gray-700">
+                            Session History
+                        </h3>
+                        <span
+                            v-if="!loadingHistory && history.length > 0"
+                            class="text-sm"
+                        >
+                            <span class="text-gray-400">
+                                {{ rangeLabel }}:
+                            </span>
+                            <span class="font-bold text-green-600">
+                                ₱{{ historyPaidTotal }}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select
+                            v-model="rangePreset"
+                            @change="applyPreset"
+                            @click="applyPreset"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                        >
+                            <option value="today">Today</option>
+                            <option value="week">This week</option>
+                            <option value="month">This month</option>
+                            <option value="custom">Custom</option>
+                        </select>
+                        <input
+                            v-model="fromDate"
+                            type="date"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            @change="onManualDateChange"
+                        />
+                        <span class="text-gray-400 text-sm">to</span>
+                        <input
+                            v-model="toDate"
+                            type="date"
+                            class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            @change="onManualDateChange"
+                        />
+                    </div>
                 </div>
 
                 <div
@@ -252,7 +287,7 @@
                     v-else-if="history.length === 0"
                     class="text-center py-6 text-gray-400 text-sm"
                 >
-                    No completed sessions for this date.
+                    No completed sessions for this range.
                 </div>
 
                 <div v-else class="overflow-x-auto">
@@ -769,7 +804,10 @@ export default {
             history: [],
             loadingSessions: true,
             loadingHistory: false,
-            historyDate: new Date().toISOString().split("T")[0],
+            fromDate: null,
+            toDate: null,
+            todayDate: null,
+            rangePreset: "today",
             tickInterval: null,
             tick: 0,
 
@@ -845,6 +883,20 @@ export default {
             }
             return this.checkoutSession?.customer_name || "";
         },
+        historyPaidTotal() {
+            return this.history.reduce(
+                (sum, s) => sum + (Number(s.total_bill) || 0),
+                0,
+            );
+        },
+        rangeLabel() {
+            if (this.fromDate === this.toDate) {
+                return this.fromDate === this.todayDate ? "Today" : "That day";
+            }
+            if (this.rangePreset === "week") return "This week";
+            if (this.rangePreset === "month") return "This month";
+            return "Range";
+        },
         displayTotal() {
             if (this.overrideOn && this.overrideTotal !== null) {
                 return this.overrideTotal;
@@ -854,6 +906,11 @@ export default {
     },
 
     async mounted() {
+        const today = this.localDate(new Date());
+        this.fromDate = today;
+        this.toDate = today;
+        this.todayDate = today;
+
         await this.fetchSessions();
         await this.fetchHistory();
         this.tickInterval = setInterval(() => {
@@ -901,12 +958,48 @@ export default {
             }
         },
 
+        localDate(d) {
+            // Avoids the UTC shift that toISOString() causes in PH time
+            const off = d.getTimezoneOffset() * 60000;
+            return new Date(d.getTime() - off).toISOString().split("T")[0];
+        },
+
+        applyPreset() {
+            const now = new Date();
+
+            if (this.rangePreset === "today") {
+                this.fromDate = this.localDate(now);
+                this.toDate = this.localDate(now);
+            } else if (this.rangePreset === "week") {
+                // Monday as the start of the week
+                const day = now.getDay();
+                const diff = day === 0 ? 6 : day - 1;
+                const monday = new Date(now);
+                monday.setDate(now.getDate() - diff);
+                this.fromDate = this.localDate(monday);
+                this.toDate = this.localDate(now);
+            } else if (this.rangePreset === "month") {
+                const first = new Date(now.getFullYear(), now.getMonth(), 1);
+                this.fromDate = this.localDate(first);
+                this.toDate = this.localDate(now);
+            } else {
+                return; // custom — leave dates alone
+            }
+
+            this.fetchHistory();
+        },
+
+        onManualDateChange() {
+            this.rangePreset = "custom";
+            this.fetchHistory();
+        },
+
         async fetchHistory() {
             this.loadingHistory = true;
             try {
                 const res = await axios.get("/api/lounge/session-history", {
                     headers: this.headers(),
-                    params: { date: this.historyDate },
+                    params: { from: this.fromDate, to: this.toDate },
                 });
                 if (res.data.success) this.history = res.data.sessions;
             } catch (e) {

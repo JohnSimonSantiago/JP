@@ -23,14 +23,21 @@ class LoungeController extends Controller
     public function updatePricing(Request $request)
     {
         $request->validate([
-            'hourly_rate' => 'required|numeric|min:0',
-            'bundle_rate' => 'required|numeric|min:0',
-            'bundle_hours' => 'required|integer|min:1',
-            'day_rate'    => 'required|numeric|min:0',
+            'hourly_rate'    => 'required|numeric|min:0',
+            'half_hour_rate' => 'required|numeric|min:0',
+            'bundle_rate'    => 'required|numeric|min:0',
+            'bundle_hours'   => 'required|integer|min:1',
+            'day_rate'       => 'required|numeric|min:0',
         ]);
 
         $pricing = LoungePricing::first();
-        $pricing->update($request->only(['hourly_rate', 'bundle_rate', 'bundle_hours', 'day_rate']));
+        $pricing->update($request->only([
+            'hourly_rate',
+            'half_hour_rate',
+            'bundle_rate',
+            'bundle_hours',
+            'day_rate',
+        ]));
 
         return response()->json(['success' => true, 'pricing' => $pricing]);
     }
@@ -61,16 +68,14 @@ class LoungeController extends Controller
     {
         $request->validate([
             'user_id'        => 'required|exists:users,id',
-            'amount'         => 'required|integer|min:100',
+            'hours'          => 'required|integer|min:1|max:24',
             'payment_method' => 'required|in:cash,balance',
         ]);
 
-        if ($request->amount % 100 !== 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Amount must be a multiple of ₱100.',
-            ], 422);
-        }
+        $hours  = $request->hours;
+        $blocks = intdiv($hours, 3);          // ₱100 per 3-hour block
+        $extra  = $hours % 3;                 // ₱40 per leftover hour
+        $amount = ($blocks * 100) + ($extra * 40);
 
         $user = User::findOrFail($request->user_id);
 
@@ -81,18 +86,17 @@ class LoungeController extends Controller
             ], 422);
         }
 
-        if ($request->payment_method === 'balance' && $user->cash < $request->amount) {
+        if ($request->payment_method === 'balance' && $user->cash < $amount) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient app balance.',
             ], 422);
         }
 
-        $blocks       = $request->amount / 100;
-        $minutesToAdd = $blocks * 180; // ₱100 = 3 hours = 180 minutes
+        $minutesToAdd = $hours * 60;
 
         if ($request->payment_method === 'balance') {
-            $user->decrement('cash', $request->amount);
+            $user->decrement('cash', $amount);
         }
 
         $user->increment('consumable_minutes', $minutesToAdd);
@@ -100,7 +104,7 @@ class LoungeController extends Controller
 
         ConsumablePurchase::create([
             'user_id'        => $user->id,
-            'amount'         => $request->amount,
+            'amount'         => $amount,
             'minutes_added'  => $minutesToAdd,
             'payment_method' => $request->payment_method,
             'purchased_by'   => Auth::id(),
@@ -108,13 +112,29 @@ class LoungeController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Added {$minutesToAdd} minutes.",
+            'message' => "Added {$hours} hour(s) for ₱{$amount}.",
             'user' => [
                 'id'                 => $user->id,
                 'name'               => $user->name,
                 'cash'               => $user->cash,
                 'consumable_minutes' => $user->consumable_minutes,
             ],
+        ]);
+    }
+
+    public function consumableBalances(Request $request)
+    {
+        $users = User::where('level', 1)
+            ->where('consumable_minutes', '!=', 0)
+            ->select('id', 'name', 'username', 'cash', 'consumable_minutes')
+            ->orderBy('consumable_minutes', 'asc')
+            ->get();
+
+        return response()->json([
+            'success'        => true,
+            'users'          => $users,
+            'total_minutes'  => $users->where('consumable_minutes', '>', 0)->sum('consumable_minutes'),
+            'owing_count'    => $users->where('consumable_minutes', '<', 0)->count(),
         ]);
     }
 
@@ -253,12 +273,7 @@ class LoungeController extends Controller
                 $line['new_balance'] = ($s->user?->consumable_minutes ?? 0) - $elapsedMinutes;
                 $line['breakdown'] = "{$elapsedMinutes} min deducted from consumable balance";
             } elseif (!$s->is_free) {
-                $floorHours = floor($elapsedMinutes / 60);
-                $remainingMins = $elapsedMinutes - ($floorHours * 60);
-                $billableHours = $remainingMins <= 10 ? $floorHours : $floorHours + 1;
-                $billableHours = max(1, $billableHours);
-
-                $result = $this->calculateBill($billableHours, $pricing);
+                $result = $this->calculateBill($elapsedMinutes, $pricing);
                 $line['bill'] = $result['total'];
                 $line['breakdown'] = $result['breakdown'];
                 $computedTotal += $result['total'];
@@ -321,23 +336,53 @@ class LoungeController extends Controller
 
     // ─── Billing Calculator ─────────────────────────────────────────────────────
 
-    private function calculateBill(int $hours, LoungePricing $pricing): array
+    private function calculateBill(int $elapsedMinutes, LoungePricing $pricing): array
     {
-        $dayRate    = $pricing->day_rate;
-        $bundleRate = $pricing->bundle_rate;
-        $bundleHrs  = $pricing->bundle_hours;
-        $hourlyRate = $pricing->hourly_rate;
+        $dayRate      = $pricing->day_rate;
+        $bundleRate   = $pricing->bundle_rate;
+        $bundleHrs    = $pricing->bundle_hours;
+        $hourlyRate   = $pricing->hourly_rate;
+        $halfHourRate = $pricing->half_hour_rate;
 
-        // How many full bundles fit
-        $bundles        = floor($hours / $bundleHrs);
-        $remainingHours = $hours % $bundleHrs;
+        // Grace: 10 free minutes past each hour mark before the next block starts
+        $fullHours     = floor($elapsedMinutes / 60);
+        $remainingMins = $elapsedMinutes - ($fullHours * 60);
 
-        $withBundles = ($bundles * $bundleRate) + ($remainingHours * $hourlyRate);
-        $total       = min($withBundles, $dayRate);
+        if ($remainingMins <= 10) {
+            $extraHalfHours = 0;              // within grace, ignore the leftover
+        } elseif ($remainingMins <= 40) {
+            $extraHalfHours = 1;              // half-hour block (+10 min grace)
+        } else {
+            $extraHalfHours = 2;              // rounds up to a full hour
+        }
 
-        $breakdown = $total == $dayRate
-            ? "Day rate applied (₱{$dayRate})"
-            : "{$bundles} bundle(s) × ₱{$bundleRate} + {$remainingHours} hr(s) × ₱{$hourlyRate}";
+        $billableHours = $fullHours + intdiv($extraHalfHours, 2);
+        $billableHalf  = $extraHalfHours % 2;
+
+        // Nobody pays less than one half-hour block
+        if ($billableHours === 0 && $billableHalf === 0) {
+            $billableHalf = 1;
+        }
+
+        // Fit as many bundles as possible into the full hours
+        $bundles        = floor($billableHours / $bundleHrs);
+        $remainingHours = $billableHours % $bundleHrs;
+
+        $withBundles = ($bundles * $bundleRate)
+            + ($remainingHours * $hourlyRate)
+            + ($billableHalf * $halfHourRate);
+
+        $total = min($withBundles, $dayRate);
+
+        if ($total == $dayRate && $withBundles > $dayRate) {
+            $breakdown = "Day rate applied (₱{$dayRate})";
+        } else {
+            $parts = [];
+            if ($bundles > 0)        $parts[] = "{$bundles} bundle(s) × ₱{$bundleRate}";
+            if ($remainingHours > 0) $parts[] = "{$remainingHours} hr(s) × ₱{$hourlyRate}";
+            if ($billableHalf > 0)   $parts[] = "30 min × ₱{$halfHourRate}";
+            $breakdown = implode(' + ', $parts);
+        }
 
         return ['total' => $total, 'breakdown' => $breakdown];
     }
@@ -375,8 +420,18 @@ class LoungeController extends Controller
             ->where('status', 'completed')
             ->orderBy('checked_out_at', 'desc');
 
-        if ($request->date) {
-            $query->whereDate('checked_in_at', $request->date);
+        // Timestamps are stored in UTC, but "a day" means a Manila calendar day
+        if ($request->from) {
+            $query->where('checked_in_at', '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
+        }
+
+        if ($request->to) {
+            $query->where('checked_in_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
+        }
+
+        if (!$request->from && !$request->to && $request->date) {
+            $query->where('checked_in_at', '>=', Carbon::parse($request->date, 'Asia/Manila')->startOfDay()->utc())
+                ->where('checked_in_at', '<=', Carbon::parse($request->date, 'Asia/Manila')->endOfDay()->utc());
         }
 
         $sessions = $query->get();

@@ -20,6 +20,19 @@
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
+                                >Half-Hour Rate (₱)</label
+                            >
+                            <input
+                                v-model="form.half_hour_rate"
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            />
+                        </div>
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
                                 >Hourly Rate (₱)</label
                             >
                             <input
@@ -30,6 +43,7 @@
                                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                             />
                         </div>
+
                         <div>
                             <label
                                 class="block text-sm font-medium text-gray-700 mb-1"
@@ -79,6 +93,7 @@
                         <p class="font-semibold mb-1">
                             Current pricing preview:
                         </p>
+                        <p>30 min = ₱{{ form.half_hour_rate }}</p>
                         <p>1 hr = ₱{{ form.hourly_rate }}</p>
                         <p>
                             {{ form.bundle_hours }} hrs = ₱{{
@@ -121,6 +136,7 @@ export default {
             success: false,
             form: {
                 hourly_rate: 40,
+                half_hour_rate: 25,
                 bundle_rate: 100,
                 bundle_hours: 3,
                 day_rate: 200,

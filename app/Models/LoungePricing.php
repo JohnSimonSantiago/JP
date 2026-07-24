@@ -10,14 +10,16 @@ class LoungePricing extends Model
 
     protected $fillable = [
         'hourly_rate',
+        'half_hour_rate',
         'bundle_rate',
         'bundle_hours',
         'day_rate',
     ];
 
     protected $casts = [
-        'hourly_rate' => 'decimal:2',
-        'bundle_rate' => 'decimal:2',
+        'hourly_rate'    => 'decimal:2',
+        'half_hour_rate' => 'decimal:2',
+        'bundle_rate'    => 'decimal:2',
         'day_rate'    => 'decimal:2',
     ];
 }

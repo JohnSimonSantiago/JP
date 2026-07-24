@@ -39,16 +39,20 @@ protected function schedule(Schedule $schedule)
                 );
             }
 
-            // 10-minute grace warning (fires at the 50-minute mark of each hour)
-            if ($minutesIntoCurrentHour === 50 && !$session->is_free) {
+            // 10-minute grace warning (fires 10 min before each 30-minute block ends)
+            $minutesIntoCurrentBlock = $elapsedMinutes % 30;
+            if ($minutesIntoCurrentBlock === 20 && !$session->is_free && $session->billing_mode !== 'consumable') {
                 \App\Services\PushNotificationService::send(
                     $session->user->push_token,
                     '⏰ Heads-up — 10 Minutes Left',
-                    'You have 10 minutes before the next hour is charged. Leave before the hour to avoid extra billing. Note: checkout may take 1–3 minutes to process.'
+                    'You have 10 minutes before the next 30-minute block is charged. Note: checkout may take 1–3 minutes to process.'
                 );
             }
         }
     })->everyMinute();
+
+    // Consumable-time balance warnings (10, 5, 1 minute remaining)
+    $schedule->command('lounge:notify-consumable')->everyMinute();
 }
 
     /**

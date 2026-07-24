@@ -7,12 +7,45 @@
                     Buy Consumable Time
                 </h2>
                 <p class="text-sm text-gray-500">
-                    For Level 1 members only. ₱100 = 3 hours, multiples of ₱100.
+                    For Level 1 members only. ₱100 = 3 hours, ₱40 per extra
+                    hour.
                 </p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="grid grid-cols-2 gap-2 mb-6 bg-gray-100 p-1 rounded-lg">
+                <button
+                    @click="activeTab = 'buy'"
+                    class="py-2 rounded-md text-sm font-medium transition-all"
+                    :class="
+                        activeTab === 'buy'
+                            ? 'bg-white shadow-sm text-indigo-600'
+                            : 'text-gray-500'
+                    "
+                >
+                    <i class="pi pi-plus-circle mr-1"></i> Buy Time
+                </button>
+                <button
+                    @click="switchToBalances"
+                    class="py-2 rounded-md text-sm font-medium transition-all"
+                    :class="
+                        activeTab === 'balances'
+                            ? 'bg-white shadow-sm text-indigo-600'
+                            : 'text-gray-500'
+                    "
+                >
+                    <i class="pi pi-users mr-1"></i> Balances
+                    <span
+                        v-if="balances.length"
+                        class="ml-1 text-xs text-gray-400"
+                        >({{ balances.length }})</span
+                    >
+                </button>
             </div>
 
             <!-- Search -->
             <div
+                v-show="activeTab === 'buy'"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6"
             >
                 <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -81,7 +114,7 @@
 
             <!-- Selected user / purchase form -->
             <div
-                v-if="selectedUser"
+                v-if="selectedUser && activeTab === 'buy'"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-5"
             >
                 <div
@@ -110,36 +143,34 @@
                     </div>
                 </div>
 
-                <!-- Amount selector -->
+                <!-- Hours selector -->
                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                    Amount (₱100 blocks)
+                    Hours
                 </label>
                 <div class="grid grid-cols-4 gap-2 mb-3">
                     <button
-                        v-for="blocks in [1, 2, 3, 5]"
-                        :key="blocks"
-                        @click="amountBlocks = blocks"
+                        v-for="h in [1, 2, 3, 6]"
+                        :key="h"
+                        @click="hours = h"
                         class="py-2 rounded-lg text-sm font-medium border transition-colors"
                         :class="
-                            amountBlocks === blocks
+                            hours === h
                                 ? 'bg-indigo-600 text-white border-indigo-600'
                                 : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
                         "
                     >
-                        ₱{{ blocks * 100 }}
+                        {{ h }}h
                     </button>
                 </div>
 
-                <!-- Custom amount -->
+                <!-- Custom hours -->
                 <div class="flex items-center gap-2 mb-4">
                     <span class="text-sm text-gray-500">Custom:</span>
                     <div
                         class="flex items-center border border-gray-200 rounded-lg overflow-hidden"
                     >
                         <button
-                            @click="
-                                amountBlocks = Math.max(1, amountBlocks - 1)
-                            "
+                            @click="hours = Math.max(1, hours - 1)"
                             class="px-3 py-1.5 text-gray-500 hover:bg-gray-50"
                         >
                             −
@@ -147,10 +178,10 @@
                         <span
                             class="px-4 py-1.5 text-sm font-medium min-w-[70px] text-center"
                         >
-                            ₱{{ amountBlocks * 100 }}
+                            {{ hours }}h
                         </span>
                         <button
-                            @click="amountBlocks++"
+                            @click="hours = Math.min(24, hours + 1)"
                             class="px-3 py-1.5 text-gray-500 hover:bg-gray-50"
                         >
                             +
@@ -162,17 +193,19 @@
                 <div
                     class="bg-indigo-50 rounded-lg p-3 mb-4 text-sm text-indigo-700"
                 >
-                    Adds <strong>{{ amountBlocks * 3 }} hours</strong> ({{
-                        amountBlocks * 180
-                    }}
-                    min). New balance will be
-                    <strong>{{
-                        formatMinutes(
-                            selectedUser.consumable_minutes +
-                                amountBlocks * 180,
-                        )
-                    }}</strong
-                    >.
+                    <p>
+                        <strong>{{ hours }} hour(s)</strong> —
+                        {{ priceBreakdown }} =
+                        <strong>₱{{ computedPrice }}</strong>
+                    </p>
+                    <p class="mt-1">
+                        New balance:
+                        <strong>{{
+                            formatMinutes(
+                                selectedUser.consumable_minutes + hours * 60,
+                            )
+                        }}</strong>
+                    </p>
                 </div>
 
                 <!-- Payment method -->
@@ -211,13 +244,12 @@
                 <p
                     v-if="
                         paymentMethod === 'balance' &&
-                        selectedUser.cash < amountBlocks * 100
+                        selectedUser.cash < computedPrice
                     "
                     class="text-xs text-red-500 mb-3"
                 >
                     Insufficient app balance for this amount.
                 </p>
-
                 <p v-if="errorMessage" class="text-xs text-red-500 mb-3">
                     {{ errorMessage }}
                 </p>
@@ -227,20 +259,103 @@
                     :disabled="
                         purchasing ||
                         (paymentMethod === 'balance' &&
-                            selectedUser.cash < amountBlocks * 100)
+                            selectedUser.cash < computedPrice)
                     "
                     class="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
                 >
                     {{
                         purchasing
                             ? "Processing..."
-                            : `Confirm Purchase — ₱${amountBlocks * 100}`
+                            : `Confirm Purchase — ₱${computedPrice}`
                     }}
                 </button>
             </div>
 
+            <!-- Balances Tab -->
+            <div
+                v-show="activeTab === 'balances'"
+                class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6"
+            >
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-700">
+                        Members with Time
+                    </h3>
+                    <button
+                        @click="fetchBalances"
+                        class="text-xs text-indigo-600 hover:underline"
+                    >
+                        <i class="pi pi-refresh mr-1"></i> Refresh
+                    </button>
+                </div>
+
+                <div
+                    v-if="loadingBalances"
+                    class="text-center py-6 text-gray-400"
+                >
+                    <i class="pi pi-spin pi-spinner"></i>
+                </div>
+
+                <div
+                    v-else-if="balances.length === 0"
+                    class="text-center py-6 text-gray-400 text-sm"
+                >
+                    No members with a balance.
+                </div>
+
+                <div v-else>
+                    <!-- Summary -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-indigo-50 rounded-lg p-3">
+                            <p class="text-xs text-indigo-400">
+                                Total Time Outstanding
+                            </p>
+                            <p class="text-lg font-bold text-indigo-700">
+                                {{ formatMinutes(totalMinutes) }}
+                            </p>
+                        </div>
+                        <div class="bg-red-50 rounded-lg p-3">
+                            <p class="text-xs text-red-400">
+                                Members Over Balance
+                            </p>
+                            <p class="text-lg font-bold text-red-600">
+                                {{ owingCount }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 max-h-96 overflow-y-auto">
+                        <button
+                            v-for="u in balances"
+                            :key="u.id"
+                            @click="selectFromBalances(u)"
+                            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
+                        >
+                            <div>
+                                <p class="text-sm font-medium text-gray-800">
+                                    {{ u.name }}
+                                </p>
+                                <p class="text-xs text-gray-400">
+                                    @{{ u.username }}
+                                </p>
+                            </div>
+                            <span
+                                class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                :class="
+                                    u.consumable_minutes < 0
+                                        ? 'bg-red-50 text-red-600'
+                                        : 'bg-green-50 text-green-600'
+                                "
+                            >
+                                {{ formatMinutes(u.consumable_minutes) }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Purchase History -->
             <div
+                v-show="activeTab === 'buy'"
                 class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mt-6"
             >
                 <h3 class="font-semibold text-gray-700 mb-4">
@@ -332,16 +447,64 @@ export default {
             searchTimeout: null,
 
             selectedUser: null,
-            amountBlocks: 1,
+            hours: 3,
             paymentMethod: "cash",
             purchasing: false,
             errorMessage: null,
 
             history: [],
             loadingHistory: false,
+
+            activeTab: "buy",
+            balances: [],
+            totalMinutes: 0,
+            owingCount: 0,
+            loadingBalances: false,
         };
     },
+    computed: {
+        computedPrice() {
+            const blocks = Math.floor(this.hours / 3);
+            const extra = this.hours % 3;
+            return blocks * 100 + extra * 40;
+        },
+        priceBreakdown() {
+            const blocks = Math.floor(this.hours / 3);
+            const extra = this.hours % 3;
+            const parts = [];
+            if (blocks > 0) parts.push(`${blocks} × ₱100 (3h)`);
+            if (extra > 0) parts.push(`${extra} × ₱40`);
+            return parts.join(" + ");
+        },
+    },
     methods: {
+        async fetchBalances() {
+            this.loadingBalances = true;
+            try {
+                const response = await axios.get(
+                    "/api/lounge/consumable/balances",
+                );
+                if (response.data.success) {
+                    this.balances = response.data.users;
+                    this.totalMinutes = response.data.total_minutes;
+                    this.owingCount = response.data.owing_count;
+                }
+            } catch (error) {
+                console.error("Failed to fetch balances:", error);
+            } finally {
+                this.loadingBalances = false;
+            }
+        },
+
+        switchToBalances() {
+            this.activeTab = "balances";
+            if (this.balances.length === 0) this.fetchBalances();
+        },
+
+        selectFromBalances(u) {
+            this.activeTab = "buy";
+            this.selectUser(u);
+        },
         async fetchHistory() {
             this.loadingHistory = true;
             try {
@@ -403,7 +566,7 @@ export default {
 
         selectUser(u) {
             this.selectedUser = u;
-            this.amountBlocks = 1;
+            this.hours = 3;
             this.paymentMethod = "cash";
             this.errorMessage = null;
             this.results = [];
@@ -431,7 +594,7 @@ export default {
                     "/api/lounge/consumable/buy",
                     {
                         user_id: this.selectedUser.id,
-                        amount: this.amountBlocks * 100,
+                        hours: this.hours,
                         payment_method: this.paymentMethod,
                     },
                 );
@@ -456,8 +619,9 @@ export default {
                         detail: response.data.message,
                     });
 
-                    this.amountBlocks = 1;
+                    this.hours = 3;
                     this.fetchHistory();
+                    if (this.balances.length) this.fetchBalances();
                 }
             } catch (error) {
                 this.errorMessage =
