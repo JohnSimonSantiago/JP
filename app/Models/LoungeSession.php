@@ -8,6 +8,7 @@ class LoungeSession extends Model
 {
     protected $fillable = [
         'customer_name',
+        'school',
         'user_id',
         'customer_type',
         'user_level',

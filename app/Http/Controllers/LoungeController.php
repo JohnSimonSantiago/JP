@@ -8,6 +8,8 @@ use App\Models\User;
 use App\Models\LoungeSession;
 use App\Models\LoungePricing;
 use App\Models\ConsumablePurchase;
+use App\Models\LoungeReceipt;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
 class LoungeController extends Controller
@@ -174,6 +176,7 @@ class LoungeController extends Controller
             'customer_type'  => 'required|in:member,walk_in',
             'group_id'       => 'nullable|string',
             'billing_mode'   => 'nullable|in:hourly,consumable',
+            'school'         => 'nullable|string|max:255',
         ]);
 
         $userLevel = 1;
@@ -210,6 +213,7 @@ class LoungeController extends Controller
 
         $session = LoungeSession::create([
             'customer_name'  => $request->customer_name,
+            'school'         => $request->school,
             'user_id'        => $request->user_id,
             'customer_type'  => $request->customer_type,
             'user_level'     => $userLevel,
@@ -474,5 +478,37 @@ class LoungeController extends Controller
         $session->update(['group_id' => $request->group_id]);
 
         return response()->json(['success' => true, 'session' => $session]);
+    }
+
+    // ─── Reserve next monthly CN number (one per check-in event) ─────────────────
+
+    public function reserveReceiptNumber(Request $request)
+    {
+        $request->validate(['group_id' => 'nullable|string']);
+
+        $now   = Carbon::now('Asia/Manila');
+        $year  = (int) $now->format('Y');
+        $month = (int) $now->format('n');
+
+        // Lock so two simultaneous check-ins can't grab the same number.
+        $number = DB::transaction(function () use ($year, $month, $request) {
+            $last = LoungeReceipt::where('year', $year)
+                ->where('month', $month)
+                ->lockForUpdate()
+                ->max('number');
+
+            $next = ($last ?? 0) + 1;
+
+            LoungeReceipt::create([
+                'year'     => $year,
+                'month'    => $month,
+                'number'   => $next,
+                'group_id' => $request->group_id,
+            ]);
+
+            return $next;
+        });
+
+        return response()->json(['success' => true, 'number' => $number]);
     }
 }

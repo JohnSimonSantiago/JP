@@ -220,6 +220,7 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
 
     Route::middleware(['staff_or_admin'])->prefix('lounge')->group(function () {
         Route::post('/check-in', [LoungeController::class, 'checkIn']);
+        Route::post('/reserve-receipt', [LoungeController::class, 'reserveReceiptNumber']);
         Route::get('/active-sessions', [LoungeController::class, 'activeSessions']);
         Route::post('/check-out/{id}', [LoungeController::class, 'checkOut']);
         Route::get('/session-history', [LoungeController::class, 'sessionHistory']);

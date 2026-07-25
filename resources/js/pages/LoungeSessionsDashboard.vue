@@ -475,6 +475,109 @@
                             />
                         </div>
 
+                        <!-- School (optional) — one value for the whole check-in event -->
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >School (optional)</label
+                            >
+                            <input
+                                v-model="checkInForm.school"
+                                type="text"
+                                placeholder="e.g. MMSU"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                            />
+                        </div>
+
+                        <!-- Duration / Open time (affects printed Time out only) -->
+                        <div>
+                            <label
+                                class="block text-sm font-medium text-gray-700 mb-1"
+                                >Duration</label
+                            >
+                            <div
+                                class="grid grid-cols-2 gap-2 mb-2 bg-gray-100 p-1 rounded-lg"
+                            >
+                                <button
+                                    type="button"
+                                    @click="checkInForm.open_time = true"
+                                    :class="
+                                        checkInForm.open_time
+                                            ? 'bg-white shadow-sm text-indigo-600'
+                                            : 'text-gray-500'
+                                    "
+                                    class="py-1.5 rounded-md text-sm font-medium transition-all"
+                                >
+                                    Open Time
+                                </button>
+                                <button
+                                    type="button"
+                                    @click="checkInForm.open_time = false"
+                                    :class="
+                                        !checkInForm.open_time
+                                            ? 'bg-white shadow-sm text-indigo-600'
+                                            : 'text-gray-500'
+                                    "
+                                    class="py-1.5 rounded-md text-sm font-medium transition-all"
+                                >
+                                    Set Time
+                                </button>
+                            </div>
+
+                            <div v-if="!checkInForm.open_time">
+                                <!-- Hour presets -->
+                                <div class="flex gap-2 mb-2">
+                                    <button
+                                        v-for="hr in [1, 2, 3]"
+                                        :key="hr"
+                                        type="button"
+                                        @click="
+                                            checkInForm.duration_minutes =
+                                                hr * 60
+                                        "
+                                        :class="
+                                            checkInForm.duration_minutes ===
+                                            hr * 60
+                                                ? 'border-indigo-400 bg-indigo-50 text-indigo-600'
+                                                : 'border-gray-200 text-gray-600'
+                                        "
+                                        class="flex-1 border rounded-lg py-1.5 text-sm font-medium transition-all"
+                                    >
+                                        {{ hr }}hr
+                                    </button>
+                                </div>
+
+                                <!-- ±30 min stepper -->
+                                <div
+                                    class="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                                >
+                                    <button
+                                        type="button"
+                                        @click="adjustDuration(-30)"
+                                        class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-600 font-bold hover:bg-gray-100"
+                                    >
+                                        −
+                                    </button>
+                                    <span
+                                        class="text-sm font-semibold text-gray-700"
+                                    >
+                                        {{
+                                            formatDuration(
+                                                checkInForm.duration_minutes,
+                                            )
+                                        }}
+                                    </span>
+                                    <button
+                                        type="button"
+                                        @click="adjustDuration(30)"
+                                        class="w-8 h-8 rounded-full bg-white border border-gray-200 text-gray-600 font-bold hover:bg-gray-100"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Member search -->
                         <div v-if="checkInForm.customer_type === 'member'">
                             <label
@@ -821,6 +924,9 @@ export default {
                 user_id: null,
                 group_id: null,
                 billing_mode: "hourly",
+                school: "",
+                open_time: true, // true = no fixed end; false = use duration_minutes
+                duration_minutes: 60, // chosen length when not open time
             },
             pendingGroup: [], // queued people to check in together
             groupMode: false, // true when building a group
@@ -942,6 +1048,24 @@ export default {
 
         groupLabel(idx) {
             return String.fromCharCode(65 + idx); // 0 -> A, 1 -> B...
+        },
+
+        adjustDuration(delta) {
+            // Never below 30 min; cap at a sane 12 hours
+            const next = (this.checkInForm.duration_minutes || 0) + delta;
+            this.checkInForm.duration_minutes = Math.max(
+                30,
+                Math.min(next, 720),
+            );
+        },
+
+        formatDuration(mins) {
+            mins = mins || 0;
+            const h = Math.floor(mins / 60);
+            const m = mins % 60;
+            if (h && m) return `${h}h ${m}m`;
+            if (h) return `${h}h`;
+            return `${m}m`;
         },
 
         async fetchSessions() {
@@ -1196,6 +1320,9 @@ export default {
                 user_id: null,
                 group_id: null,
                 billing_mode: "hourly",
+                school: "",
+                open_time: true,
+                duration_minutes: 60,
             };
             this.pendingGroup = [];
             this.groupMode = false;
@@ -1234,16 +1361,51 @@ export default {
                 return;
             }
 
+            // Snapshot info for the slip before we clear the form
+            const school = this.checkInForm.school;
+            const groupId = this.checkInForm.group_id;
+            const isGroup = people.length > 1;
+            const openTime = this.checkInForm.open_time;
+            const durationMinutes = this.checkInForm.duration_minutes;
+
             this.checkingIn = true;
             try {
                 // Check each person in, all sharing the same group_id (may be null for solo)
                 for (const person of people) {
                     await axios.post(
                         "/api/lounge/check-in",
-                        { ...person, group_id: this.checkInForm.group_id },
+                        {
+                            ...person,
+                            group_id: groupId,
+                            school: school,
+                        },
                         { headers: this.headers() },
                     );
                 }
+
+                // One CN number per check-in event (whole group shares one)
+                let cn = null;
+                try {
+                    const res = await axios.post(
+                        "/api/lounge/reserve-receipt",
+                        { group_id: groupId },
+                        { headers: this.headers() },
+                    );
+                    if (res.data.success) cn = res.data.number;
+                } catch (e) {
+                    console.error("CN reserve failed", e);
+                }
+
+                // Print the slip (one per event)
+                this.printCheckInSlip({
+                    people,
+                    school,
+                    isGroup,
+                    cn,
+                    openTime,
+                    durationMinutes,
+                });
+
                 this.showCheckIn = false;
                 this.resetCheckIn();
                 await this.fetchSessions();
@@ -1253,6 +1415,143 @@ export default {
             } finally {
                 this.checkingIn = false;
             }
+        },
+
+        // ── Receipt printing ──
+        // Opens a hidden 80mm window and prints one slip. Reusable for reprints.
+        printCheckInSlip({
+            people,
+            school,
+            isGroup,
+            cn,
+            openTime,
+            durationMinutes,
+        }) {
+            const now = new Date();
+            const dateStr = now.toLocaleDateString("en-PH");
+            const timeIn = now.toLocaleTimeString("en-PH", {
+                hour: "2-digit",
+                minute: "2-digit",
+            });
+
+            // Time out: computed clock time, or "OPEN TIME"
+            let timeOut;
+            let durationText;
+            if (openTime) {
+                timeOut = "OPEN TIME";
+                durationText = "Open Time";
+            } else {
+                const out = new Date(now.getTime() + durationMinutes * 60000);
+                timeOut = out.toLocaleTimeString("en-PH", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                });
+                durationText = this.formatDuration(durationMinutes);
+            }
+
+            const cnStr =
+                cn !== null ? "CN:" + String(cn).padStart(3, "0") : "CN:___";
+
+            // Individual → the one name. Group → a numbered list of everyone.
+            const membersLine = isGroup ? String(people.length) : "1";
+            const esc0 = (s) =>
+                String(s ?? "").replace(
+                    /[&<>]/g,
+                    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+                );
+
+            let nameBlock;
+            if (isGroup) {
+                const list = people
+                    .map((p, i) => `${i + 1}. ${esc0(p.customer_name)}`)
+                    .join("<br>");
+                nameBlock = `Full Name (Group of ${people.length}):<br>${list}`;
+            } else {
+                nameBlock = `Full Name: ${esc0(people[0]?.customer_name || "")}`;
+            }
+
+            const esc = (s) =>
+                String(s ?? "").replace(
+                    /[&<>]/g,
+                    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[c],
+                );
+
+            const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page { size: 80mm auto; margin: 0; }
+  * { box-sizing: border-box; }
+  body {
+    width: 80mm;
+    margin: 0;
+    padding: 4mm 5mm;
+    font-family: 'Courier New', monospace;
+    color: #000;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    font-weight: bold;
+  }
+  .brand { text-align: center; font-size: 18px; font-weight: 900; margin-bottom: 2mm; }
+  .row { font-size: 13px; margin: 2mm 0; font-weight: bold; }
+  .lbl { display: inline-block; }
+  .fill { border-bottom: 1px solid #000; display: inline-block; min-width: 30mm; }
+  .type { font-size: 13px; margin: 2mm 0; font-weight: bold; }
+  .cn { text-align: left; font-size: 16px; font-weight: 900; margin-top: 4mm; }
+  hr { border: none; border-top: 1px dashed #000; margin: 2mm 0; }
+</style>
+</head>
+<body>
+  <div class="brand" style="display:flex; align-items:center; justify-content:center; gap:3mm;">
+    <svg width="40" height="40" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+      <!-- Up arrow: wider arrowhead, even hollow border -->
+      <path fill-rule="evenodd" fill="#000" d="
+        M32 8 L66 48 L47 48 L47 108 L17 108 L17 48 L-2 48 Z
+        M32 26 L50 44 L37 44 L37 98 L27 98 L27 44 L14 44 Z"/>
+      <!-- Down arrow: wider arrowhead, even hollow border -->
+      <path fill-rule="evenodd" fill="#000" d="
+        M88 112 L122 72 L103 72 L103 12 L73 12 L73 72 L54 72 Z
+        M88 94 L106 76 L93 76 L93 22 L83 22 L83 76 L70 76 Z"/>
+    </svg>
+    <span>LEVEL LOUNGE</span>
+  </div>
+  <div style="text-align:center; font-size:12px; margin-bottom:2mm;">
+    Brgy 5. Ablan Avenue<br>
+    Beside Calle Kape and Starlight Lodging House
+  </div>
+  <hr>
+  <div class="row"><span class="lbl">Date: ${esc(dateStr)}</span></div>
+  <div class="row">Time in: ${esc(timeIn)}</div>
+  <div class="row">Time out: ${esc(timeOut)}</div>
+  <div class="type">
+    Registration Type: <strong>${isGroup ? "Group" : "Individual"}</strong>
+  </div>
+  <div class="row">Duration: ${esc(durationText)}</div>
+  <div class="row">${nameBlock}</div>
+  <div class="row">School: ${esc(school || "-")}</div>
+  <div class="row">Number of Members: ${esc(membersLine)}</div>
+  <div class="row" style="margin-top:4mm">
+    Signature: <span class="fill" style="min-width:35mm"></span>
+  </div>
+  <div class="cn">${esc(cnStr)}</div>
+  <div style="text-align:center; margin-top:5mm; font-size:10px;">.</div>
+</body>
+</html>`;
+
+            const w = window.open("", "_blank", "width=380,height=600");
+            if (!w) {
+                console.error("Popup blocked — allow popups to print slips.");
+                return;
+            }
+            w.document.write(html);
+            w.document.close();
+            w.focus();
+            setTimeout(() => {
+                w.print();
+                w.close();
+            }, 300);
         },
 
         // ── Checkout flows ──
