@@ -177,6 +177,7 @@ class LoungeController extends Controller
             'group_id'       => 'nullable|string',
             'billing_mode'   => 'nullable|in:hourly,consumable',
             'school'         => 'nullable|string|max:255',
+            'receipt_number' => 'nullable|integer',
         ]);
 
         $userLevel = 1;
@@ -218,6 +219,7 @@ class LoungeController extends Controller
             'customer_type'  => $request->customer_type,
             'user_level'     => $userLevel,
             'group_id'       => $request->group_id,
+            'receipt_number' => $request->receipt_number,
             'checked_in_at'  => now(),
             'status'         => 'active',
             'is_free'        => $isFree,

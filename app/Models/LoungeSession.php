@@ -21,6 +21,7 @@ class LoungeSession extends Model
         'group_id',
         'billing_mode',
         'notified_thresholds',
+        'receipt_number',
     ];
 
     protected $casts = [
