@@ -140,6 +140,33 @@
                 </button>
             </div>
 
+            <!-- Search + Sort -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-6">
+                <div class="relative flex-1">
+                    <input
+                        v-model="searchQuery"
+                        type="text"
+                        placeholder="Search by name or email..."
+                        class="w-full border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                    <i
+                        class="pi pi-search absolute right-3 top-2.5 text-gray-400"
+                    ></i>
+                </div>
+                <button
+                    @click="sortAlphabetical = !sortAlphabetical"
+                    :class="
+                        sortAlphabetical
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600'
+                    "
+                    class="flex items-center justify-center gap-2 px-4 py-2 rounded-lg border text-sm font-medium transition-colors"
+                >
+                    <i class="pi pi-sort-alpha-down"></i>
+                    {{ sortAlphabetical ? "A → Z" : "Newest first" }}
+                </button>
+            </div>
+
             <!-- Loading State -->
             <div v-if="isLoading" class="flex justify-center items-center py-8">
                 <div
@@ -460,17 +487,36 @@ export default {
             idModalUser: null,
             currentUserId: null,
             isCurrentUserAdmin: false,
+            searchQuery: "",
+            sortAlphabetical: false,
         };
     },
     computed: {
         filteredUsers() {
-            return this.users.filter((user) => {
+            let result = this.users.filter((user) => {
                 if (this.activeTab === "pending") {
                     return !user.is_approved;
                 } else {
                     return user.is_approved;
                 }
             });
+
+            const q = this.searchQuery.trim().toLowerCase();
+            if (q) {
+                result = result.filter(
+                    (user) =>
+                        user.name?.toLowerCase().includes(q) ||
+                        user.email?.toLowerCase().includes(q),
+                );
+            }
+
+            if (this.sortAlphabetical) {
+                result = [...result].sort((a, b) =>
+                    (a.name || "").localeCompare(b.name || ""),
+                );
+            }
+
+            return result;
         },
         pendingCount() {
             return this.users.filter((user) => !user.is_approved).length;

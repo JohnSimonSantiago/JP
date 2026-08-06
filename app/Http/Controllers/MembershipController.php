@@ -14,9 +14,9 @@ class MembershipController extends Controller
     public function adminIndex()
     {
         $memberships = Membership::with('user:id,name,email,profile_image')
-            ->where('status', 'pending')
-            ->orderBy('created_at', 'desc')
-            ->get();
+    ->orderBy('created_at', 'desc')
+    ->limit(50)
+    ->get();
 
         return response()->json([
             'success' => true,

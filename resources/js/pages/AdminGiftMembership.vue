@@ -299,7 +299,8 @@
                                             ? "Level 2"
                                             : "Level 3"
                                     }}
-                                    · {{ m.start_date }} → {{ m.end_date }}
+                                    · {{ formatDate(m.start_date) }} →
+                                    {{ formatDate(m.end_date) }}
                                 </div>
                             </div>
                             <span
@@ -375,6 +376,14 @@ export default {
             this.selectedUser = null;
             this.searchQuery = "";
             this.searchResults = [];
+        },
+        formatDate(d) {
+            if (!d) return "";
+            return new Date(d).toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+            });
         },
         async giftMembership() {
             this.successMessage = "";
