@@ -15,6 +15,7 @@ import PointShop from "./pages/PointShop.vue";
 import AdminUserApproval from "./pages/AdminUserApproval.vue";
 import AdminShopManagement from "./pages/AdminShopManagement.vue";
 import AdminGiftMembership from "./pages/AdminGiftMembership.vue";
+import AdminMembershipManagement from "./pages/AdminMembershipManagement.vue";
 import LoungeSessionsDashboard from "./pages/LoungeSessionsDashboard.vue";
 import LoungeSettings from "./pages/LoungeSettings.vue";
 import LoungeBuyTime from "./pages/LoungeBuyTime.vue";
@@ -155,6 +156,12 @@ export const routes = [
         path: "/admin/gift-membership",
         name: "admin-gift-membership",
         component: AdminGiftMembership,
+        beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/admin/membership-management",
+        name: "admin-membership-management",
+        component: AdminMembershipManagement,
         beforeEnter: requiresAdmin,
     },
     {

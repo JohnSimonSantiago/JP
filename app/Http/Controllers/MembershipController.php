@@ -24,6 +24,62 @@ class MembershipController extends Controller
         ]);
     }
 
+    public function pendingApplications()
+    {
+        $memberships = Membership::with('user:id,name,email,profile_image')
+            ->where('status', 'pending')
+            ->where('source', 'applied')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'memberships' => $memberships
+        ]);
+    }
+
+    public function activeMemberships()
+    {
+        $memberships = Membership::with('user:id,name,email,profile_image,valid_id')
+            ->where('status', 'approved')
+            ->where('end_date', '>', now())
+            ->orderBy('end_date', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'memberships' => $memberships
+        ]);
+    }
+
+    public function history(Request $request)
+    {
+        $query = Membership::with('user:id,name,email,profile_image')
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('from')) {
+            $query->whereDate('created_at', '>=', $request->from);
+        }
+        if ($request->filled('to')) {
+            $query->whereDate('created_at', '<=', $request->to);
+        }
+
+        $memberships = $query->get();
+
+        // Revenue = paid (applied) approvals only; gifts are free
+        $priceMap = ['level_2' => 2500, 'level_3' => 3000];
+        $revenue = $memberships
+            ->where('status', 'approved')
+            ->where('source', 'applied')
+            ->sum(fn ($m) => $priceMap[$m->type] ?? 0);
+
+        return response()->json([
+            'success' => true,
+            'memberships' => $memberships,
+            'revenue' => $revenue,
+        ]);
+    }
+
     public function approve($id)
     {
         $membership = Membership::with('user')->findOrFail($id);
@@ -41,10 +97,13 @@ $start = now();
             'end_date' => $end,
         ]);
         $levelMap = ['level_2' => 2, 'level_3' => 3];
-$membership->user->update([
-    'is_premium' => true,
-    'level' => $levelMap[$membership->type] ?? 1,
-]);
+        $cashMap  = ['level_2' => 1000, 'level_3' => 1500];
+        $membership->user->update([
+            'is_premium' => true,
+            'level' => $levelMap[$membership->type] ?? 1,
+        ]);
+        // Paid perk: credit cash on approval (gifts do NOT grant this)
+        $membership->user->increment('cash', $cashMap[$membership->type] ?? 0);
 
         // Notify the user their membership was approved
         try {
@@ -126,6 +185,7 @@ $membership->user->update([
             'user_id'    => $user->id,
             'type'       => $request->type,
             'status'     => 'approved',
+            'source'     => 'gifted',
             'start_date' => $start,
             'end_date'   => $end,
         ]);

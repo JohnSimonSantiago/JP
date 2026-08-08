@@ -311,7 +311,7 @@
                             <div class="text-lg font-medium text-gray-800">
                                 {{
                                     formatDate(
-                                        user.member_since || user.created_at
+                                        user.member_since || user.created_at,
                                     )
                                 }}
                                 <!-- Fixed -->
@@ -550,7 +550,7 @@
                                 <input
                                     :value="
                                         calculateAgeFromDate(
-                                            profileForm.birthday
+                                            profileForm.birthday,
                                         ) + ' years old'
                                     "
                                     type="text"
@@ -747,7 +747,30 @@
                         </div>
                     </div>
 
-                    <!-- No Membership / Other States -->
+                    <!-- Pending Application -->
+                    <div
+                        v-else-if="
+                            activeMembership &&
+                            activeMembership.status === 'pending'
+                        "
+                        class="text-center py-8 bg-amber-50 border border-amber-200 rounded-lg"
+                    >
+                        <i class="pi pi-clock text-amber-500 text-4xl mb-3"></i>
+                        <h3 class="text-lg font-medium text-amber-700 mb-2">
+                            Application Pending
+                        </h3>
+                        <p class="text-amber-600 text-sm px-4">
+                            Your
+                            {{
+                                activeMembership.type === "level_2"
+                                    ? "Level 2"
+                                    : "Level 3"
+                            }}
+                            membership application is awaiting admin approval.
+                        </p>
+                    </div>
+
+                    <!-- No Membership -->
                     <div v-else class="text-center py-8">
                         <i class="pi pi-crown text-gray-300 text-4xl mb-4"></i>
                         <h3 class="text-lg font-medium text-gray-600 mb-2">
@@ -757,10 +780,79 @@
                             Upgrade to premium to unlock exclusive features!
                         </p>
                         <button
+                            @click="showMembershipModal = true"
                             class="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:from-purple-600 hover:to-pink-600 transition-all"
                         >
                             Upgrade Now
                         </button>
+                    </div>
+
+                    <!-- Apply Modal -->
+                    <div
+                        v-if="showMembershipModal"
+                        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                        @click.self="showMembershipModal = false"
+                    >
+                        <div
+                            class="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+                        >
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="text-xl font-bold text-gray-800">
+                                    Apply for Premium
+                                </h3>
+                                <button
+                                    @click="showMembershipModal = false"
+                                    class="text-gray-400 hover:text-gray-600"
+                                >
+                                    <i class="pi pi-times"></i>
+                                </button>
+                            </div>
+                            <p class="text-sm text-gray-500 mb-5">
+                                Choose a plan. Your membership starts today and
+                                activates once approved by an admin.
+                            </p>
+
+                            <div
+                                v-for="plan in membershipPlans"
+                                :key="plan.key"
+                                @click="membershipType = plan.key"
+                                :class="
+                                    membershipType === plan.key
+                                        ? 'border-purple-500 bg-purple-50'
+                                        : 'border-gray-200 hover:border-purple-300'
+                                "
+                                class="cursor-pointer border-2 rounded-xl p-4 mb-3 transition-all"
+                            >
+                                <div class="flex justify-between items-center">
+                                    <span class="font-semibold text-gray-800">
+                                        {{ plan.label }} — {{ plan.price }}
+                                    </span>
+                                    <i
+                                        v-if="membershipType === plan.key"
+                                        class="pi pi-check-circle text-purple-500"
+                                    ></i>
+                                </div>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    {{ plan.sub }}
+                                </p>
+                            </div>
+
+                            <button
+                                @click="applyMembership"
+                                :disabled="applyingMembership"
+                                class="w-full bg-purple-500 hover:bg-purple-600 disabled:bg-purple-300 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2 mt-2"
+                            >
+                                <i
+                                    v-if="applyingMembership"
+                                    class="pi pi-spin pi-spinner"
+                                ></i>
+                                {{
+                                    applyingMembership
+                                        ? "Submitting..."
+                                        : "Submit Application"
+                                }}
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -938,7 +1030,7 @@
                                             Math.floor(
                                                 progress.current_purchases /
                                                     progress.loyalty_card
-                                                        .required_purchases
+                                                        .required_purchases,
                                             )
                                         }}
                                         completed
@@ -1009,7 +1101,7 @@
                                 Last purchase:
                                 {{
                                     formatRelativeDate(
-                                        progress.last_purchase_at
+                                        progress.last_purchase_at,
                                     )
                                 }}
                             </div>
@@ -1139,6 +1231,23 @@ export default {
             updating: false,
             isEditing: false,
             validationErrors: {},
+            showMembershipModal: false,
+            membershipType: "level_2",
+            applyingMembership: false,
+            membershipPlans: [
+                {
+                    key: "level_2",
+                    label: "Level 2",
+                    price: "₱2,500/mo",
+                    sub: "₱1,000 cash credit • deals & discounts",
+                },
+                {
+                    key: "level_3",
+                    label: "Level 3",
+                    price: "₱3,000/mo",
+                    sub: "₱1,500 cash credit • higher discounts than Level 2",
+                },
+            ],
         };
     },
     computed: {
@@ -1149,7 +1258,7 @@ export default {
             if (!Array.isArray(this.loyaltyProgress)) {
                 console.warn(
                     "loyaltyProgress is not an array:",
-                    this.loyaltyProgress
+                    this.loyaltyProgress,
                 );
                 return [];
             }
@@ -1185,7 +1294,7 @@ export default {
                             ((currentPurchases % requiredPurchases) /
                                 requiredPurchases) *
                                 100,
-                            100
+                            100,
                         );
 
                         // Updated canClaim logic - check for actual pending rewards
@@ -1213,7 +1322,7 @@ export default {
                         console.error(
                             "Error processing progress item:",
                             progress,
-                            error
+                            error,
                         );
                         return null;
                     }
@@ -1300,11 +1409,11 @@ export default {
             const now = new Date();
 
             const totalDays = Math.ceil(
-                (endDate - startDate) / (1000 * 60 * 60 * 24)
+                (endDate - startDate) / (1000 * 60 * 60 * 24),
             );
             const daysLeft = Math.max(
                 0,
-                Math.ceil((endDate - now) / (1000 * 60 * 60 * 24))
+                Math.ceil((endDate - now) / (1000 * 60 * 60 * 24)),
             );
             const daysUsed = totalDays - daysLeft;
 
@@ -1335,27 +1444,55 @@ export default {
             console.log("loyaltyProgress type:", typeof this.loyaltyProgress);
             console.log(
                 "loyaltyProgress isArray:",
-                Array.isArray(this.loyaltyProgress)
+                Array.isArray(this.loyaltyProgress),
             );
             console.log(
                 "loyaltyProgress length:",
-                this.loyaltyProgress?.length
+                this.loyaltyProgress?.length,
             );
             console.log("activeLoyaltyProgress:", this.activeLoyaltyProgress);
             console.log(
                 "activeLoyaltyProgress length:",
-                this.activeLoyaltyProgress?.length
+                this.activeLoyaltyProgress?.length,
             );
             console.log(
                 "availableLoyaltyPrograms:",
-                this.availableLoyaltyPrograms
+                this.availableLoyaltyPrograms,
             );
             console.log(
                 "availableLoyaltyPrograms length:",
-                this.availableLoyaltyPrograms?.length
+                this.availableLoyaltyPrograms?.length,
             );
             console.log("=== END DEBUG ===");
         },
+        async applyMembership() {
+            this.applyingMembership = true;
+            try {
+                const today = new Date().toISOString().split("T")[0];
+                const { data } = await axios.post("/api/user/memberships", {
+                    type: this.membershipType,
+                    start_date: today,
+                });
+                if (data.success) {
+                    this.activeMembership = data.membership;
+                    this.showMembershipModal = false;
+                    this.$toast.add({
+                        severity: "success",
+                        summary: "Application Submitted",
+                        detail: "Your membership is pending admin approval.",
+                    });
+                }
+            } catch (error) {
+                this.$toast.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail: error.response?.data?.message || "Failed to apply",
+                });
+            } finally {
+                this.applyingMembership = false;
+            }
+        },
+
         async fetchLoyaltyProgress() {
             try {
                 console.log("Starting loyalty progress fetch...");
@@ -1375,12 +1512,12 @@ export default {
                     console.log("Loyalty Progress Set:", this.loyaltyProgress);
                     console.log(
                         "Available Programs Set:",
-                        this.availableLoyaltyPrograms
+                        this.availableLoyaltyPrograms,
                     );
                 } else {
                     console.error(
                         "API response indicates failure:",
-                        response.data
+                        response.data,
                     );
                     this.$toast.add({
                         severity: "error",
@@ -1499,7 +1636,7 @@ export default {
 
                 const response = await axios.put(
                     "/api/user/profile",
-                    this.profileForm
+                    this.profileForm,
                 );
 
                 console.log("Profile update response:", response.data); // Debug log
@@ -1639,7 +1776,7 @@ export default {
                     formData,
                     {
                         headers: { "Content-Type": "multipart/form-data" },
-                    }
+                    },
                 );
 
                 this.user.profile_image = response.data.filename;

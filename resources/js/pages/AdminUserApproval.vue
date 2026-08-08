@@ -197,232 +197,288 @@
             </div>
 
             <!-- Users Table -->
-            <div v-else-if="users.length > 0" class="overflow-x-auto">
-                <table
-                    class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
-                >
-                    <thead class="bg-gray-50 dark:bg-gray-700">
-                        <tr>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                                User
-                            </th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                                Registration Date
-                            </th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                                Role
-                            </th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                                Status
-                            </th>
-                            <th
-                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
-                            >
-                                Actions
-                            </th>
-                        </tr>
-                    </thead>
-                    <tbody
-                        class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
+            <div v-else-if="users.length > 0" class="flex gap-2">
+                <div class="flex-1 overflow-x-auto">
+                    <table
+                        class="min-w-full divide-y divide-gray-200 dark:divide-gray-700"
                     >
-                        <tr
-                            v-for="user in filteredUsers"
-                            :key="user.id"
-                            class="hover:bg-gray-50 dark:hover:bg-gray-700"
+                        <thead class="bg-gray-50 dark:bg-gray-700">
+                            <tr>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                >
+                                    User
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                >
+                                    Registration Date
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                >
+                                    Role
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                >
+                                    Status
+                                </th>
+                                <th
+                                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider"
+                                >
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody
+                            class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
                         >
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <img
-                                        v-if="user.profile_image"
-                                        :src="`/storage/profiles/${user.profile_image}`"
-                                        :alt="user.name"
-                                        class="h-10 w-10 rounded-full object-cover"
-                                    />
-                                    <div
-                                        v-else
-                                        class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
-                                    >
-                                        <i
-                                            class="pi pi-user text-gray-500 dark:text-gray-400"
-                                        ></i>
-                                    </div>
-                                    <div class="ml-4">
-                                        <div
-                                            class="text-sm font-medium text-gray-900 dark:text-white"
-                                        >
-                                            {{ user.name }}
-                                        </div>
-                                        <div
-                                            class="text-sm text-gray-500 dark:text-gray-400"
-                                        >
-                                            {{ user.email }}
-                                        </div>
-                                        <div
-                                            class="flex items-center gap-2 mt-1"
-                                        >
-                                            <span class="text-xs text-gray-500">
-                                                Level {{ user.level || 1 }}
-                                            </span>
-                                            <span class="text-xs text-gray-500">
-                                                •
-                                            </span>
-                                            <span class="text-xs text-gray-500">
-                                                {{ user.points || 0 }} points
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                    class="text-sm text-gray-900 dark:text-white"
-                                >
-                                    {{ formatDate(user.created_at) }}
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <!-- Role display for pending users or non-admin users -->
-                                <span
-                                    v-if="
-                                        !user.is_approved || !isCurrentUserAdmin
-                                    "
-                                    :class="getRoleColor(user.role)"
-                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                >
-                                    {{
-                                        user.role === "admin"
-                                            ? "Administrator"
-                                            : user.role === "shop_owner"
-                                              ? "Shop Owner"
-                                              : "User"
-                                    }}
-                                </span>
-
-                                <!-- Role dropdown for approved users (admin only) -->
-                                <div v-else class="relative">
-                                    <select
-                                        v-model="user.role"
-                                        @change="updateUserRole(user)"
-                                        :disabled="
-                                            processingUsers[user.id] ||
-                                            user.id === currentUserId
-                                        "
-                                        :class="[
-                                            getRoleColor(user.role),
-                                            processingUsers[user.id]
-                                                ? 'opacity-50'
-                                                : '',
-                                            user.id === currentUserId
-                                                ? 'cursor-not-allowed'
-                                                : 'cursor-pointer',
-                                        ]"
-                                        class="inline-flex px-2 py-1 text-xs font-semibold rounded-full border-0 bg-transparent appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
-                                    >
-                                        <option value="user">User</option>
-                                        <option value="shop_owner">
-                                            Shop Owner
-                                        </option>
-                                        <option value="admin">
-                                            Administrator
-                                        </option>
-                                    </select>
-                                    <!-- Custom dropdown arrow -->
-                                    <div
-                                        class="absolute inset-y-0 right-0 flex items-center pr-1 pointer-events-none"
-                                    >
-                                        <svg
-                                            class="w-3 h-3 text-gray-400"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M19 9l-7 7-7-7"
-                                            ></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span
-                                    :class="
-                                        user.is_approved
-                                            ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
-                                            : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
-                                    "
-                                    class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
-                                >
-                                    {{
-                                        user.is_approved
-                                            ? "Approved"
-                                            : "Pending"
-                                    }}
-                                </span>
-                            </td>
-                            <td
-                                class="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                            <tr
+                                v-for="user in filteredUsers"
+                                :key="user.id"
+                                :data-letter="
+                                    (user.name || '').charAt(0).toUpperCase()
+                                "
+                                class="hover:bg-gray-50 dark:hover:bg-gray-700"
                             >
-                                <div class="flex gap-2">
-                                    <button
-                                        v-if="user.valid_id"
-                                        @click="idModalUser = user"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <img
+                                            v-if="user.profile_image"
+                                            :src="`/storage/profiles/${user.profile_image}`"
+                                            :alt="user.name"
+                                            class="h-10 w-10 rounded-full object-cover"
+                                        />
+                                        <div
+                                            v-else
+                                            class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center"
+                                        >
+                                            <i
+                                                class="pi pi-user text-gray-500 dark:text-gray-400"
+                                            ></i>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div
+                                                class="text-sm font-medium text-gray-900 dark:text-white"
+                                            >
+                                                {{ user.name }}
+                                            </div>
+                                            <div
+                                                class="text-sm text-gray-500 dark:text-gray-400"
+                                            >
+                                                {{ user.email }}
+                                            </div>
+                                            <div
+                                                class="flex items-center gap-2 mt-1"
+                                            >
+                                                <span
+                                                    class="text-xs text-gray-500"
+                                                >
+                                                    Level {{ user.level || 1 }}
+                                                </span>
+                                                <span
+                                                    class="text-xs text-gray-500"
+                                                >
+                                                    •
+                                                </span>
+                                                <span
+                                                    class="text-xs text-gray-500"
+                                                >
+                                                    {{ user.points || 0 }}
+                                                    points
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div
+                                        class="text-sm text-gray-900 dark:text-white"
                                     >
-                                        View ID
-                                    </button>
-                                    <button
-                                        v-if="!user.is_approved"
-                                        @click="approveUser(user)"
-                                        :disabled="processingUsers[user.id]"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                                    >
-                                        <i
-                                            v-if="processingUsers[user.id]"
-                                            class="pi pi-spin pi-spinner mr-1"
-                                        ></i>
-                                        <i v-else class="pi pi-check mr-1"></i>
-                                        {{
-                                            processingUsers[user.id]
-                                                ? "Approving..."
-                                                : "Approve"
-                                        }}
-                                    </button>
-                                    <button
+                                        {{ formatDate(user.created_at) }}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <!-- Role display for pending users or non-admin users -->
+                                    <span
                                         v-if="
-                                            user.is_approved &&
-                                            user.role !== 'admin'
+                                            !user.is_approved ||
+                                            !isCurrentUserAdmin
                                         "
-                                        @click="revokeApproval(user)"
-                                        :disabled="processingUsers[user.id]"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        :class="getRoleColor(user.role)"
+                                        class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
                                     >
-                                        <i
-                                            v-if="processingUsers[user.id]"
-                                            class="pi pi-spin pi-spinner mr-1"
-                                        ></i>
-                                        <i v-else class="pi pi-times mr-1"></i>
                                         {{
-                                            processingUsers[user.id]
-                                                ? "Revoking..."
-                                                : "Revoke"
+                                            user.role === "admin"
+                                                ? "Administrator"
+                                                : user.role === "shop_owner"
+                                                  ? "Shop Owner"
+                                                  : "User"
                                         }}
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                    </span>
+
+                                    <!-- Role dropdown for approved users (admin only) -->
+                                    <div v-else class="relative">
+                                        <select
+                                            v-model="user.role"
+                                            @change="updateUserRole(user)"
+                                            :disabled="
+                                                processingUsers[user.id] ||
+                                                user.id === currentUserId
+                                            "
+                                            :class="[
+                                                getRoleColor(user.role),
+                                                processingUsers[user.id]
+                                                    ? 'opacity-50'
+                                                    : '',
+                                                user.id === currentUserId
+                                                    ? 'cursor-not-allowed'
+                                                    : 'cursor-pointer',
+                                            ]"
+                                            class="inline-flex px-2 py-1 text-xs font-semibold rounded-full border-0 bg-transparent appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+                                        >
+                                            <option value="user">User</option>
+                                            <option value="shop_owner">
+                                                Shop Owner
+                                            </option>
+                                            <option value="admin">
+                                                Administrator
+                                            </option>
+                                        </select>
+                                        <!-- Custom dropdown arrow -->
+                                        <div
+                                            class="absolute inset-y-0 right-0 flex items-center pr-1 pointer-events-none"
+                                        >
+                                            <svg
+                                                class="w-3 h-3 text-gray-400"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    stroke-width="2"
+                                                    d="M19 9l-7 7-7-7"
+                                                ></path>
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        :class="
+                                            user.is_approved
+                                                ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400'
+                                        "
+                                        class="inline-flex px-2 py-1 text-xs font-semibold rounded-full"
+                                    >
+                                        {{
+                                            user.is_approved
+                                                ? "Approved"
+                                                : "Pending"
+                                        }}
+                                    </span>
+                                </td>
+                                <td
+                                    class="px-6 py-4 whitespace-nowrap text-sm font-medium"
+                                >
+                                    <div class="flex gap-2">
+                                        <button
+                                            v-if="user.valid_id"
+                                            @click="idModalUser = user"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                                        >
+                                            View ID
+                                        </button>
+                                        <button
+                                            v-if="!user.is_approved"
+                                            @click="approveUser(user)"
+                                            :disabled="processingUsers[user.id]"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <i
+                                                v-if="processingUsers[user.id]"
+                                                class="pi pi-spin pi-spinner mr-1"
+                                            ></i>
+                                            <i
+                                                v-else
+                                                class="pi pi-check mr-1"
+                                            ></i>
+                                            {{
+                                                processingUsers[user.id]
+                                                    ? "Approving..."
+                                                    : "Approve"
+                                            }}
+                                        </button>
+                                        <button
+                                            v-if="!user.is_approved"
+                                            @click="deleteUser(user)"
+                                            :disabled="processingUsers[user.id]"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <i
+                                                v-if="processingUsers[user.id]"
+                                                class="pi pi-spin pi-spinner mr-1"
+                                            ></i>
+                                            <i
+                                                v-else
+                                                class="pi pi-trash mr-1"
+                                            ></i>
+                                            {{
+                                                processingUsers[user.id]
+                                                    ? "Deleting..."
+                                                    : "Delete"
+                                            }}
+                                        </button>
+                                        <button
+                                            v-if="
+                                                user.is_approved &&
+                                                user.role !== 'admin'
+                                            "
+                                            @click="revokeApproval(user)"
+                                            :disabled="processingUsers[user.id]"
+                                            class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            <i
+                                                v-if="processingUsers[user.id]"
+                                                class="pi pi-spin pi-spinner mr-1"
+                                            ></i>
+                                            <i
+                                                v-else
+                                                class="pi pi-times mr-1"
+                                            ></i>
+                                            {{
+                                                processingUsers[user.id]
+                                                    ? "Revoking..."
+                                                    : "Revoke"
+                                            }}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- A-Z jump strip -->
+                <div class="flex flex-col text-base leading-snug pt-12">
+                    <button
+                        v-for="L in alphabet"
+                        :key="L"
+                        @click="scrollToLetter(L)"
+                        :disabled="!availableLetters.has(L)"
+                        :class="
+                            availableLetters.has(L)
+                                ? 'text-blue-600 hover:font-bold'
+                                : 'text-gray-300 dark:text-gray-600 cursor-default'
+                        "
+                        class="px-1"
+                    >
+                        {{ L }}
+                    </button>
+                </div>
             </div>
 
             <!-- Empty State -->
@@ -489,6 +545,7 @@ export default {
             isCurrentUserAdmin: false,
             searchQuery: "",
             sortAlphabetical: false,
+            alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
         };
     },
     computed: {
@@ -526,6 +583,14 @@ export default {
         },
         totalCount() {
             return this.users.length;
+        },
+        availableLetters() {
+            const set = new Set();
+            this.filteredUsers.forEach((u) => {
+                const c = (u.name || "").charAt(0).toUpperCase();
+                if (c >= "A" && c <= "Z") set.add(c);
+            });
+            return set;
         },
     },
     methods: {
@@ -812,6 +877,78 @@ export default {
                 hour: "2-digit",
                 minute: "2-digit",
             });
+        },
+
+        scrollToLetter(letter) {
+            if (!this.availableLetters.has(letter)) return;
+            this.$nextTick(() => {
+                const target = document.querySelector(
+                    `tr[data-letter="${letter}"]`,
+                );
+                if (target)
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "center",
+                    });
+            });
+        },
+
+        async deleteUser(user) {
+            if (
+                !confirm(
+                    `Permanently delete ${user.name}? This cannot be undone.`,
+                )
+            ) {
+                return;
+            }
+
+            this.processingUsers[user.id] = true;
+
+            try {
+                if (!this.setupAxiosToken()) {
+                    throw new Error("No authentication token found");
+                }
+
+                const response = await axios.delete(
+                    `/api/admin/users/${user.id}`,
+                );
+
+                if (response.data.success) {
+                    this.users = this.users.filter((u) => u.id !== user.id);
+
+                    if (this.$toast) {
+                        this.$toast.add({
+                            severity: "success",
+                            summary: "Success",
+                            detail: `${user.name} has been deleted`,
+                            life: 3000,
+                        });
+                    }
+                } else {
+                    throw new Error(
+                        response.data.message || "Failed to delete user",
+                    );
+                }
+            } catch (error) {
+                console.error("Error deleting user:", error);
+                const errorMessage =
+                    error.response?.data?.message ||
+                    error.message ||
+                    "Failed to delete user";
+
+                if (this.$toast) {
+                    this.$toast.add({
+                        severity: "error",
+                        summary: "Error",
+                        detail: errorMessage,
+                        life: 5000,
+                    });
+                } else {
+                    alert(errorMessage);
+                }
+            } finally {
+                delete this.processingUsers[user.id];
+            }
         },
 
         getRoleColor(role) {

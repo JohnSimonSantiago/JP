@@ -1,6 +1,6 @@
 <template>
     <Layout>
-        <div class="max-w-2xl mx-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <!-- Header -->
             <div class="mb-6">
                 <h2 class="text-xl font-bold text-gray-800">
@@ -280,12 +280,26 @@
                     <h3 class="font-semibold text-gray-700">
                         Members with Time
                     </h3>
-                    <button
-                        @click="fetchBalances"
-                        class="text-xs text-indigo-600 hover:underline"
-                    >
-                        <i class="pi pi-refresh mr-1"></i> Refresh
-                    </button>
+                    <div class="flex items-center gap-3">
+                        <button
+                            @click="toggleSort"
+                            :class="
+                                sortAlphabetical
+                                    ? 'bg-indigo-600 text-white border-indigo-600'
+                                    : 'bg-white text-gray-600 border-gray-200'
+                            "
+                            class="flex items-center gap-1 px-2 py-1 rounded-md border text-xs font-medium transition-colors"
+                        >
+                            <i class="pi pi-sort-alpha-down"></i>
+                            {{ sortAlphabetical ? "A → Z" : "Default" }}
+                        </button>
+                        <button
+                            @click="fetchBalances"
+                            class="text-xs text-indigo-600 hover:underline"
+                        >
+                            <i class="pi pi-refresh mr-1"></i> Refresh
+                        </button>
+                    </div>
                 </div>
 
                 <div
@@ -323,32 +337,61 @@
                         </div>
                     </div>
 
-                    <div class="space-y-1 max-h-96 overflow-y-auto">
-                        <button
-                            v-for="u in balances"
-                            :key="u.id"
-                            @click="selectFromBalances(u)"
-                            class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
-                        >
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">
-                                    {{ u.name }}
-                                </p>
-                                <p class="text-xs text-gray-400">
-                                    @{{ u.username }}
-                                </p>
-                            </div>
-                            <span
-                                class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                :class="
-                                    u.consumable_minutes < 0
-                                        ? 'bg-red-50 text-red-600'
-                                        : 'bg-green-50 text-green-600'
+                    <input
+                        v-model="balanceSearch"
+                        type="text"
+                        placeholder="Search by name or username..."
+                        class="w-full mb-3 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    />
+                    <div class="flex gap-2">
+                        <div ref="balancesList" class="flex-1 space-y-1">
+                            <button
+                                v-for="u in filteredBalances"
+                                :key="u.id"
+                                :data-letter="
+                                    (u.name || '').charAt(0).toUpperCase()
                                 "
+                                @click="selectFromBalances(u)"
+                                class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
                             >
-                                {{ formatMinutes(u.consumable_minutes) }}
-                            </span>
-                        </button>
+                                <div>
+                                    <p
+                                        class="text-sm font-medium text-gray-800"
+                                    >
+                                        {{ u.name }}
+                                    </p>
+                                    <p class="text-xs text-gray-400">
+                                        @{{ u.username }}
+                                    </p>
+                                </div>
+                                <span
+                                    class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                    :class="
+                                        u.consumable_minutes < 0
+                                            ? 'bg-red-50 text-red-600'
+                                            : 'bg-green-50 text-green-600'
+                                    "
+                                >
+                                    {{ formatMinutes(u.consumable_minutes) }}
+                                </span>
+                            </button>
+                        </div>
+                        <div class="flex flex-col text-base leading-snug">
+                            <button
+                                v-for="L in alphabet"
+                                :key="L"
+                                @click="scrollToLetter(L)"
+                                :disabled="!availableLetters.has(L)"
+                                :class="
+                                    availableLetters.has(L)
+                                        ? 'text-indigo-600 hover:font-bold'
+                                        : 'text-gray-300 cursor-default'
+                                "
+                                class="px-1"
+                            >
+                                {{ L }}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -528,6 +571,9 @@ export default {
             totalAmount: 0,
             totalMinutesSold: 0,
 
+            sortAlphabetical: true,
+            balanceSearch: "",
+            alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
             activeTab: "buy",
             balances: [],
             totalMinutes: 0,
@@ -536,6 +582,23 @@ export default {
         };
     },
     computed: {
+        filteredBalances() {
+            const q = this.balanceSearch.trim().toLowerCase();
+            if (!q) return this.balances;
+            return this.balances.filter(
+                (u) =>
+                    u.name?.toLowerCase().includes(q) ||
+                    u.username?.toLowerCase().includes(q),
+            );
+        },
+        availableLetters() {
+            const set = new Set();
+            this.balances.forEach((u) => {
+                const c = (u.name || "").charAt(0).toUpperCase();
+                if (c >= "A" && c <= "Z") set.add(c);
+            });
+            return set;
+        },
         computedPrice() {
             const blocks = Math.floor(this.hours / 3);
             const extra = this.hours % 3;
@@ -566,7 +629,7 @@ export default {
                     "/api/lounge/consumable/balances",
                 );
                 if (response.data.success) {
-                    this.balances = response.data.users;
+                    this.balances = this.applySort(response.data.users);
                     this.totalMinutes = response.data.total_minutes;
                     this.owingCount = response.data.owing_count;
                 }
@@ -575,6 +638,11 @@ export default {
             } finally {
                 this.loadingBalances = false;
             }
+        },
+
+        toggleSort() {
+            this.sortAlphabetical = !this.sortAlphabetical;
+            this.balances = this.applySort(this.balances);
         },
 
         switchToBalances() {
@@ -697,6 +765,28 @@ export default {
             this.errorMessage = null;
             this.results = [];
             this.search = "";
+        },
+
+        scrollToLetter(letter) {
+            if (!this.availableLetters.has(letter)) return;
+            this.$nextTick(() => {
+                const container = this.$refs.balancesList;
+                const target = container?.querySelector(
+                    `[data-letter="${letter}"]`,
+                );
+                if (target)
+                    target.scrollIntoView({
+                        behavior: "smooth",
+                        block: "start",
+                    });
+            });
+        },
+
+        applySort(list) {
+            if (!this.sortAlphabetical) return list;
+            return [...list].sort((a, b) =>
+                (a.name || "").localeCompare(b.name || ""),
+            );
         },
 
         formatMinutes(mins) {

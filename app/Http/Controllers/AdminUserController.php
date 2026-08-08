@@ -358,4 +358,64 @@ public function changePassword(Request $request, User $user)
             ], 500);
         }
     }
+
+    /**
+     * Permanently delete a user
+     */
+    public function destroy(User $user)
+    {
+        try {
+            $currentAdmin = Auth::guard('sanctum')->user();
+
+            // Prevent deleting your own account
+            if ($currentAdmin && $currentAdmin->id === $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You cannot delete your own account'
+                ], 403);
+            }
+
+            // Prevent deleting admin accounts
+            if ($user->role === 'admin') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete admin users'
+                ], 403);
+            }
+
+            // Only allow deleting users who are not yet approved
+            if ($user->is_approved) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete an approved user. Revoke approval first.'
+                ], 403);
+            }
+
+            $userName = $user->name;
+            $userId = $user->id;
+
+            // Log out the user everywhere before removing
+            $user->tokens()->delete();
+            $user->delete();
+
+            $adminName = $currentAdmin ? $currentAdmin->name : 'Unknown Admin';
+            Log::info("User {$userName} (ID: {$userId}) deleted by admin {$adminName}");
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$userName} has been deleted"
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error deleting user: ' . $e->getMessage(), [
+                'user_id' => $user->id ?? 'unknown',
+                'exception_class' => get_class($e),
+                'stack_trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete user'
+            ], 500);
+        }
+    }
 }

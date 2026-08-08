@@ -171,6 +171,7 @@ Route::get('/sales-report', [ShopItemController::class, 'salesReport']);
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
     Route::post('/users/{user}/approve', [AdminUserController::class, 'approve']);
     Route::post('/users/{user}/revoke', [AdminUserController::class, 'revoke']);
+    Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);
 Route::post('/users/{user}/update-role', [AdminUserController::class, 'updateRole']);
 Route::post('/users/{user}/change-password', [AdminUserController::class, 'changePassword']);
     Route::post('/users/bulk-approve', [AdminUserController::class, 'bulkApprove']);
@@ -205,6 +206,9 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
 
     // Membership management
     Route::get('/memberships', [MembershipController::class, 'adminIndex']);
+    Route::get('/memberships/pending', [MembershipController::class, 'pendingApplications']);
+    Route::get('/memberships/active', [MembershipController::class, 'activeMemberships']);
+    Route::get('/memberships/history', [MembershipController::class, 'history']);
     Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
     Route::post('/memberships/gift', [MembershipController::class, 'gift']);

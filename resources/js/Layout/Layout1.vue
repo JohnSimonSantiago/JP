@@ -733,6 +733,34 @@
                             </span>
                         </router-link>
 
+                        <!-- Admin Membership Applications (Admins Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-blue-50 text-blue-700 border-r-2 border-blue-600"
+                            to="/admin/membership-management"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-blue-50 hover:text-blue-700 transition-all duration-200 group relative"
+                        >
+                            <i
+                                class="pi pi-id-card text-lg group-hover:scale-110 transition-transform"
+                            ></i>
+                            <span class="font-medium">Memberships</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                            >
+                                Admin
+                            </span>
+                            <div
+                                v-if="pendingMembershipCount > 0"
+                                class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold animate-pulse"
+                            >
+                                {{
+                                    pendingMembershipCount > 99
+                                        ? "99+"
+                                        : pendingMembershipCount
+                                }}
+                            </div>
+                        </router-link>
+
                         <!-- Admin Store Management (Admins Only) -->
                         <router-link
                             v-if="isAdmin"
@@ -890,6 +918,7 @@ export default {
             shopOrdersCount: 0,
             shopLoyaltyCount: 0,
             pendingApprovalCount: 0,
+            pendingMembershipCount: 0,
 
             // Polling
             notificationPollingInterval: null,
@@ -1035,6 +1064,27 @@ export default {
             } catch (error) {
                 console.error("Failed to fetch pending approval count:", error);
                 this.pendingApprovalCount = 0;
+            }
+        },
+
+        async fetchPendingMembershipCount() {
+            if (!this.isAdmin) return;
+
+            try {
+                const response = await axios.get(
+                    "/api/admin/memberships/pending",
+                );
+                if (response.data.success) {
+                    this.pendingMembershipCount = (
+                        response.data.memberships || []
+                    ).length;
+                }
+            } catch (error) {
+                console.error(
+                    "Failed to fetch pending membership count:",
+                    error,
+                );
+                this.pendingMembershipCount = 0;
             }
         },
 
@@ -1194,6 +1244,7 @@ export default {
                 // Fetch pending approval count for admins
                 if (this.isAdmin) {
                     promises.push(this.fetchPendingApprovalCount());
+                    promises.push(this.fetchPendingMembershipCount());
                 }
 
                 await Promise.all(promises);

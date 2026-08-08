@@ -16,6 +16,7 @@ class Membership extends Model
         'end_date',
         'type',
         'status',
+        'source',
     ];
 
     protected $casts = [

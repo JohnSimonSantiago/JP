@@ -303,18 +303,36 @@
                                     {{ formatDate(m.end_date) }}
                                 </div>
                             </div>
-                            <span
-                                :class="
-                                    m.status === 'approved'
-                                        ? 'bg-green-100 text-green-700'
-                                        : m.status === 'expired'
-                                          ? 'bg-gray-100 text-gray-500'
-                                          : 'bg-yellow-100 text-yellow-700'
-                                "
-                                class="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
+                            <div
+                                class="flex flex-col items-end gap-1 flex-shrink-0"
                             >
-                                {{ m.status }}
-                            </span>
+                                <span
+                                    :class="
+                                        m.source === 'gifted'
+                                            ? 'bg-purple-100 text-purple-700'
+                                            : 'bg-blue-100 text-blue-700'
+                                    "
+                                    class="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
+                                >
+                                    {{
+                                        m.source === "gifted"
+                                            ? "Gifted"
+                                            : "Applied"
+                                    }}
+                                </span>
+                                <span
+                                    :class="
+                                        m.status === 'approved'
+                                            ? 'bg-green-100 text-green-700'
+                                            : m.status === 'expired'
+                                              ? 'bg-gray-100 text-gray-500'
+                                              : 'bg-yellow-100 text-yellow-700'
+                                    "
+                                    class="text-xs px-2 py-0.5 rounded-full font-medium capitalize"
+                                >
+                                    {{ m.status }}
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
