@@ -106,11 +106,11 @@
                 <!-- Tabs -->
                 <div class="bg-white rounded-xl shadow-lg overflow-hidden">
                     <div class="border-b border-gray-200">
-                        <nav class="flex">
+                        <nav class="grid grid-cols-2 md:flex">
                             <button
                                 @click="activeTab = 'incoming'"
                                 :class="[
-                                    'px-6 py-4 text-sm font-medium border-b-2 transition-colors',
+                                    'px-4 py-4 text-sm font-medium border-b-2 transition-colors flex items-center justify-center md:justify-start',
                                     activeTab === 'incoming'
                                         ? 'border-blue-500 text-blue-600 bg-blue-50'
                                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
@@ -249,7 +249,7 @@
                                             >
                                                 {{
                                                     formatStars(
-                                                        bet.stars_amount
+                                                        bet.stars_amount,
                                                     )
                                                 }}
                                             </div>
@@ -425,7 +425,7 @@
                                                 >
                                                     +{{
                                                         formatStars(
-                                                            bet.stars_amount
+                                                            bet.stars_amount,
                                                         )
                                                     }}
                                                 </div>
@@ -435,7 +435,7 @@
                                                 >
                                                     -{{
                                                         formatStars(
-                                                            bet.stars_amount
+                                                            bet.stars_amount,
                                                         )
                                                     }}
                                                 </div>
@@ -452,7 +452,7 @@
                                                 >
                                                     {{
                                                         formatStars(
-                                                            bet.stars_amount
+                                                            bet.stars_amount,
                                                         )
                                                     }}
                                                 </div>
@@ -650,7 +650,7 @@
                                         @click="
                                             declareWinner(
                                                 bet.id,
-                                                bet.creator.id
+                                                bet.creator.id,
                                             )
                                         "
                                         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
@@ -663,7 +663,7 @@
                                         @click="
                                             declareWinner(
                                                 bet.id,
-                                                bet.opponent.id
+                                                bet.opponent.id,
                                             )
                                         "
                                         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1"
@@ -812,7 +812,7 @@
                                         @click="
                                             declareWinner(
                                                 bet.id,
-                                                bet.creator.id
+                                                bet.creator.id,
                                             )
                                         "
                                         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1 transition-colors"
@@ -825,7 +825,7 @@
                                         @click="
                                             declareWinner(
                                                 bet.id,
-                                                bet.opponent.id
+                                                bet.opponent.id,
                                             )
                                         "
                                         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm flex-1 transition-colors"
@@ -1335,13 +1335,13 @@ export default {
                     this.searchingOpponents = true;
                     const response = await axios.get(
                         `/api/users/search?q=${encodeURIComponent(
-                            this.opponentSearchQuery
-                        )}`
+                            this.opponentSearchQuery,
+                        )}`,
                     );
 
                     if (response.data.success) {
                         this.opponentSearchResults = response.data.users.filter(
-                            (user) => user.id !== this.currentUser.id
+                            (user) => user.id !== this.currentUser.id,
                         );
                     }
                 } catch (error) {
@@ -1380,8 +1380,8 @@ export default {
                     this.searchingReferees = true;
                     const response = await axios.get(
                         `/api/users/search?q=${encodeURIComponent(
-                            this.refereeSearchQuery
-                        )}`
+                            this.refereeSearchQuery,
+                        )}`,
                     );
 
                     if (response.data.success) {
@@ -1389,7 +1389,7 @@ export default {
                             (user) =>
                                 user.id !== this.currentUser.id &&
                                 (!this.selectedOpponent ||
-                                    user.id !== this.selectedOpponent.id)
+                                    user.id !== this.selectedOpponent.id),
                         );
                     }
                 } catch (error) {
@@ -1559,7 +1559,7 @@ export default {
                     `/api/bets/${betId}/declare-winner`,
                     {
                         winner_id: winnerId,
-                    }
+                    },
                 );
 
                 if (response.data.success) {
@@ -1625,7 +1625,7 @@ export default {
             }
 
             const seasonResponse = await axios.get(
-                "/api/leaderboard/current-season"
+                "/api/leaderboard/current-season",
             );
             if (seasonResponse.data.success) {
                 this.currentSeason = seasonResponse.data.current_season;

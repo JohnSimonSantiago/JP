@@ -11,6 +11,172 @@
                 </p>
             </div>
 
+            <!-- House Rules (collapsible) -->
+            <div
+                class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden"
+            >
+                <button
+                    @click="showRules = !showRules"
+                    class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                >
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0"
+                        >
+                            <i class="pi pi-info-circle text-amber-500"></i>
+                        </div>
+                        <div class="text-left">
+                            <p class="font-semibold text-gray-800">
+                                Lounge Rules & Rates
+                            </p>
+                            <p class="text-xs text-gray-400">
+                                House rules, walk-in rates, and member billing
+                            </p>
+                        </div>
+                    </div>
+                    <i
+                        class="pi text-gray-400"
+                        :class="showRules ? 'pi-chevron-up' : 'pi-chevron-down'"
+                    ></i>
+                </button>
+
+                <div v-if="showRules" class="px-5 pb-5 space-y-5">
+                    <!-- House Rules -->
+                    <div>
+                        <h4
+                            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2"
+                        >
+                            House Rules
+                        </h4>
+                        <ul
+                            class="text-sm text-gray-600 space-y-1.5 list-disc pl-5"
+                        >
+                            <li>
+                                Outside food and drinks are welcome — no corkage
+                                fee.
+                            </li>
+                            <li>
+                                Free WiFi, free charging, and free internet for
+                                everyone in the lounge.
+                            </li>
+                            <li>
+                                The time you pay for is the time you spend
+                                inside the lounge — from check-in to check-out.
+                                It is not based on how long you actually play or
+                                watch.
+                            </li>
+                            <li>
+                                Please keep track of your own time. If you say
+                                you're staying for 1 hour, it's your
+                                responsibility to watch the clock — staff will
+                                not remind you.
+                            </li>
+                            <li>
+                                If you go past your stated time, you're still
+                                responsible for paying for the extra time, even
+                                if no one reminded you.
+                            </li>
+                            <li>
+                                Keep noise at a friendly level so everyone can
+                                enjoy their session.
+                            </li>
+                            <li>
+                                Clean up your area before leaving — throw out
+                                trash and return borrowed items.
+                            </li>
+                            <li>
+                                Staff reserves the right to end a session for
+                                disruptive or abusive behavior.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Walk-in Rates -->
+                    <div>
+                        <h4
+                            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2"
+                        >
+                            Walk-in Rates & Billing
+                        </h4>
+                        <ul
+                            class="text-sm text-gray-600 space-y-1.5 list-disc pl-5"
+                        >
+                            <li>
+                                Rates (per head): ₱25 / 30 min · ₱40 / hour ·
+                                ₱100 / 3 hours · ₱200 / day.
+                            </li>
+                            <li>
+                                Charged in 30-minute blocks, with 10 minutes of
+                                grace on each block. Stay 34 minutes and you're
+                                charged for 30; stay 42 minutes and you're
+                                charged for a full hour.
+                            </li>
+                            <li>
+                                The grace period is not extra playtime — it's
+                                for packing up and heading out. Past the
+                                10-minute mark, the next block begins.
+                            </li>
+                            <li>
+                                Walk-in time cannot be paused, saved, or
+                                continued later. Each visit is billed on its own
+                                — earlier time is settled first and new visits
+                                start fresh.
+                            </li>
+                            <li>
+                                Example: 45 minutes, then a return visit of 1h
+                                15m, costs ₱40 + ₱65 = ₱105. It cannot be
+                                combined into one 2-hour session for ₱80.
+                            </li>
+                            <li>
+                                Leftover time is not saved for walk-in
+                                customers. Only members keep unused time.
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Member Rules -->
+                    <div>
+                        <h4
+                            class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2"
+                        >
+                            Member Time & Billing
+                        </h4>
+                        <ul
+                            class="text-sm text-gray-600 space-y-1.5 list-disc pl-5"
+                        >
+                            <li>
+                                Rates (per head): ₱40 / hour · ₱100 / 3-hour
+                                bundle.
+                            </li>
+                            <li>Member time is sold in whole hours only.</li>
+                            <li>
+                                To get the bundle price, all 3 hours must be
+                                bought in one purchase. Buying 1 hour now and 2
+                                later is charged ₱40 + ₱80, not ₱100.
+                            </li>
+                            <li>
+                                Unused time never expires — whatever you don't
+                                use stays on your balance.
+                            </li>
+                            <li>
+                                Time is not refundable and cannot be transferred
+                                to another member.
+                            </li>
+                            <li>
+                                Your balance counts down for the whole time
+                                you're checked in — from time-in to time-out —
+                                not just while playing.
+                            </li>
+                            <li>
+                                Once your balance hits zero, it keeps counting
+                                into the negative. Any negative balance must be
+                                settled immediately before leaving.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
             <!-- Lounge Session Card (only if active session exists) -->
             <div
                 v-if="loungeSession"
@@ -88,8 +254,8 @@
                         ><br />
                         Your balance ticks down while you're checked in. Once it
                         hits zero it keeps counting into the negative, and any
-                        negative balance must be settled immediately before you
-                        can time in again.
+                        negative balance must be settled immediately before
+                        leaving the lounge.
                     </p>
                 </div>
                 <div
@@ -415,6 +581,7 @@ export default {
             },
             membership: null,
             userRank: null,
+            showRules: false,
             loungeSession: null,
             loungeStats: { total_time: "0h 0m", total_visits: 0 },
             recentActivity: [],
