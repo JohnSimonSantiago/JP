@@ -9,6 +9,7 @@ import { setupCalendar, Calendar, DatePicker } from "v-calendar";
 import "v-calendar/style.css";
 import PrimeVue from "primevue/config";
 import "primevue/resources/themes/aura-light-green/theme.css";
+import Chart from "primevue/chart";
 import ToastService from "primevue/toastservice";
 import "primeicons/primeicons.css";
 import { createPinia } from "pinia";
@@ -17,7 +18,7 @@ const pinia = createPinia();
 const router = createRouter({
     history: createWebHistory(),
     routes: routes,
-}); 
+});
 const app = createApp({});
 
 app.use(pinia);
@@ -29,4 +30,5 @@ app.mount("#app");
 
 app.component("VCalendar", Calendar);
 app.component("VDatePicker", DatePicker);
+app.component("Chart", Chart);
 app.use(ToastService);

@@ -19,6 +19,8 @@ import AdminMembershipManagement from "./pages/AdminMembershipManagement.vue";
 import LoungeSessionsDashboard from "./pages/LoungeSessionsDashboard.vue";
 import LoungeSettings from "./pages/LoungeSettings.vue";
 import LoungeBuyTime from "./pages/LoungeBuyTime.vue";
+import Statistics from "@/pages/Statistics.vue";
+
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
     const user = JSON.parse(localStorage.getItem("user") || "null");
@@ -186,6 +188,12 @@ export const routes = [
         path: "/admin/lounge-buy-time",
         name: "lounge-buy-time",
         component: LoungeBuyTime,
+        beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/admin/statistics",
+        name: "statistics",
+        component: Statistics,
         beforeEnter: requiresAdmin,
     },
 ];

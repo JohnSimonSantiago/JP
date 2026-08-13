@@ -278,9 +278,15 @@
                 </div>
             </div>
 
-            <!-- Consumable Time Balance (Level 1 members, always visible) -->
+            <!-- Consumable Time Balance (Level 1 members, hidden during active consumable session) -->
             <div
-                v-if="user.level === 1"
+                v-if="
+                    user.level === 1 &&
+                    !(
+                        loungeSession &&
+                        loungeSession.billing_mode === 'consumable'
+                    )
+                "
                 class="rounded-xl p-4 mb-6 border"
                 :class="
                     (user.consumable_minutes ?? 0) < 0

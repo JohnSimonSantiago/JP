@@ -166,6 +166,41 @@ class LoungeController extends Controller
         ]);
     }
 
+    public function consumableTopSpenders(Request $request)
+    {
+        $query = ConsumablePurchase::query();
+
+        // Same Manila-day handling as the history endpoint
+        if ($request->from) {
+            $query->where('created_at', '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
+        }
+        if ($request->to) {
+            $query->where('created_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
+        }
+
+        $rows = $query
+            ->selectRaw('user_id, SUM(amount) as total_spent, SUM(minutes_added) as total_minutes, COUNT(*) as purchase_count')
+            ->groupBy('user_id')
+            ->with('user:id,name,username')
+            ->orderByDesc('total_spent')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'user_id'        => $r->user_id,
+                    'name'           => $r->user->name ?? 'Unknown',
+                    'username'       => $r->user->username ?? null,
+                    'total_spent'    => (float) $r->total_spent,
+                    'total_minutes'  => (int) $r->total_minutes,
+                    'purchase_count' => (int) $r->purchase_count,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'users'   => $rows,
+        ]);
+    }
+
     // ─── Check In ───────────────────────────────────────────────────────────────
 
     public function checkIn(Request $request)
@@ -393,6 +428,14 @@ class LoungeController extends Controller
         $withBundles = ($bundles * $bundleRate)
             + ($remainingHours * $hourlyRate)
             + ($billableHalf * $halfHourRate);
+
+        // A partial run into a bundle should never cost more than just buying
+        // the whole bundle. e.g. 2h30m must cap at the 3-hour bundle price.
+        if ($billableHalf > 0 || ($remainingHours > 0 && $remainingHours < $bundleHrs)) {
+            $bundlesIfRoundedUp = $bundles + 1;
+            $priceIfRoundedUp   = $bundlesIfRoundedUp * $bundleRate;
+            $withBundles        = min($withBundles, $priceIfRoundedUp);
+        }
 
         $total = min($withBundles, $dayRate);
 
