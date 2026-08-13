@@ -38,6 +38,35 @@
                 </div>
             </div>
 
+            <div v-if="history.length" class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-emerald-50 rounded-lg p-3">
+                    <p class="text-xs text-emerald-400">Best revenue day</p>
+                    <p class="text-lg font-bold text-emerald-600">
+                        ₱{{
+                            bestRevenueDay
+                                ? bestRevenueDay.value.toLocaleString()
+                                : 0
+                        }}
+                    </p>
+                    <p class="text-xs text-emerald-400 mt-0.5">
+                        {{ bestRevenueDay ? bestRevenueDay.label : "—" }}
+                    </p>
+                </div>
+                <div class="bg-violet-50 rounded-lg p-3">
+                    <p class="text-xs text-violet-400">Best hours-sold day</p>
+                    <p class="text-lg font-bold text-violet-600">
+                        {{
+                            bestHoursDay
+                                ? formatMinutes(bestHoursDay.value)
+                                : "0h 0m"
+                        }}
+                    </p>
+                    <p class="text-xs text-violet-400 mt-0.5">
+                        {{ bestHoursDay ? bestHoursDay.label : "—" }}
+                    </p>
+                </div>
+            </div>
+
             <!-- Daily revenue chart -->
             <div
                 v-if="history.length"
@@ -78,13 +107,26 @@ export default {
         };
     },
     computed: {
+        bestRevenueDay() {
+            const byDay = {};
+            this.history.forEach((p) => {
+                const day = this.dayLabel(p.created_at);
+                byDay[day] = (byDay[day] || 0) + Number(p.amount || 0);
+            });
+            return this.topEntry(byDay);
+        },
+        bestHoursDay() {
+            const byDay = {};
+            this.history.forEach((p) => {
+                const day = this.dayLabel(p.created_at);
+                byDay[day] = (byDay[day] || 0) + Number(p.minutes_added || 0);
+            });
+            return this.topEntry(byDay);
+        },
         chartData() {
             const byDay = {};
             this.history.forEach((p) => {
-                const day = new Date(p.created_at).toLocaleDateString("en-PH", {
-                    month: "short",
-                    day: "numeric",
-                });
+                const day = this.dayLabel(p.created_at);
                 byDay[day] = (byDay[day] || 0) + Number(p.amount || 0);
             });
             const labels = Object.keys(byDay);
@@ -109,6 +151,19 @@ export default {
         },
     },
     methods: {
+        dayLabel(dateStr) {
+            return new Date(dateStr).toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+            });
+        },
+        topEntry(map) {
+            let best = null;
+            for (const [label, value] of Object.entries(map)) {
+                if (!best || value > best.value) best = { label, value };
+            }
+            return best;
+        },
         formatMinutes(mins) {
             mins = mins || 0;
             const h = Math.floor(mins / 60);

@@ -10,7 +10,13 @@
         </div>
 
         <template v-else>
-            <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <div class="bg-green-50 rounded-lg p-3">
+                    <p class="text-xs text-green-400">Earned</p>
+                    <p class="text-lg font-bold text-green-600">
+                        ₱{{ totalEarned.toLocaleString() }}
+                    </p>
+                </div>
                 <div class="bg-indigo-50 rounded-lg p-3">
                     <p class="text-xs text-indigo-400">Sessions</p>
                     <p class="text-lg font-bold text-indigo-700">
@@ -21,6 +27,31 @@
                     <p class="text-xs text-blue-400">Days active</p>
                     <p class="text-lg font-bold text-blue-600">
                         {{ activeDays }}
+                    </p>
+                </div>
+            </div>
+
+            <div v-if="history.length" class="grid grid-cols-2 gap-3 mb-6">
+                <div class="bg-emerald-50 rounded-lg p-3">
+                    <p class="text-xs text-emerald-400">Best earning day</p>
+                    <p class="text-lg font-bold text-emerald-600">
+                        ₱{{
+                            bestEarningDay
+                                ? bestEarningDay.value.toLocaleString()
+                                : 0
+                        }}
+                    </p>
+                    <p class="text-xs text-emerald-400 mt-0.5">
+                        {{ bestEarningDay ? bestEarningDay.label : "—" }}
+                    </p>
+                </div>
+                <div class="bg-violet-50 rounded-lg p-3">
+                    <p class="text-xs text-violet-400">Busiest day</p>
+                    <p class="text-lg font-bold text-violet-600">
+                        {{ bestSessionDay ? bestSessionDay.value : 0 }} sessions
+                    </p>
+                    <p class="text-xs text-violet-400 mt-0.5">
+                        {{ bestSessionDay ? bestSessionDay.label : "—" }}
                     </p>
                 </div>
             </div>
@@ -59,9 +90,28 @@ export default {
             history: [],
         };
     },
+    // earnings computed below
     computed: {
         activeDays() {
             return Object.keys(this.byDay()).length;
+        },
+        totalEarned() {
+            return this.history.reduce(
+                (sum, s) => sum + (Number(s.total_bill) || 0),
+                0,
+            );
+        },
+        bestEarningDay() {
+            const byDay = {};
+            this.history.forEach((s) => {
+                const day = this.dayLabel(s.checked_in_at);
+                byDay[day] = (byDay[day] || 0) + (Number(s.total_bill) || 0);
+            });
+            return this.topEntry(byDay);
+        },
+        bestSessionDay() {
+            const grouped = this.byDay();
+            return this.topEntry(grouped);
         },
         chartData() {
             const grouped = this.byDay();
@@ -87,17 +137,25 @@ export default {
         },
     },
     methods: {
+        dayLabel(dateStr) {
+            return new Date(dateStr).toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+            });
+        },
+        topEntry(map) {
+            // Returns { label, value } for the biggest entry, or null if empty
+            let best = null;
+            for (const [label, value] of Object.entries(map)) {
+                if (!best || value > best.value) best = { label, value };
+            }
+            return best;
+        },
         byDay() {
             const grouped = {};
             this.history.forEach((s) => {
-                const day = new Date(s.checked_in_at).toLocaleDateString(
-                    "en-PH",
-                    {
-                        month: "short",
-                        day: "numeric",
-                    },
-                );
-                grouped[day] = (grouped[day] || 0) + 1;
+                grouped[this.dayLabel(s.checked_in_at)] =
+                    (grouped[this.dayLabel(s.checked_in_at)] || 0) + 1;
             });
             return grouped;
         },
