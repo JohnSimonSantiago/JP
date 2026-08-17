@@ -21,6 +21,7 @@
         "postcss": "^8.4.31",
         "primeicons": "^6.0.1",
         "primevue": "^3.49.0",
+        "qrcode.vue": "^3.10.0",
         "tailwind": "^4.0.0",
         "v-calendar": "^3.1.2",
         "vue": "^3.3.8",

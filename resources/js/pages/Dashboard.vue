@@ -11,6 +11,27 @@
                 </p>
             </div>
 
+            <!-- Check-in QR — shown only when not in a session -->
+            <div
+                v-if="!loungeSession && user.id"
+                class="bg-white rounded-xl shadow-sm border border-indigo-100 mb-6 p-6 flex flex-col items-center"
+            >
+                <div class="flex items-center gap-2 mb-4">
+                    <i class="pi pi-qrcode text-indigo-600"></i>
+                    <p class="font-semibold text-gray-800">Time-In Code</p>
+                </div>
+                <div class="p-3 bg-white rounded-xl border border-gray-100">
+                    <QrcodeVue
+                        :value="`levelup://user/${user.id}`"
+                        :size="180"
+                        level="M"
+                    />
+                </div>
+                <p class="text-sm font-medium text-gray-700 mt-4">
+                    Show this to staff to time in.
+                </p>
+            </div>
+
             <!-- House Rules (collapsible) -->
             <div
                 class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden"
@@ -155,8 +176,9 @@
                                 later is charged ₱40 + ₱80, not ₱100.
                             </li>
                             <li>
-                                Unused time never expires — whatever you don't
-                                use stays on your balance.
+                                Member time can be paused and continued for the
+                                next visit. Unused time never expires — whatever
+                                you don't use stays on your balance.
                             </li>
                             <li>
                                 Time is not refundable and cannot be transferred
@@ -569,8 +591,11 @@
 </template>
 
 <script>
+import QrcodeVue from "qrcode.vue";
+
 export default {
     name: "Dashboard",
+    components: { QrcodeVue },
     data() {
         return {
             user: {

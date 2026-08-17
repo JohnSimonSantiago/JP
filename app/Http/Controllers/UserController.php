@@ -695,6 +695,7 @@ $endDate = $startDate->copy()->addMonth();
                 'name' => $user->name,
                 'level' => $user->level,
                 'stars' => $user->stars,
+                'consumable_minutes' => $user->consumable_minutes ?? 0,
                 'is_premium' => $membership ? true : false,
                 'profile_image' => $user->profile_image,
                 'role' => $user->role,
