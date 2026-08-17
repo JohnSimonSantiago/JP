@@ -543,38 +543,30 @@ $recentOrders = $shop->purchases()
             ], 401);
         }
 
-        // Get user's shop
-        $shop = null;
+        // Get user's shop (admins own shops too — scope to their own shop)
         if ($user->role === 'admin') {
-            // Admin gets notifications from all shops
-            $pendingOrdersCount = Purchase::where('status', 'pending')
-                ->whereHas('shop')
-                ->count();
-            
-            $pendingLoyaltyCount = LoyaltyCardReward::where('status', 'pending')
-                ->count();
+            $shop = Shop::where('owner_id', $user->id)->first();
         } else {
-            // Shop owner gets notifications from their shop only
             $shop = $user->shops()->first();
-            
-            if (!$shop) {
-                return response()->json([
-                    'success' => true,
-                    'pending_orders_count' => 0,
-                    'pending_loyalty_count' => 0
-                ]);
-            }
-
-            $pendingOrdersCount = $shop->purchases()
-                ->where('status', 'pending')
-                ->count();
-                
-            $pendingLoyaltyCount = LoyaltyCardReward::where('status', 'pending')
-                ->whereHas('loyaltyCard', function($query) use ($shop) {
-                    $query->where('shop_id', $shop->id);
-                })
-                ->count();
         }
+
+        if (!$shop) {
+            return response()->json([
+                'success' => true,
+                'pending_orders_count' => 0,
+                'pending_loyalty_count' => 0
+            ]);
+        }
+
+        $pendingOrdersCount = $shop->purchases()
+            ->where('status', 'pending')
+            ->count();
+
+        $pendingLoyaltyCount = LoyaltyCardReward::where('status', 'pending')
+            ->whereHas('loyaltyCard', function($query) use ($shop) {
+                $query->where('shop_id', $shop->id);
+            })
+            ->count();
 
         return response()->json([
             'success' => true,
