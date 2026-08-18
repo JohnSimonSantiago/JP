@@ -76,6 +76,7 @@
                                 Outside food and drinks are welcome — no corkage
                                 fee.
                             </li>
+                            <li>Vaping is not allowed.</li>
                             <li>
                                 Free WiFi, free charging, and free internet for
                                 everyone in the lounge.

@@ -6,6 +6,7 @@
             class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
         >
             <option value="today">Today</option>
+            <option value="yesterday">Yesterday</option>
             <option value="week">This week</option>
             <option value="month">This month</option>
             <option value="pickMonth">Pick a month</option>
@@ -71,6 +72,7 @@ export default {
         label() {
             if (this.mode === "all") return "All time";
             if (this.mode === "today") return "Today";
+            if (this.mode === "yesterday") return "Yesterday";
             if (this.mode === "week") return "This week";
             if (this.mode === "month") return "This month";
             if (this.mode === "pickMonth") return "Selected month";
@@ -101,6 +103,12 @@ export default {
             if (this.mode === "today") {
                 this.fromDate = this.localDate(now);
                 this.toDate = this.localDate(now);
+                this.emit();
+            } else if (this.mode === "yesterday") {
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
+                this.fromDate = this.localDate(yesterday);
+                this.toDate = this.localDate(yesterday);
                 this.emit();
             } else if (this.mode === "week") {
                 const day = now.getDay();

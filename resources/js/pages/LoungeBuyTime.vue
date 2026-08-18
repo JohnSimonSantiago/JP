@@ -425,8 +425,11 @@
                             class="text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-300"
                         >
                             <option value="today">Today</option>
+                            <option value="yesterday">Yesterday</option>
                             <option value="week">This week</option>
+
                             <option value="month">This month</option>
+                            <option value="all">All Time</option>
                             <option value="custom">Custom</option>
                         </select>
                         <input
@@ -613,6 +616,7 @@ export default {
             return parts.join(" + ");
         },
         rangeLabel() {
+            if (this.rangePreset === "all") return "All time";
             if (this.fromDate === this.toDate) {
                 return this.fromDate === this.todayDate ? "Today" : "That day";
             }
@@ -666,6 +670,14 @@ export default {
             if (this.rangePreset === "today") {
                 this.fromDate = this.localDate(now);
                 this.toDate = this.localDate(now);
+            } else if (this.rangePreset === "yesterday") {
+                const yesterday = new Date(now);
+                yesterday.setDate(now.getDate() - 1);
+                this.fromDate = this.localDate(yesterday);
+                this.toDate = this.localDate(yesterday);
+            } else if (this.rangePreset === "all") {
+                this.fromDate = null;
+                this.toDate = null;
             } else if (this.rangePreset === "week") {
                 // Monday as the start of the week
                 const day = now.getDay();
