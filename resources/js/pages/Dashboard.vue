@@ -11,14 +11,16 @@
                 </p>
             </div>
 
-            <!-- Check-in QR — shown only when not in a session -->
+            <!-- Session QR — shown for both time-in and time-out -->
             <div
-                v-if="!loungeSession && user.id"
+                v-if="user.id"
                 class="bg-white rounded-xl shadow-sm border border-indigo-100 mb-6 p-6 flex flex-col items-center"
             >
                 <div class="flex items-center gap-2 mb-4">
                     <i class="pi pi-qrcode text-indigo-600"></i>
-                    <p class="font-semibold text-gray-800">Time-In Code</p>
+                    <p class="font-semibold text-gray-800">
+                        {{ loungeSession ? "Time-Out Code" : "Time-In Code" }}
+                    </p>
                 </div>
                 <div class="p-3 bg-white rounded-xl border border-gray-100">
                     <QrcodeVue
@@ -28,7 +30,11 @@
                     />
                 </div>
                 <p class="text-sm font-medium text-gray-700 mt-4">
-                    Show this to staff to time in.
+                    {{
+                        loungeSession
+                            ? "Show this to staff to time out."
+                            : "Show this to staff to time in."
+                    }}
                 </p>
             </div>
 
