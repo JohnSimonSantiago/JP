@@ -142,6 +142,7 @@ Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approv
 Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);
 Route::post('/walk-in-order', [ShopItemController::class, 'walkInOrder']);
 Route::get('/sales-report', [ShopItemController::class, 'salesReport']);
+Route::get('/sales-stats', [ShopItemController::class, 'salesStats']);
         });
     });
     

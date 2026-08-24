@@ -723,6 +723,68 @@ class ShopItemController extends Controller
         ]);
     }
 
+        public function salesStats(Request $request, Shop $shop)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $from = $request->get('from'); // "YYYY-MM-DD" or null (all time)
+        $to   = $request->get('to');
+
+        $query = Purchase::where('shop_id', $shop->id)
+            ->where('status', 'completed');
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $purchases = $query->with(['shopItem:id,name'])->get();
+
+        // Summary totals
+        $summary = [
+            'revenue'    => (float) $purchases->sum(fn($p) => $p->price_paid * $p->quantity),
+            'orders'     => $purchases->count(),
+            'items_sold' => (int) $purchases->sum('quantity'),
+        ];
+
+        // Grouped by day for the line/bar charts
+        $byDay = $purchases
+            ->groupBy(fn($p) => $p->created_at->format('Y-m-d'))
+            ->map(function ($group, $date) {
+                return [
+                    'date'    => $date,
+                    'revenue' => (float) $group->sum(fn($p) => $p->price_paid * $p->quantity),
+                    'orders'  => $group->count(),
+                ];
+            })
+            ->sortBy('date')
+            ->values();
+
+        // Top items by quantity sold
+        $topItems = $purchases
+            ->groupBy(fn($p) => $p->shopItem->name ?? 'Unknown')
+            ->map(fn($group, $name) => [
+                'name' => $name,
+                'qty'  => (int) $group->sum('quantity'),
+            ])
+            ->sortByDesc('qty')
+            ->take(5)
+            ->values();
+
+        return response()->json([
+            'success'    => true,
+            'summary'    => $summary,
+            'by_day'     => $byDay,
+            'top_items'  => $topItems,
+        ]);
+    }
+
     public function getAllPendingPurchases()
     {
         if (!Auth::user()->isAdmin()) {

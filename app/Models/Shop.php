@@ -164,6 +164,7 @@ class Shop extends Model
             'total_orders' => $this->purchases()->count(),
             'pending_orders' => $this->purchases()->where('status', 'pending')->count(),
             'completed_orders' => $this->purchases()->where('status', 'completed')->count(),
+            'rejected_orders' => $this->purchases()->where('status', 'rejected')->count(),
 'total_revenue' => $this->purchases()->where('status', 'completed')->selectRaw('SUM(price_paid * quantity) as total')->value('total') ?? 0,
             'followers_count' => $this->followers()->count(),
             'reviews_count' => $this->reviews()->count(),
