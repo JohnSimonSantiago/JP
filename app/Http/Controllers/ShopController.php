@@ -137,7 +137,16 @@ class ShopController extends Controller
             }
             
             $items = $itemsQuery->paginate(20);
-            
+
+            // Attach discount breakdown to each item (only shop items paid with cash balance).
+            // The frontend shows discounted_price with cash_price crossed out when has_discount is true.
+            $items->getCollection()->transform(function ($item) use ($shop) {
+                $breakdown = $shop->calculateDiscount($item->cash_price);
+                $item->discounted_price = $breakdown['customer_pays'];
+                $item->has_discount = $breakdown['customer_pays'] < $item->cash_price;
+                return $item;
+            });
+
             // Check if user is following this shop
             $isFollowing = $user ? $shop->isFollowedBy($user) : false;
             
@@ -459,6 +468,18 @@ $recentOrders = $shop->purchases()
                 ->withCount(['activeItems', 'followers', 'reviews'])
                 ->orderByDesc('created_at')
                 ->paginate(20);
+
+            // Attach each shop's current payout balance (completed, unremitted orders)
+            $shops->getCollection()->transform(function ($shop) {
+                $unremitted = \App\Models\Purchase::where('shop_id', $shop->id)
+                    ->where('status', 'completed')
+                    ->where('payout_status', 'unremitted')
+                    ->get();
+
+                $shop->payout_balance = (float) $unremitted->sum(fn($p) => $p->shop_claim_amount * $p->quantity);
+                $shop->payout_orders = $unremitted->count();
+                return $shop;
+            });
             
             return response()->json([
                 'success' => true,
@@ -494,6 +515,46 @@ $recentOrders = $shop->purchases()
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to update verification status'
+            ], 500);
+        }
+    }
+
+    /**
+     * Admin: Update a shop's discount percentages
+     */
+    public function updateDiscounts(Shop $shop, Request $request)
+    {
+        $this->checkAdminAccess();
+
+        $request->validate([
+            'admin_discount_percent' => 'required|integer|min:0|max:100',
+            'store_discount_percent' => 'required|integer|min:0|max:100',
+        ]);
+
+        // Guard: combined discount can't exceed 100%
+        if ($request->admin_discount_percent + $request->store_discount_percent > 100) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Combined discount cannot exceed 100%'
+            ], 422);
+        }
+
+        try {
+            $shop->update([
+                'admin_discount_percent' => $request->admin_discount_percent,
+                'store_discount_percent' => $request->store_discount_percent,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Discounts updated',
+                'shop' => $shop->fresh()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update discounts'
             ], 500);
         }
     }

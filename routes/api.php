@@ -16,6 +16,7 @@ use App\Http\Controllers\LoyaltyCardController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\LoungeController;
+use App\Http\Controllers\PayoutController;
 
 /*
 |--------------------------------------------------------------------------
@@ -143,6 +144,7 @@ Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectP
 Route::post('/walk-in-order', [ShopItemController::class, 'walkInOrder']);
 Route::get('/sales-report', [ShopItemController::class, 'salesReport']);
 Route::get('/sales-stats', [ShopItemController::class, 'salesStats']);
+            Route::get('/payouts', [PayoutController::class, 'show']); // Balance + history (owner or admin)
         });
     });
     
@@ -181,6 +183,8 @@ Route::post('/users/{user}/change-password', [AdminUserController::class, 'chang
   Route::get('/shops', [ShopController::class, 'adminIndex']); // All shops (including inactive)
     Route::post('/shops/{shop}/verify', [ShopController::class, 'toggleVerification']);
     Route::post('/shops/{shop}/toggle-active', [ShopController::class, 'toggleActive']);
+    Route::post('/shops/{shop}/discounts', [ShopController::class, 'updateDiscounts']); // Admin sets discount %
+    Route::post('/shops/{shop}/payout', [PayoutController::class, 'claim']); // Admin marks a payout as paid
     
     // Admin Point Shop Management Routes
     Route::put('/shop-items/{item}/point-shop-status', [AdminPricingController::class, 'updatePointShopStatus']); // Update single item point shop status

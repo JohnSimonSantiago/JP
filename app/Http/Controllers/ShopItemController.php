@@ -31,20 +31,38 @@ class ShopItemController extends Controller
             ], 400);
         }
 
+        // Default: no discount (point shop items, or shops with no discount set)
+        $discount = [
+            'list_price'            => 0,
+            'admin_discount_amount' => 0,
+            'store_discount_amount' => 0,
+            'customer_pays'         => 0,
+            'shop_claim_amount'     => 0,
+        ];
+
         if ($item->isPointShopItem()) {
             $totalCost = $item->price * $quantity;
             $pricePerItem = $item->price;
             $currencyType = 'points';
             $balanceField = 'points';
         } else {
-            $totalCost = $item->cash_price * $quantity;
-            $pricePerItem = $item->cash_price;
+            // Shop item, paid with Level Lounge cash balance -> discount applies
+            $item->loadMissing('shop');
+            $discount = $item->shop
+                ? $item->shop->calculateDiscount($item->cash_price)
+                : $discount;
+
+            $pricePerItem = $discount['customer_pays'] > 0 || $item->shop
+                ? $discount['customer_pays']
+                : $item->cash_price;
+
+            $totalCost = $pricePerItem * $quantity;
             $currencyType = 'cash';
             $balanceField = 'cash';
         }
 
         try {
-            DB::transaction(function () use ($user, $item, $quantity, $totalCost, $pricePerItem, $currencyType, $balanceField) {
+            DB::transaction(function () use ($user, $item, $quantity, $totalCost, $pricePerItem, $currencyType, $balanceField, $discount) {
                 $user->decrement($balanceField, $totalCost);
 
                 Purchase::create([
@@ -54,7 +72,13 @@ class ShopItemController extends Controller
                     'price_paid' => $pricePerItem,
                     'currency_type' => $currencyType,
                     'quantity' => $quantity,
-                    'status' => 'pending'
+                    'status' => 'pending',
+                    // Frozen "receipt" numbers (per unit) — only meaningful for cash shop items
+                    'list_price'            => $discount['list_price'],
+                    'admin_discount_amount' => $discount['admin_discount_amount'],
+                    'store_discount_amount' => $discount['store_discount_amount'],
+                    'shop_claim_amount'     => $discount['shop_claim_amount'],
+                    'payout_status'         => 'unremitted',
                 ]);
             });
 

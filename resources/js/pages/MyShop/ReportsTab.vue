@@ -268,6 +268,7 @@ export default {
             });
         },
         onRangeChange(range) {
+            console.log("Range emitted:", range);
             this.range = range;
             this.fetchStats();
         },

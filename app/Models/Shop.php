@@ -5,20 +5,23 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;   
 use Illuminate\Support\Facades\Storage;
 
 class Shop extends Model
 {
     protected $fillable = [
         'owner_id', 'name', 'description', 'logo', 'banner', 
-        'is_active', 'is_verified', 'settings'
+        'is_active', 'is_verified', 'settings',
+        'admin_discount_percent', 'store_discount_percent'
     ];
 
     protected $casts = [
         'settings' => 'array',
         'is_active' => 'boolean',
         'is_verified' => 'boolean',
+        'admin_discount_percent' => 'integer',
+        'store_discount_percent' => 'integer',
     ];
 
     protected $appends = [  
@@ -180,4 +183,44 @@ public function hasLoyaltyCard()
 {
     return $this->loyaltyCard()->exists();
 }
+
+    /**
+     * Calculate the discount breakdown for a given unit price.
+     * Discounts only apply to users paying with Level Lounge cash balance.
+     * Each slice is rounded DOWN to a whole peso (never overpay the discount).
+     *
+     * Returns per-unit amounts:
+     *   list_price            - original price
+     *   admin_discount_amount - we (Level Lounge) shoulder this
+     *   store_discount_amount - the shop shoulders this
+     *   customer_pays         - what the customer is charged
+     *   shop_claim_amount     - what the shop can claim from us
+     */
+    public function calculateDiscount($listPrice): array
+    {
+        $listPrice = (float) $listPrice;
+
+        $adminSlice = (int) floor($listPrice * $this->admin_discount_percent / 100);
+        $storeSlice = (int) floor($listPrice * $this->store_discount_percent / 100);
+
+        // Safety floor: total discount can never exceed the list price
+        $totalDiscount = $adminSlice + $storeSlice;
+        if ($totalDiscount > $listPrice) {
+            $totalDiscount = (int) floor($listPrice);
+            // Trim the store slice first, then admin, so nothing goes negative
+            $storeSlice = min($storeSlice, $totalDiscount);
+            $adminSlice = $totalDiscount - $storeSlice;
+        }
+
+        $customerPays = $listPrice - $adminSlice - $storeSlice;
+        $shopClaim    = $listPrice - $storeSlice;
+
+        return [
+            'list_price'            => round($listPrice, 2),
+            'admin_discount_amount' => $adminSlice,
+            'store_discount_amount' => $storeSlice,
+            'customer_pays'         => round($customerPays, 2),
+            'shop_claim_amount'     => round($shopClaim, 2),
+        ];
+    }
 }

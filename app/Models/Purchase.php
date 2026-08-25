@@ -18,15 +18,26 @@ class Purchase extends Model
         'quantity',
         'status',
         'rejection_reason',
-         'counts_for_loyalty',    // ADD THIS
-    'loyalty_card_id'      
+        'counts_for_loyalty',
+        'loyalty_card_id',
+        // Frozen "receipt" numbers for the discount/payout system
+        'list_price',
+        'admin_discount_amount',
+        'store_discount_amount',
+        'shop_claim_amount',
+        'payout_status',
+        'payout_id',
     ];
 
     protected $casts = [
         'price_paid' => 'decimal:2', // Changed to decimal to handle cash
         'quantity' => 'integer',
         'currency_type' => 'string',
-        'counts_for_loyalty' => 'boolean'  // ADD THIS
+        'counts_for_loyalty' => 'boolean',
+        'list_price' => 'decimal:2',
+        'admin_discount_amount' => 'integer',
+        'store_discount_amount' => 'integer',
+        'shop_claim_amount' => 'decimal:2',
     ];
 
     /**

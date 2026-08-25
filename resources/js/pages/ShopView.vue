@@ -152,7 +152,7 @@
                                                 {{
                                                     shop.average_rating
                                                         ? shop.average_rating.toFixed(
-                                                              1
+                                                              1,
                                                           )
                                                         : "New"
                                                 }}
@@ -377,8 +377,8 @@
                                                             item.stock > 10
                                                                 ? 'text-green-600'
                                                                 : item.stock > 0
-                                                                ? 'text-yellow-600'
-                                                                : 'text-red-600'
+                                                                  ? 'text-yellow-600'
+                                                                  : 'text-red-600'
                                                         "
                                                     >
                                                         {{
@@ -389,19 +389,44 @@
                                                     </span>
                                                 </div>
                                             </div>
-
                                             <!-- Price and Buy Button -->
                                             <div
                                                 class="flex items-center justify-between"
                                             >
-                                                <div
-                                                    class="text-xl font-bold text-green-600"
-                                                >
-                                                    ₱{{
-                                                        formatCash(
-                                                            item.cash_price
-                                                        )
-                                                    }}
+                                                <div>
+                                                    <div
+                                                        v-if="item.has_discount"
+                                                        class="flex items-baseline gap-2"
+                                                    >
+                                                        <span
+                                                            class="text-xl font-bold text-green-600"
+                                                        >
+                                                            ₱{{
+                                                                formatCash(
+                                                                    item.discounted_price,
+                                                                )
+                                                            }}
+                                                        </span>
+                                                        <span
+                                                            class="text-sm text-gray-400 line-through"
+                                                        >
+                                                            ₱{{
+                                                                formatCash(
+                                                                    item.cash_price,
+                                                                )
+                                                            }}
+                                                        </span>
+                                                    </div>
+                                                    <div
+                                                        v-else
+                                                        class="text-xl font-bold text-green-600"
+                                                    >
+                                                        ₱{{
+                                                            formatCash(
+                                                                item.cash_price,
+                                                            )
+                                                        }}
+                                                    </div>
                                                 </div>
                                                 <button
                                                     @click="buyItem(item)"
@@ -463,7 +488,7 @@
                                         <button
                                             @click="
                                                 goToItemsPage(
-                                                    items.current_page - 1
+                                                    items.current_page - 1,
                                                 )
                                             "
                                             :disabled="items.current_page <= 1"
@@ -482,7 +507,7 @@
                                         <button
                                             @click="
                                                 goToItemsPage(
-                                                    items.current_page + 1
+                                                    items.current_page + 1,
                                                 )
                                             "
                                             :disabled="
@@ -544,7 +569,7 @@
                                         class="bg-gray-50 rounded-xl p-6 border-l-4"
                                         :class="
                                             getPurchaseStatusColor(
-                                                purchase.status
+                                                purchase.status,
                                             )
                                         "
                                     >
@@ -583,7 +608,7 @@
                                                             class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                                             :class="
                                                                 getPurchaseStatusBadge(
-                                                                    purchase.status
+                                                                    purchase.status,
                                                                 )
                                                             "
                                                         >
@@ -592,7 +617,7 @@
                                                                     .charAt(0)
                                                                     .toUpperCase() +
                                                                 purchase.status.slice(
-                                                                    1
+                                                                    1,
                                                                 )
                                                             }}
                                                         </span>
@@ -624,7 +649,7 @@
                                                             >₱{{
                                                                 formatCash(
                                                                     purchase.price_paid *
-                                                                        purchase.quantity
+                                                                        purchase.quantity,
                                                                 )
                                                             }}</span
                                                         >
@@ -638,7 +663,7 @@
                                                             class="font-medium ml-1"
                                                             >{{
                                                                 formatDate(
-                                                                    purchase.created_at
+                                                                    purchase.created_at,
                                                                 )
                                                             }}</span
                                                         >
@@ -690,7 +715,7 @@
                                         <button
                                             @click="
                                                 goToPurchasePage(
-                                                    purchases.current_page - 1
+                                                    purchases.current_page - 1,
                                                 )
                                             "
                                             :disabled="
@@ -711,7 +736,7 @@
                                         <button
                                             @click="
                                                 goToPurchasePage(
-                                                    purchases.current_page + 1
+                                                    purchases.current_page + 1,
                                                 )
                                             "
                                             :disabled="
@@ -765,8 +790,16 @@
                                 </p>
                             </div>
                             <div class="text-right">
-                                <p class="text-lg font-bold text-green-600">
+                                <p
+                                    v-if="selectedItem?.has_discount"
+                                    class="text-sm text-gray-400 line-through"
+                                >
                                     ₱{{ formatCash(selectedItem?.cash_price) }}
+                                </p>
+                                <p class="text-lg font-bold text-green-600">
+                                    ₱{{
+                                        formatCash(effectivePrice(selectedItem))
+                                    }}
                                 </p>
                                 <p class="text-sm text-gray-500">per item</p>
                             </div>
@@ -1078,7 +1111,7 @@ export default {
                     this.pendingPurchasesCount = this.purchases.data.filter(
                         (p) =>
                             p.status === "pending" &&
-                            p.shop_id === this.shop?.id
+                            p.shop_id === this.shop?.id,
                     ).length;
                 }
             } catch (error) {
@@ -1098,7 +1131,7 @@ export default {
                 });
 
                 const response = await axios.get(
-                    `/api/shops/${shopId}?${params}`
+                    `/api/shops/${shopId}?${params}`,
                 );
 
                 if (response.data.success) {
@@ -1120,7 +1153,7 @@ export default {
             try {
                 this.followLoading = true;
                 const response = await axios.post(
-                    `/api/shops/${this.shop.id}/follow`
+                    `/api/shops/${this.shop.id}/follow`,
                 );
 
                 if (response.data.success) {
@@ -1149,7 +1182,7 @@ export default {
                 this.submittingReview = true;
                 const response = await axios.post(
                     `/api/shops/${this.shop.id}/reviews`,
-                    this.newReview
+                    this.newReview,
                 );
 
                 if (response.data.success) {
@@ -1198,7 +1231,7 @@ export default {
                     `/api/shop-items/${this.selectedItem.id}/purchase`,
                     {
                         quantity: this.purchaseQuantity,
-                    }
+                    },
                 );
 
                 if (response.data.success) {
@@ -1262,25 +1295,34 @@ export default {
             }
         },
 
+        // The price the customer actually pays — discounted if the shop has a discount
+        effectivePrice(item) {
+            if (!item) return 0;
+            return item.has_discount
+                ? parseFloat(item.discounted_price)
+                : parseFloat(item.cash_price);
+        },
+
         getMaxQuantity(item) {
             if (!item) return 1;
+            const unit = this.effectivePrice(item) || 1;
 
             if (item.stock === null) {
                 const affordableQuantity = Math.floor(
-                    this.currentUser.cash / item.cash_price
+                    this.currentUser.cash / unit,
                 );
                 return Math.min(affordableQuantity, 10);
             }
 
-            const affordableQuantity = Math.floor(
-                this.currentUser.cash / item.cash_price
-            );
+            const affordableQuantity = Math.floor(this.currentUser.cash / unit);
             return Math.min(item.stock, affordableQuantity, 10);
         },
 
         getTotalCost() {
             if (!this.selectedItem) return 0;
-            return this.selectedItem.cash_price * this.purchaseQuantity;
+            return (
+                this.effectivePrice(this.selectedItem) * this.purchaseQuantity
+            );
         },
 
         getBalanceAfterPurchase() {
@@ -1319,15 +1361,14 @@ export default {
         canBuyItem(item) {
             if (!this.currentUser) return false;
 
-            // Convert to numbers safely
             const userCash = parseFloat(this.currentUser.cash || 0);
-            const itemPrice = parseFloat(item.cash_price || 0);
+            const itemPrice = this.effectivePrice(item);
 
             return (
                 item.is_active &&
                 (item.stock === null || item.stock > 0) &&
                 userCash >= itemPrice &&
-                itemPrice > 0 // Ensure item has a valid price
+                parseFloat(item.cash_price || 0) > 0 // valid listed price
             );
         },
 
@@ -1337,9 +1378,7 @@ export default {
             if (item.stock !== null && item.stock <= 0) return "Out of Stock";
 
             const userCash = parseFloat(this.currentUser.cash || 0);
-            const itemPrice = parseFloat(item.cash_price || 0);
-
-            if (userCash < itemPrice) return "Not Enough Cash";
+            if (userCash < this.effectivePrice(item)) return "Not Enough Cash";
             return "Buy Now";
         },
 

@@ -110,6 +110,11 @@
                                 :statistics="statistics"
                                 :shop="shop"
                             />
+
+                            <EarningsTab
+                                v-if="activeTab === 'earnings'"
+                                :shop="shop"
+                            />
                         </div>
                     </div>
                 </div>
@@ -189,6 +194,7 @@ import OrdersTab from "./MyShop/OrdersTab.vue";
 import LoyaltyTab from "./MyShop/LoyaltyTab.vue";
 import SettingsTab from "./MyShop/SettingsTab.vue";
 import ReportsTab from "./MyShop/ReportsTab.vue";
+import EarningsTab from "./MyShop/EarningsTab.vue";
 
 export default {
     components: {
@@ -197,6 +203,7 @@ export default {
         LoyaltyTab,
         SettingsTab,
         ReportsTab,
+        EarningsTab,
     },
 
     data() {
@@ -247,6 +254,7 @@ export default {
                 },
                 { id: "settings", name: "Settings", icon: "pi pi-cog" },
                 { id: "reports", name: "Reports", icon: "pi pi-chart-bar" },
+                { id: "earnings", name: "Earnings", icon: "pi pi-wallet" },
             ];
         },
     },
