@@ -5,7 +5,7 @@
             <div v-if="loading" class="flex justify-center py-12">
                 <i class="pi pi-spin pi-spinner text-green-500 text-3xl"></i>
             </div>
-
+            <!-- Fixing mobile view -->
             <div v-else-if="shop" class="max-w-4xl mx-auto">
                 <!-- Banner + Shop Header (mobile-style, flowing) -->
                 <div class="relative">
