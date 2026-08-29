@@ -59,6 +59,8 @@ class User extends Authenticatable
         'privacy_settings' => 'array',  // NEW: Cast privacy settings as array
     ];
 
+
+
     /**
      * Relationships
      */
@@ -148,6 +150,7 @@ class User extends Authenticatable
     {
         return $this->isShopOwner() && $this->ownedShop()->exists();
     }
+
 
     public function canCreateShop()
     {

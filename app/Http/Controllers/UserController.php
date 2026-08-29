@@ -54,6 +54,7 @@ return response()->json([
                 'privacy_settings' => $user->privacy_settings,
                 'role' => $user->role,
 'rank' => $rank,
+'has_shop' => $user->hasShop(),
 'created_at' => $user->created_at,
 'member_since' => $user->created_at
             ],
@@ -270,6 +271,7 @@ $isPremium = false;
                 'privacy_settings' => $user->privacy_settings,
                 'role' => $user->role ?? 'user',
 'rank' => $rank,
+'has_shop' => $user->hasShop(),
 'created_at' => $user->created_at,
 'member_since' => $user->created_at
             ],

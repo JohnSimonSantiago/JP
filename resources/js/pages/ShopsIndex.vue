@@ -1,36 +1,7 @@
 <template>
     <Layout>
-        <div class="min-h-screen bg-gray-50 p-6">
-            <div class="max-w-7xl mx-auto space-y-6">
-                <!-- Header -->
-                <div class="bg-white rounded-xl shadow-lg p-8">
-                    <div
-                        class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
-                    >
-                        <div>
-                            <h1
-                                class="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3"
-                            >
-                                <i class="pi pi-shop text-purple-500"></i>
-                                Shops
-                            </h1>
-                            <p class="text-gray-600">
-                                Discover amazing shops and spend your points on
-                                great items
-                            </p>
-                        </div>
-                        <div class="bg-purple-100 px-4 py-2 rounded-lg">
-                            <div class="flex items-center gap-2">
-                                <i class="pi pi-wallet text-purple-600"></i>
-                                <span class="text-lg font-bold text-purple-700">
-                                    {{ formatPoints(currentUser.points || 0) }}
-                                    Points
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+        <div class="min-h-screen bg-gray-50 p-4">
+            <div class="max-w-7xl mx-auto space-y-4">
                 <!-- Filters and Search -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -48,41 +19,23 @@
                             />
                         </div>
 
-                        <!-- Sort -->
-                        <select
-                            v-model="filters.sort"
-                            @change="applyFilters"
-                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        >
-                            <option value="name">Name (A-Z)</option>
-                            <option value="rating">Best Rated</option>
-                            <option value="followers">Most Followed</option>
-                            <option value="newest">Newest</option>
-                        </select>
-
-                        <!-- View Toggle -->
-                        <div class="flex items-center gap-2">
+                        <!-- Sort Pills -->
+                        <div class="flex items-center gap-2 md:col-span-2">
                             <button
-                                @click="viewMode = 'grid'"
-                                :class="
-                                    viewMode === 'grid'
-                                        ? 'bg-purple-500 text-white'
-                                        : 'bg-gray-200 text-gray-600'
+                                v-for="opt in sortOptions"
+                                :key="opt.value"
+                                @click="
+                                    filters.sort = opt.value;
+                                    applyFilters();
                                 "
-                                class="p-2 rounded-lg transition-colors"
-                            >
-                                <i class="pi pi-th-large"></i>
-                            </button>
-                            <button
-                                @click="viewMode = 'list'"
                                 :class="
-                                    viewMode === 'list'
-                                        ? 'bg-purple-500 text-white'
-                                        : 'bg-gray-200 text-gray-600'
+                                    filters.sort === opt.value
+                                        ? 'bg-purple-500 text-white border-purple-500'
+                                        : 'bg-white text-gray-600 border-gray-300'
                                 "
-                                class="p-2 rounded-lg transition-colors"
+                                class="flex-1 px-3 py-2 rounded-full border text-sm font-semibold transition-colors"
                             >
-                                <i class="pi pi-list"></i>
+                                {{ opt.label }}
                             </button>
                         </div>
                     </div>
@@ -97,9 +50,7 @@
 
                 <!-- Shops Grid/List -->
                 <div v-else-if="shops.data && shops.data.length > 0">
-                    <!-- Grid View -->
                     <div
-                        v-if="viewMode === 'grid'"
                         class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
                     >
                         <div
@@ -235,123 +186,6 @@
                                     <span class="text-sm text-gray-600"
                                         >by {{ shop.owner.name }}</span
                                     >
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- List View -->
-                    <div v-else class="space-y-4">
-                        <div
-                            v-for="shop in shops.data"
-                            :key="shop.id"
-                            @click="goToShop(shop)"
-                            class="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all cursor-pointer"
-                        >
-                            <div class="flex items-center gap-6">
-                                <!-- Shop Logo -->
-                                <div
-                                    class="w-16 h-16 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0"
-                                >
-                                    <img
-                                        v-if="shop.logo_url"
-                                        :src="shop.logo_url"
-                                        :alt="shop.name"
-                                        class="w-full h-full object-cover"
-                                    />
-                                    <div
-                                        v-else
-                                        class="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center"
-                                    >
-                                        <i
-                                            class="pi pi-shop text-white text-xl"
-                                        ></i>
-                                    </div>
-                                </div>
-
-                                <!-- Shop Info -->
-                                <div class="flex-1">
-                                    <div
-                                        class="flex items-start justify-between mb-2"
-                                    >
-                                        <div>
-                                            <h3
-                                                class="text-xl font-bold text-gray-800 flex items-center gap-2"
-                                            >
-                                                {{ shop.name }}
-                                                <i
-                                                    v-if="shop.is_verified"
-                                                    class="pi pi-check-circle text-green-500 text-sm"
-                                                ></i>
-                                            </h3>
-                                            <p class="text-sm text-gray-600">
-                                                by {{ shop.owner.name }}
-                                            </p>
-                                        </div>
-                                        <div
-                                            class="flex items-center gap-1 text-yellow-500"
-                                        >
-                                            <i class="pi pi-star-fill"></i>
-                                            <span>{{
-                                                shop.average_rating
-                                                    ? shop.average_rating.toFixed(
-                                                          1
-                                                      )
-                                                    : "New"
-                                            }}</span>
-                                        </div>
-                                    </div>
-
-                                    <p
-                                        v-if="shop.description"
-                                        class="text-gray-600 mb-4 line-clamp-2"
-                                    >
-                                        {{ shop.description }}
-                                    </p>
-
-                                    <!-- Stats -->
-                                    <div
-                                        class="flex items-center gap-6 text-sm"
-                                    >
-                                        <div class="flex items-center gap-1">
-                                            <i
-                                                class="pi pi-box text-purple-500"
-                                            ></i>
-                                            <span
-                                                >{{
-                                                    shop.active_items_count
-                                                }}
-                                                items</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <i
-                                                class="pi pi-users text-blue-500"
-                                            ></i>
-                                            <span
-                                                >{{
-                                                    shop.followers_count
-                                                }}
-                                                followers</span
-                                            >
-                                        </div>
-                                        <div class="flex items-center gap-1">
-                                            <i
-                                                class="pi pi-comments text-green-500"
-                                            ></i>
-                                            <span
-                                                >{{
-                                                    shop.reviews_count
-                                                }}
-                                                reviews</span
-                                            >
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Arrow -->
-                                <div class="text-gray-400">
-                                    <i class="pi pi-chevron-right"></i>
                                 </div>
                             </div>
                         </div>
@@ -516,6 +350,13 @@ export default {
                 search: "",
                 sort: "name",
             },
+
+            sortOptions: [
+                { label: "Name", value: "name" },
+                { label: "Rating", value: "rating" },
+                { label: "Followers", value: "followers" },
+                { label: "Newest", value: "newest" },
+            ],
 
             // Create shop
             showCreateShopDialog: false,

@@ -3,15 +3,14 @@
         <div class="min-h-screen bg-gray-50">
             <!-- Loading State -->
             <div v-if="loading" class="flex justify-center py-12">
-                <i class="pi pi-spin pi-spinner text-blue-500 text-3xl"></i>
+                <i class="pi pi-spin pi-spinner text-green-500 text-3xl"></i>
             </div>
 
-            <div v-else-if="shop" class="space-y-6">
-                <!-- Shop Header -->
+            <div v-else-if="shop" class="max-w-4xl mx-auto">
+                <!-- Banner + Shop Header (mobile-style, flowing) -->
                 <div class="relative">
-                    <!-- Banner -->
                     <div
-                        class="h-64 bg-gradient-to-r from-blue-600 to-blue-600 relative overflow-hidden"
+                        class="h-40 md:h-52 bg-gradient-to-r from-green-500 to-green-600 relative"
                     >
                         <img
                             v-if="shop.banner_url"
@@ -20,980 +19,840 @@
                             class="w-full h-full object-cover"
                         />
                         <div
-                            class="absolute inset-0 bg-black bg-opacity-30"
+                            class="absolute inset-0 bg-black bg-opacity-20"
                         ></div>
+
+                        <!-- Back button -->
+                        <button
+                            @click="$router.push('/shops')"
+                            class="absolute top-4 left-4 bg-black bg-opacity-30 hover:bg-opacity-50 text-white rounded-full p-2 transition-colors"
+                        >
+                            <i class="pi pi-arrow-left"></i>
+                        </button>
                     </div>
 
-                    <!-- Shop Info -->
-                    <div class="max-w-6xl mx-auto px-6 relative">
+                    <!-- Shop info row -->
+                    <div class="px-4 md:px-6 relative z-10">
+                        <div class="flex items-end gap-4 -mt-10">
+                            <!-- Logo -->
+                            <div
+                                class="w-20 h-20 rounded-2xl bg-gray-100 overflow-hidden flex-shrink-0 border-4 border-white shadow-lg"
+                            >
+                                <img
+                                    v-if="shop.logo_url"
+                                    :src="shop.logo_url"
+                                    :alt="shop.name"
+                                    class="w-full h-full object-contain"
+                                />
+                                <div
+                                    v-else
+                                    class="w-full h-full bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center"
+                                >
+                                    <i
+                                        class="pi pi-shop text-white text-2xl"
+                                    ></i>
+                                </div>
+                            </div>
+
+                            <!-- Action buttons (aligned to logo bottom) -->
+                            <div class="flex-1 flex justify-end gap-2 pb-1">
+                                <button
+                                    v-if="currentUser"
+                                    @click="toggleFollow"
+                                    :disabled="followLoading"
+                                    :class="
+                                        isFollowing
+                                            ? 'bg-green-500 hover:bg-green-600 text-white'
+                                            : 'bg-white border border-green-500 text-green-600 hover:bg-green-50'
+                                    "
+                                    class="px-4 py-2 rounded-full text-sm font-semibold transition-colors flex items-center gap-2"
+                                >
+                                    <i
+                                        v-if="followLoading"
+                                        class="pi pi-spin pi-spinner"
+                                    ></i>
+                                    <i
+                                        v-else
+                                        :class="
+                                            isFollowing
+                                                ? 'pi pi-check'
+                                                : 'pi pi-plus'
+                                        "
+                                    ></i>
+                                    {{ isFollowing ? "Following" : "Follow" }}
+                                </button>
+
+                                <button
+                                    v-if="canReview"
+                                    @click="showReviewDialog = true"
+                                    class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full text-sm font-semibold transition-colors flex items-center gap-2"
+                                >
+                                    <i class="pi pi-star"></i>
+                                    Review
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Name + description -->
+                        <div class="mt-3">
+                            <h1
+                                class="text-2xl font-bold text-gray-800 flex items-center gap-2"
+                            >
+                                {{ shop.name }}
+                                <i
+                                    v-if="shop.is_verified"
+                                    class="pi pi-check-circle text-green-500 text-lg"
+                                ></i>
+                            </h1>
+                            <p class="text-sm text-gray-500 mt-0.5">
+                                by {{ shop.owner.name }}
+                            </p>
+                            <p
+                                v-if="shop.description"
+                                class="text-gray-700 text-sm mt-2"
+                            >
+                                {{ shop.description }}
+                            </p>
+                        </div>
+
+                        <!-- Stats row (compact chips like mobile) -->
+                        <div class="flex flex-wrap gap-2 mt-4">
+                            <div
+                                class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5"
+                            >
+                                <i class="pi pi-box text-green-500 text-xs"></i>
+                                <span
+                                    class="text-sm font-semibold text-gray-700"
+                                >
+                                    {{ shop.total_items }}
+                                </span>
+                                <span class="text-xs text-gray-400">items</span>
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5"
+                            >
+                                <i
+                                    class="pi pi-users text-blue-500 text-xs"
+                                ></i>
+                                <span
+                                    class="text-sm font-semibold text-gray-700"
+                                >
+                                    {{ shop.follower_count }}
+                                </span>
+                                <span class="text-xs text-gray-400"
+                                    >followers</span
+                                >
+                            </div>
+                            <div
+                                class="flex items-center gap-1.5 bg-white border border-gray-200 rounded-lg px-3 py-1.5"
+                            >
+                                <i
+                                    class="pi pi-star-fill text-yellow-500 text-xs"
+                                ></i>
+                                <span
+                                    class="text-sm font-semibold text-gray-700"
+                                >
+                                    {{
+                                        shop.average_rating
+                                            ? shop.average_rating.toFixed(1)
+                                            : "New"
+                                    }}
+                                </span>
+                                <span class="text-xs text-gray-400">
+                                    ({{ shop.total_reviews }})
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Cash balance -->
                         <div
-                            class="bg-white rounded-xl shadow-lg -mt-16 relative z-10 p-8"
+                            class="mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-2 inline-flex items-center gap-2"
+                        >
+                            <i class="pi pi-wallet text-green-600 text-sm"></i>
+                            <span class="text-sm font-bold text-green-700">
+                                ₱{{ formatCash(currentUser.cash || 0) }}
+                                available
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="px-4 md:px-6 mt-6">
+                    <div class="flex border-b border-gray-200">
+                        <button
+                            @click="activeTab = 'shop'"
+                            :class="
+                                activeTab === 'shop'
+                                    ? 'border-green-500 text-green-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            "
+                            class="flex-1 md:flex-none md:px-8 py-3 border-b-2 font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                            <i class="pi pi-shop"></i>
+                            Items
+                        </button>
+                        <button
+                            @click="activeTab = 'purchases'"
+                            :class="
+                                activeTab === 'purchases'
+                                    ? 'border-green-500 text-green-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                            "
+                            class="flex-1 md:flex-none md:px-8 py-3 border-b-2 font-medium text-sm flex items-center justify-center gap-2"
+                        >
+                            <i class="pi pi-history"></i>
+                            My Orders
+                            <span
+                                v-if="pendingPurchasesCount > 0"
+                                class="bg-red-500 text-white text-xs rounded-full px-2 py-0.5"
+                            >
+                                {{ pendingPurchasesCount }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="px-4 md:px-6 py-6">
+                    <!-- Shop Tab -->
+                    <div v-if="activeTab === 'shop'" class="space-y-4">
+                        <!-- Search -->
+                        <div class="relative">
+                            <i
+                                class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm"
+                            ></i>
+                            <input
+                                v-model="filters.search"
+                                @input="debounceSearch"
+                                type="text"
+                                placeholder="Search items..."
+                                class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            />
+                        </div>
+
+                        <!-- Sort pills -->
+                        <div class="flex gap-2 overflow-x-auto pb-1">
+                            <button
+                                v-for="opt in sortOptions"
+                                :key="opt.value"
+                                @click="
+                                    filters.sort = opt.value;
+                                    applyFilters();
+                                "
+                                :class="
+                                    filters.sort === opt.value
+                                        ? 'bg-gray-800 text-white border-gray-800'
+                                        : 'bg-white text-gray-600 border-gray-300'
+                                "
+                                class="flex-shrink-0 px-4 py-1.5 rounded-full border text-sm font-medium transition-colors"
+                            >
+                                {{ opt.label }}
+                            </button>
+                        </div>
+
+                        <!-- Items grid (compact mobile-style cards, desktop width) -->
+                        <div
+                            v-if="itemsLoading"
+                            class="flex justify-center py-12"
+                        >
+                            <i
+                                class="pi pi-spin pi-spinner text-green-500 text-2xl"
+                            ></i>
+                        </div>
+
+                        <div
+                            v-else-if="items.data && items.data.length > 0"
+                            class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3"
                         >
                             <div
-                                class="flex flex-col md:flex-row items-start gap-6"
+                                v-for="item in items.data"
+                                :key="item.id"
+                                @click="openDetail(item)"
+                                class="bg-white rounded-2xl border border-gray-200 overflow-hidden flex flex-col cursor-pointer hover:shadow-md transition-shadow"
                             >
-                                <!-- Shop Logo -->
+                                <!-- Image -->
                                 <div
-                                    class="w-24 h-24 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 border-4 border-white shadow-lg"
+                                    class="aspect-square bg-gray-100 flex items-center justify-center relative"
                                 >
                                     <img
-                                        v-if="shop.logo_url"
-                                        :src="shop.logo_url"
-                                        :alt="shop.name"
+                                        v-if="item.image_url"
+                                        :src="item.image_url"
+                                        :alt="item.name"
                                         class="w-full h-full object-cover"
                                     />
-                                    <div
+                                    <i
                                         v-else
-                                        class="w-full h-full bg-gradient-to-br from-blue-400 to-blue-500 flex items-center justify-center"
-                                    >
-                                        <i
-                                            class="pi pi-shop text-white text-2xl"
-                                        ></i>
-                                    </div>
-                                </div>
-
-                                <!-- Shop Details -->
-                                <div class="flex-1">
+                                        class="pi pi-box text-gray-300 text-4xl"
+                                    ></i>
                                     <div
-                                        class="flex flex-col md:flex-row md:items-start md:justify-between gap-4"
+                                        v-if="
+                                            item.stock !== null &&
+                                            item.stock <= 0
+                                        "
+                                        class="absolute bottom-0 inset-x-0 bg-black bg-opacity-50 text-center py-1"
                                     >
-                                        <div>
-                                            <h1
-                                                class="text-3xl font-bold text-gray-800 flex items-center gap-3"
-                                            >
-                                                {{ shop.name }}
-                                                <i
-                                                    v-if="shop.is_verified"
-                                                    class="pi pi-check-circle text-green-500 text-xl"
-                                                ></i>
-                                            </h1>
-                                            <p class="text-gray-600 mt-1">
-                                                by {{ shop.owner.name }}
-                                            </p>
-                                            <p
-                                                v-if="shop.description"
-                                                class="text-gray-700 mt-3"
-                                            >
-                                                {{ shop.description }}
-                                            </p>
-                                        </div>
-
-                                        <!-- Action Buttons -->
-                                        <div class="flex items-center gap-3">
-                                            <button
-                                                v-if="currentUser"
-                                                @click="toggleFollow"
-                                                :disabled="followLoading"
-                                                :class="
-                                                    isFollowing
-                                                        ? 'bg-green-500 hover:bg-green-600 text-white'
-                                                        : 'bg-blue-500 hover:bg-blue-600 text-white'
-                                                "
-                                                class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                            >
-                                                <i
-                                                    v-if="followLoading"
-                                                    class="pi pi-spin pi-spinner"
-                                                ></i>
-                                                <i
-                                                    v-else
-                                                    :class="
-                                                        isFollowing
-                                                            ? 'pi pi-check'
-                                                            : 'pi pi-plus'
-                                                    "
-                                                ></i>
-                                                {{
-                                                    isFollowing
-                                                        ? "Following"
-                                                        : "Follow"
-                                                }}
-                                            </button>
-
-                                            <button
-                                                v-if="canReview"
-                                                @click="showReviewDialog = true"
-                                                class="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors flex items-center gap-2"
-                                            >
-                                                <i class="pi pi-star"></i>
-                                                Review
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Shop Stats -->
-                                    <div
-                                        class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100"
-                                    >
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-blue-600"
-                                            >
-                                                {{ shop.total_items }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Items
-                                            </div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-blue-600"
-                                            >
-                                                {{ shop.follower_count }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Followers
-                                            </div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-yellow-600 flex items-center justify-center gap-1"
-                                            >
-                                                {{
-                                                    shop.average_rating
-                                                        ? shop.average_rating.toFixed(
-                                                              1,
-                                                          )
-                                                        : "New"
-                                                }}
-                                                <i
-                                                    class="pi pi-star-fill text-sm"
-                                                ></i>
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Rating
-                                            </div>
-                                        </div>
-                                        <div class="text-center">
-                                            <div
-                                                class="text-2xl font-bold text-green-600"
-                                            >
-                                                {{ shop.total_reviews }}
-                                            </div>
-                                            <div class="text-sm text-gray-500">
-                                                Reviews
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- User Cash Balance Display -->
-                <div class="max-w-6xl mx-auto px-6">
-                    <div
-                        class="bg-green-100 px-4 py-3 rounded-lg inline-flex items-center gap-2"
-                    >
-                        <span class="text-lg font-bold text-green-700">
-                            ₱{{ formatCash(currentUser.cash || 0) }}
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Main Content Tabs -->
-                <div class="max-w-6xl mx-auto px-6">
-                    <div class="bg-white rounded-xl shadow-lg">
-                        <!-- Tab Navigation -->
-                        <div class="border-b border-gray-200">
-                            <nav class="flex">
-                                <button
-                                    @click="activeTab = 'shop'"
-                                    :class="
-                                        activeTab === 'shop'
-                                            ? 'border-green-500 text-green-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    "
-                                    class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
-                                >
-                                    <i class="pi pi-shop"></i>
-                                    Shop Items
-                                </button>
-                                <button
-                                    @click="activeTab = 'purchases'"
-                                    :class="
-                                        activeTab === 'purchases'
-                                            ? 'border-green-500 text-green-600'
-                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                                    "
-                                    class="px-6 py-4 border-b-2 font-medium text-sm whitespace-nowrap flex items-center gap-2"
-                                >
-                                    <i class="pi pi-history"></i>
-                                    My Purchases
-                                    <span
-                                        v-if="pendingPurchasesCount > 0"
-                                        class="bg-red-500 text-white text-xs rounded-full px-2 py-1"
-                                    >
-                                        {{ pendingPurchasesCount }}
-                                    </span>
-                                </button>
-                            </nav>
-                        </div>
-
-                        <!-- Tab Content -->
-                        <div class="p-6">
-                            <!-- Shop Tab -->
-                            <div v-if="activeTab === 'shop'" class="space-y-6">
-                                <!-- Filters -->
-                                <div
-                                    class="grid grid-cols-1 md:grid-cols-4 gap-4"
-                                >
-                                    <!-- Search -->
-                                    <div class="relative">
-                                        <i
-                                            class="pi pi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                                        ></i>
-                                        <input
-                                            v-model="filters.search"
-                                            @input="debounceSearch"
-                                            type="text"
-                                            placeholder="Search items..."
-                                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                        />
-                                    </div>
-
-                                    <!-- Category -->
-                                    <select
-                                        v-model="filters.category"
-                                        @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    >
-                                        <option value="">All Categories</option>
-                                        <option
-                                            v-for="category in categories"
-                                            :key="category.value"
-                                            :value="category.value"
+                                        <span
+                                            class="text-red-300 text-xs font-bold"
                                         >
-                                            {{ category.label }}
-                                        </option>
-                                    </select>
+                                            Out of Stock
+                                        </span>
+                                    </div>
+                                </div>
 
-                                    <!-- Sort -->
-                                    <select
-                                        v-model="filters.sort"
-                                        @change="applyFilters"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                <!-- Body -->
+                                <div class="p-3 flex flex-col flex-1">
+                                    <h3
+                                        class="text-sm font-bold text-gray-800 line-clamp-2"
                                     >
-                                        <option value="name">Name (A-Z)</option>
-                                        <option value="price_low">
-                                            Price (Low to High)
-                                        </option>
-                                        <option value="price_high">
-                                            Price (High to Low)
-                                        </option>
-                                        <option value="newest">Newest</option>
-                                        <option value="popular">
-                                            Most Popular
-                                        </option>
-                                    </select>
+                                        {{ item.name }}
+                                    </h3>
+                                    <p
+                                        v-if="item.description"
+                                        class="text-xs text-gray-500 mt-1 line-clamp-2"
+                                    >
+                                        {{ item.description }}
+                                    </p>
 
-                                    <!-- Back to Shops -->
+                                    <!-- Price -->
+                                    <div
+                                        class="mt-2 flex items-baseline gap-1.5 flex-wrap"
+                                    >
+                                        <span
+                                            class="text-base font-bold text-green-600"
+                                        >
+                                            ₱{{
+                                                formatCash(
+                                                    item.has_discount
+                                                        ? item.discounted_price
+                                                        : item.cash_price,
+                                                )
+                                            }}
+                                        </span>
+                                        <span
+                                            v-if="item.has_discount"
+                                            class="text-xs text-gray-400 line-through"
+                                        >
+                                            ₱{{ formatCash(item.cash_price) }}
+                                        </span>
+                                    </div>
+
+                                    <!-- Stock line -->
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        <span v-if="item.stock === null"
+                                            >Unlimited stock</span
+                                        >
+                                        <span v-else-if="item.stock > 0"
+                                            >{{ item.stock }} left</span
+                                        >
+                                        <span v-else class="text-red-500"
+                                            >Out of stock</span
+                                        >
+                                    </p>
+
+                                    <!-- Buy button (stop click so it doesn't open detail) -->
                                     <button
-                                        @click="$router.push('/shops')"
-                                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-lg transition-colors flex items-center justify-center gap-2"
+                                        @click.stop="buyItem(item)"
+                                        :disabled="
+                                            !canBuyItem(item) ||
+                                            purchasingItem === item.id
+                                        "
+                                        :class="
+                                            canBuyItem(item)
+                                                ? 'bg-green-500 hover:bg-green-600 text-white'
+                                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                        "
+                                        class="mt-3 w-full py-2 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-1.5"
                                     >
-                                        <i class="pi pi-arrow-left"></i>
-                                        Back to Shops
+                                        <i
+                                            v-if="purchasingItem === item.id"
+                                            class="pi pi-spin pi-spinner text-xs"
+                                        ></i>
+                                        <i
+                                            v-else
+                                            class="pi pi-shopping-cart text-xs"
+                                        ></i>
+                                        {{ getButtonText(item) }}
                                     </button>
                                 </div>
-
-                                <!-- Items Grid -->
-                                <div
-                                    v-if="itemsLoading"
-                                    class="flex justify-center py-12"
-                                >
-                                    <i
-                                        class="pi pi-spin pi-spinner text-green-500 text-2xl"
-                                    ></i>
-                                </div>
-
-                                <div
-                                    v-else-if="
-                                        items.data && items.data.length > 0
-                                    "
-                                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-                                >
-                                    <div
-                                        v-for="item in items.data"
-                                        :key="item.id"
-                                        class="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-                                    >
-                                        <!-- Item Image -->
-                                        <div
-                                            class="aspect-square bg-gray-100 flex items-center justify-center"
-                                        >
-                                            <img
-                                                v-if="item.image_url"
-                                                :src="item.image_url"
-                                                :alt="item.name"
-                                                class="w-full h-full object-cover"
-                                            />
-                                            <div v-else class="text-gray-400">
-                                                <i
-                                                    class="pi pi-box text-5xl"
-                                                ></i>
-                                            </div>
-                                        </div>
-
-                                        <!-- Item Details -->
-                                        <div class="p-6">
-                                            <div
-                                                class="flex items-start justify-between mb-2"
-                                            >
-                                                <h3
-                                                    class="text-lg font-bold text-gray-800 line-clamp-2"
-                                                >
-                                                    {{ item.name }}
-                                                </h3>
-                                            </div>
-
-                                            <p
-                                                v-if="item.description"
-                                                class="text-sm text-gray-600 mb-4 line-clamp-3"
-                                            >
-                                                {{ item.description }}
-                                            </p>
-
-                                            <!-- Stock Info -->
-                                            <div class="mb-3">
-                                                <div
-                                                    class="flex items-center justify-between text-sm"
-                                                >
-                                                    <span class="text-gray-500"
-                                                        >Stock:</span
-                                                    >
-                                                    <span
-                                                        v-if="
-                                                            item.stock === null
-                                                        "
-                                                        class="text-green-600 font-medium"
-                                                    >
-                                                        Unlimited
-                                                    </span>
-                                                    <span
-                                                        v-else
-                                                        :class="
-                                                            item.stock > 10
-                                                                ? 'text-green-600'
-                                                                : item.stock > 0
-                                                                  ? 'text-yellow-600'
-                                                                  : 'text-red-600'
-                                                        "
-                                                    >
-                                                        {{
-                                                            item.stock > 0
-                                                                ? `${item.stock} left`
-                                                                : "Out of stock"
-                                                        }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <!-- Price and Buy Button -->
-                                            <div
-                                                class="flex items-center justify-between"
-                                            >
-                                                <div>
-                                                    <div
-                                                        v-if="item.has_discount"
-                                                        class="flex items-baseline gap-2"
-                                                    >
-                                                        <span
-                                                            class="text-xl font-bold text-green-600"
-                                                        >
-                                                            ₱{{
-                                                                formatCash(
-                                                                    item.discounted_price,
-                                                                )
-                                                            }}
-                                                        </span>
-                                                        <span
-                                                            class="text-sm text-gray-400 line-through"
-                                                        >
-                                                            ₱{{
-                                                                formatCash(
-                                                                    item.cash_price,
-                                                                )
-                                                            }}
-                                                        </span>
-                                                    </div>
-                                                    <div
-                                                        v-else
-                                                        class="text-xl font-bold text-green-600"
-                                                    >
-                                                        ₱{{
-                                                            formatCash(
-                                                                item.cash_price,
-                                                            )
-                                                        }}
-                                                    </div>
-                                                </div>
-                                                <button
-                                                    @click="buyItem(item)"
-                                                    :disabled="
-                                                        !canBuyItem(item) ||
-                                                        purchasingItem ===
-                                                            item.id
-                                                    "
-                                                    :class="
-                                                        canBuyItem(item)
-                                                            ? 'bg-green-500 hover:bg-green-600 text-white'
-                                                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                                                    "
-                                                    class="px-4 py-2 rounded-lg transition-colors flex items-center gap-2"
-                                                >
-                                                    <i
-                                                        v-if="
-                                                            purchasingItem ===
-                                                            item.id
-                                                        "
-                                                        class="pi pi-spin pi-spinner"
-                                                    ></i>
-                                                    <i
-                                                        v-else
-                                                        class="pi pi-shopping-cart"
-                                                    ></i>
-                                                    {{ getButtonText(item) }}
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Empty Items State -->
-                                <div v-else class="text-center py-12">
-                                    <i
-                                        class="pi pi-box text-gray-300 text-5xl mb-4"
-                                    ></i>
-                                    <h3
-                                        class="text-lg font-medium text-gray-600 mb-2"
-                                    >
-                                        No Items Found
-                                    </h3>
-                                    <p class="text-gray-500">
-                                        {{
-                                            filters.search
-                                                ? "Try adjusting your filters"
-                                                : "This shop has no items yet"
-                                        }}
-                                    </p>
-                                </div>
-
-                                <!-- Items Pagination -->
-                                <div
-                                    v-if="items.last_page > 1"
-                                    class="flex justify-center"
-                                >
-                                    <div class="flex items-center gap-2">
-                                        <button
-                                            @click="
-                                                goToItemsPage(
-                                                    items.current_page - 1,
-                                                )
-                                            "
-                                            :disabled="items.current_page <= 1"
-                                            class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                                        >
-                                            <i class="pi pi-chevron-left"></i>
-                                        </button>
-
-                                        <span
-                                            class="px-4 py-2 text-sm text-gray-600"
-                                        >
-                                            Page {{ items.current_page }} of
-                                            {{ items.last_page }}
-                                        </span>
-
-                                        <button
-                                            @click="
-                                                goToItemsPage(
-                                                    items.current_page + 1,
-                                                )
-                                            "
-                                            :disabled="
-                                                items.current_page >=
-                                                items.last_page
-                                            "
-                                            class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                                        >
-                                            <i class="pi pi-chevron-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
+                        </div>
 
-                            <!-- Purchases Tab -->
-                            <div
-                                v-else-if="activeTab === 'purchases'"
-                                class="space-y-6"
+                        <!-- Empty items -->
+                        <div v-else class="text-center py-12">
+                            <i
+                                class="pi pi-box text-gray-300 text-5xl mb-3"
+                            ></i>
+                            <h3
+                                class="text-base font-medium text-gray-600 mb-1"
                             >
-                                <!-- Purchase Filters -->
-                                <div class="flex gap-4">
-                                    <select
-                                        v-model="purchaseFilters.status"
-                                        @change="fetchPurchases"
-                                        class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                    >
-                                        <option value="">All Purchases</option>
-                                        <option value="pending">Pending</option>
-                                        <option value="completed">
-                                            Approved
-                                        </option>
-                                        <option value="rejected">
-                                            Rejected
-                                        </option>
-                                    </select>
-                                </div>
+                                No items found
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                                {{
+                                    filters.search
+                                        ? "Try adjusting your filters"
+                                        : "This shop has no items yet"
+                                }}
+                            </p>
+                        </div>
 
-                                <!-- Purchase Loading -->
-                                <div
-                                    v-if="purchasesLoading"
-                                    class="flex justify-center py-12"
-                                >
-                                    <i
-                                        class="pi pi-spin pi-spinner text-green-500 text-2xl"
-                                    ></i>
-                                </div>
-
-                                <!-- Purchase List -->
-                                <div
-                                    v-else-if="
-                                        purchases.data &&
-                                        purchases.data.length > 0
+                        <!-- Items pagination -->
+                        <div
+                            v-if="items.last_page > 1"
+                            class="flex justify-center pt-2"
+                        >
+                            <div class="flex items-center gap-2">
+                                <button
+                                    @click="
+                                        goToItemsPage(items.current_page - 1)
                                     "
-                                    class="space-y-4"
+                                    :disabled="items.current_page <= 1"
+                                    class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                                 >
-                                    <div
-                                        v-for="purchase in purchases.data"
-                                        :key="purchase.id"
-                                        class="bg-gray-50 rounded-xl p-6 border-l-4"
+                                    <i class="pi pi-chevron-left"></i>
+                                </button>
+                                <span class="px-4 py-2 text-sm text-gray-600">
+                                    Page {{ items.current_page }} of
+                                    {{ items.last_page }}
+                                </span>
+                                <button
+                                    @click="
+                                        goToItemsPage(items.current_page + 1)
+                                    "
+                                    :disabled="
+                                        items.current_page >= items.last_page
+                                    "
+                                    class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                >
+                                    <i class="pi pi-chevron-right"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Purchases Tab -->
+                    <div
+                        v-else-if="activeTab === 'purchases'"
+                        class="space-y-3"
+                    >
+                        <select
+                            v-model="purchaseFilters.status"
+                            @change="fetchPurchases"
+                            class="px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                        >
+                            <option value="">All Orders</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Approved</option>
+                            <option value="rejected">Rejected</option>
+                        </select>
+
+                        <div
+                            v-if="purchasesLoading"
+                            class="flex justify-center py-12"
+                        >
+                            <i
+                                class="pi pi-spin pi-spinner text-green-500 text-2xl"
+                            ></i>
+                        </div>
+
+                        <div
+                            v-else-if="
+                                purchases.data && purchases.data.length > 0
+                            "
+                            class="space-y-3"
+                        >
+                            <div
+                                v-for="purchase in purchases.data"
+                                :key="purchase.id"
+                                class="bg-white rounded-xl p-4 border-l-4"
+                                :class="getPurchaseStatusColor(purchase.status)"
+                            >
+                                <div
+                                    class="flex items-start justify-between gap-3"
+                                >
+                                    <div class="flex-1">
+                                        <h3
+                                            class="text-base font-bold text-gray-800"
+                                        >
+                                            {{ purchase.shop_item.name }}
+                                        </h3>
+                                        <p class="text-xs text-gray-500 mt-0.5">
+                                            Qty: {{ purchase.quantity }} · ₱{{
+                                                formatCash(
+                                                    purchase.price_paid *
+                                                        purchase.quantity,
+                                                )
+                                            }}
+                                        </p>
+                                        <p class="text-xs text-gray-400 mt-0.5">
+                                            {{
+                                                formatDate(purchase.created_at)
+                                            }}
+                                        </p>
+                                        <p
+                                            v-if="purchase.rejection_reason"
+                                            class="text-xs text-red-600 mt-1"
+                                        >
+                                            Reason:
+                                            {{ purchase.rejection_reason }}
+                                        </p>
+                                    </div>
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium flex-shrink-0"
                                         :class="
-                                            getPurchaseStatusColor(
+                                            getPurchaseStatusBadge(
                                                 purchase.status,
                                             )
                                         "
                                     >
-                                        <div
-                                            class="flex flex-col md:flex-row md:items-center justify-between gap-4"
-                                        >
-                                            <div class="flex-1">
-                                                <div
-                                                    class="flex items-start justify-between mb-2"
-                                                >
-                                                    <div>
-                                                        <h3
-                                                            class="text-lg font-bold text-gray-800"
-                                                        >
-                                                            {{
-                                                                purchase
-                                                                    .shop_item
-                                                                    .name
-                                                            }}
-                                                        </h3>
-                                                        <p
-                                                            class="text-sm text-gray-600"
-                                                        >
-                                                            from
-                                                            {{
-                                                                purchase.shop
-                                                                    ? purchase
-                                                                          .shop
-                                                                          .name
-                                                                    : shop.name
-                                                            }}
-                                                        </p>
-                                                    </div>
-                                                    <div class="text-right">
-                                                        <span
-                                                            class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                                            :class="
-                                                                getPurchaseStatusBadge(
-                                                                    purchase.status,
-                                                                )
-                                                            "
-                                                        >
-                                                            {{
-                                                                purchase.status
-                                                                    .charAt(0)
-                                                                    .toUpperCase() +
-                                                                purchase.status.slice(
-                                                                    1,
-                                                                )
-                                                            }}
-                                                        </span>
-                                                    </div>
-                                                </div>
-
-                                                <div
-                                                    class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm"
-                                                >
-                                                    <div>
-                                                        <span
-                                                            class="text-gray-500"
-                                                            >Quantity:</span
-                                                        >
-                                                        <span
-                                                            class="font-medium ml-1"
-                                                            >{{
-                                                                purchase.quantity
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                    <div>
-                                                        <span
-                                                            class="text-gray-500"
-                                                            >Total Cost:</span
-                                                        >
-                                                        <span
-                                                            class="font-medium ml-1"
-                                                            >₱{{
-                                                                formatCash(
-                                                                    purchase.price_paid *
-                                                                        purchase.quantity,
-                                                                )
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                    <div>
-                                                        <span
-                                                            class="text-gray-500"
-                                                            >Date:</span
-                                                        >
-                                                        <span
-                                                            class="font-medium ml-1"
-                                                            >{{
-                                                                formatDate(
-                                                                    purchase.created_at,
-                                                                )
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                    <div
-                                                        v-if="
-                                                            purchase.rejection_reason
-                                                        "
-                                                    >
-                                                        <span
-                                                            class="text-gray-500"
-                                                            >Reason:</span
-                                                        >
-                                                        <span
-                                                            class="font-medium ml-1 text-red-600"
-                                                            >{{
-                                                                purchase.rejection_reason
-                                                            }}</span
-                                                        >
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Empty Purchases State -->
-                                <div v-else class="text-center py-12">
-                                    <i
-                                        class="pi pi-history text-gray-300 text-5xl mb-4"
-                                    ></i>
-                                    <h3
-                                        class="text-lg font-medium text-gray-600 mb-2"
-                                    >
-                                        No Purchases Found
-                                    </h3>
-                                    <p class="text-gray-500">
-                                        You haven't made any purchases from this
-                                        shop yet
-                                    </p>
-                                </div>
-
-                                <!-- Purchase Pagination -->
-                                <div
-                                    v-if="purchases.last_page > 1"
-                                    class="flex justify-center"
-                                >
-                                    <div class="flex items-center gap-2">
-                                        <button
-                                            @click="
-                                                goToPurchasePage(
-                                                    purchases.current_page - 1,
-                                                )
-                                            "
-                                            :disabled="
-                                                purchases.current_page <= 1
-                                            "
-                                            class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                                        >
-                                            <i class="pi pi-chevron-left"></i>
-                                        </button>
-
-                                        <span
-                                            class="px-4 py-2 text-sm text-gray-600"
-                                        >
-                                            Page {{ purchases.current_page }} of
-                                            {{ purchases.last_page }}
-                                        </span>
-
-                                        <button
-                                            @click="
-                                                goToPurchasePage(
-                                                    purchases.current_page + 1,
-                                                )
-                                            "
-                                            :disabled="
-                                                purchases.current_page >=
-                                                purchases.last_page
-                                            "
-                                            class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                                        >
-                                            <i class="pi pi-chevron-right"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Purchase Confirmation Dialog -->
-        <div
-            v-if="showPurchaseDialog"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        >
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-                <div class="text-center">
-                    <div
-                        class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center"
-                    >
-                        <i
-                            class="pi pi-shopping-cart text-green-500 text-2xl"
-                        ></i>
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-800 mb-2">
-                        Confirm Purchase
-                    </h3>
-                    <p class="text-gray-600 mb-4">
-                        Select quantity for
-                        <strong>{{ selectedItem?.name }}</strong>
-                    </p>
-
-                    <!-- Item preview -->
-                    <div class="bg-gray-50 rounded-lg p-4 mb-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <div>
-                                <p class="font-medium text-gray-800">
-                                    {{ selectedItem?.name }}
-                                </p>
-                                <p class="text-sm text-gray-600">
-                                    from {{ shop.name }}
-                                </p>
-                            </div>
-                            <div class="text-right">
-                                <p
-                                    v-if="selectedItem?.has_discount"
-                                    class="text-sm text-gray-400 line-through"
-                                >
-                                    ₱{{ formatCash(selectedItem?.cash_price) }}
-                                </p>
-                                <p class="text-lg font-bold text-green-600">
-                                    ₱{{
-                                        formatCash(effectivePrice(selectedItem))
-                                    }}
-                                </p>
-                                <p class="text-sm text-gray-500">per item</p>
-                            </div>
-                        </div>
-
-                        <!-- Quantity Selection -->
-                        <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label
-                                    class="text-sm font-medium text-gray-700"
-                                >
-                                    Quantity:
-                                </label>
-                                <div class="flex items-center gap-2">
-                                    <button
-                                        @click="decreaseQuantity"
-                                        :disabled="purchaseQuantity <= 1"
-                                        class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                    >
-                                        <i class="pi pi-minus text-sm"></i>
-                                    </button>
-                                    <input
-                                        v-model.number="purchaseQuantity"
-                                        type="number"
-                                        :min="1"
-                                        :max="getMaxQuantity(selectedItem)"
-                                        class="w-16 px-2 py-1 text-center border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                        @input="validateQuantity"
-                                    />
-                                    <button
-                                        @click="increaseQuantity"
-                                        :disabled="
-                                            purchaseQuantity >=
-                                            getMaxQuantity(selectedItem)
-                                        "
-                                        class="w-8 h-8 rounded-full bg-gray-200 hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                                    >
-                                        <i class="pi pi-plus text-sm"></i>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Stock info -->
-                            <div class="text-xs text-gray-500 text-left">
-                                <span v-if="selectedItem?.stock === null">
-                                    Unlimited stock available
-                                </span>
-                                <span v-else>
-                                    {{ selectedItem?.stock }} items available
-                                </span>
-                            </div>
-
-                            <!-- Total cost -->
-                            <div
-                                class="bg-green-50 rounded-lg p-3 border-l-4 border-green-400"
-                            >
-                                <div class="flex justify-between items-center">
-                                    <span
-                                        class="text-sm font-medium text-green-700"
-                                    >
-                                        Total Cost:
-                                    </span>
-                                    <span
-                                        class="text-lg font-bold text-green-600"
-                                    >
-                                        ₱{{ formatCash(getTotalCost()) }}
+                                        {{
+                                            purchase.status
+                                                .charAt(0)
+                                                .toUpperCase() +
+                                            purchase.status.slice(1)
+                                        }}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <!-- Balance info -->
-                    <div class="text-sm text-gray-600 mb-6">
-                        <div class="flex justify-between">
-                            <span>Current cash:</span>
-                            <span>₱{{ formatCash(currentUser.cash) }}</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span>After purchase:</span>
-                            <span
-                                :class="
-                                    getBalanceAfterPurchase() >= 0
-                                        ? 'text-green-600'
-                                        : 'text-red-600'
-                                "
-                            >
-                                ₱{{ formatCash(getBalanceAfterPurchase()) }}
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3">
-                        <button
-                            @click="cancelPurchase"
-                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            @click="confirmPurchase"
-                            :disabled="
-                                processingPurchase || !canAffordPurchase()
-                            "
-                            class="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
+                        <!-- Empty purchases -->
+                        <div v-else class="text-center py-12">
                             <i
-                                v-if="processingPurchase"
-                                class="pi pi-spin pi-spinner mr-2"
+                                class="pi pi-history text-gray-300 text-5xl mb-3"
                             ></i>
-                            {{
-                                !canAffordPurchase()
-                                    ? "Not Enough Cash"
-                                    : "Confirm Purchase"
-                            }}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Review Dialog -->
-        <div
-            v-if="showReviewDialog"
-            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-        >
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
-                <h3 class="text-xl font-bold text-gray-800 mb-4">
-                    Review {{ shop.name }}
-                </h3>
-
-                <form @submit.prevent="submitReview">
-                    <div class="space-y-4">
-                        <!-- Rating -->
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-gray-700 mb-2"
+                            <h3
+                                class="text-base font-medium text-gray-600 mb-1"
                             >
-                                Rating *
-                            </label>
-                            <div class="flex items-center gap-1">
+                                No orders yet
+                            </h3>
+                            <p class="text-sm text-gray-500">
+                                You haven't ordered from this shop yet
+                            </p>
+                        </div>
+
+                        <!-- Purchase pagination -->
+                        <div
+                            v-if="purchases.last_page > 1"
+                            class="flex justify-center pt-2"
+                        >
+                            <div class="flex items-center gap-2">
                                 <button
-                                    v-for="star in 5"
-                                    :key="star"
-                                    type="button"
-                                    @click="newReview.rating = star"
-                                    :class="
-                                        star <= newReview.rating
-                                            ? 'text-yellow-500'
-                                            : 'text-gray-300'
+                                    @click="
+                                        goToPurchasePage(
+                                            purchases.current_page - 1,
+                                        )
                                     "
-                                    class="text-2xl hover:text-yellow-500 transition-colors"
+                                    :disabled="purchases.current_page <= 1"
+                                    class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
                                 >
-                                    <i class="pi pi-star-fill"></i>
+                                    <i class="pi pi-chevron-left"></i>
+                                </button>
+                                <span class="px-4 py-2 text-sm text-gray-600">
+                                    Page {{ purchases.current_page }} of
+                                    {{ purchases.last_page }}
+                                </span>
+                                <button
+                                    @click="
+                                        goToPurchasePage(
+                                            purchases.current_page + 1,
+                                        )
+                                    "
+                                    :disabled="
+                                        purchases.current_page >=
+                                        purchases.last_page
+                                    "
+                                    class="px-3 py-2 rounded-lg border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+                                >
+                                    <i class="pi pi-chevron-right"></i>
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                        <!-- Comment -->
-                        <div>
-                            <label
-                                class="block text-sm font-medium text-gray-700 mb-1"
+        <!-- Item Detail Bottom Sheet -->
+        <div
+            v-if="showDetailDialog"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+            @click.self="showDetailDialog = false"
+        >
+            <div
+                class="bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-md max-h-[85vh] overflow-y-auto p-6 pb-8"
+            >
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        Item Details
+                    </h3>
+                    <button @click="showDetailDialog = false">
+                        <i class="pi pi-times text-gray-400"></i>
+                    </button>
+                </div>
+
+                <div v-if="detailItem">
+                    <!-- Big image -->
+                    <div
+                        class="aspect-square md:aspect-video bg-gray-100 rounded-2xl overflow-hidden flex items-center justify-center mb-4"
+                    >
+                        <img
+                            v-if="detailItem.image_url"
+                            :src="detailItem.image_url"
+                            :alt="detailItem.name"
+                            class="w-full h-full object-cover"
+                        />
+                        <i v-else class="pi pi-box text-gray-300 text-6xl"></i>
+                    </div>
+
+                    <!-- Name -->
+                    <h2 class="text-xl font-bold text-gray-800">
+                        {{ detailItem.name }}
+                    </h2>
+
+                    <!-- Price -->
+                    <div class="mt-2 flex items-baseline gap-2">
+                        <span class="text-2xl font-bold text-green-600">
+                            ₱{{
+                                formatCash(
+                                    detailItem.has_discount
+                                        ? detailItem.discounted_price
+                                        : detailItem.cash_price,
+                                )
+                            }}
+                        </span>
+                        <span
+                            v-if="detailItem.has_discount"
+                            class="text-sm text-gray-400 line-through"
+                        >
+                            ₱{{ formatCash(detailItem.cash_price) }}
+                        </span>
+                    </div>
+
+                    <!-- Stock -->
+                    <p class="text-sm text-gray-500 mt-1">
+                        <span v-if="detailItem.stock === null"
+                            >Unlimited stock available</span
+                        >
+                        <span v-else-if="detailItem.stock > 0"
+                            >{{ detailItem.stock }} in stock</span
+                        >
+                        <span v-else class="text-red-500 font-medium"
+                            >Out of stock</span
+                        >
+                    </p>
+
+                    <!-- Full description -->
+                    <p
+                        v-if="detailItem.description"
+                        class="text-sm text-gray-700 mt-4 leading-relaxed whitespace-pre-line"
+                    >
+                        {{ detailItem.description }}
+                    </p>
+
+                    <!-- Buy button -->
+                    <button
+                        @click="buyFromDetail"
+                        :disabled="!canBuyItem(detailItem)"
+                        :class="
+                            canBuyItem(detailItem)
+                                ? 'bg-green-500 hover:bg-green-600 text-white'
+                                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        "
+                        class="mt-6 w-full py-3.5 rounded-xl font-semibold transition-colors flex items-center justify-center gap-2"
+                    >
+                        <i class="pi pi-shopping-cart"></i>
+                        {{ getButtonText(detailItem) }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Purchase Bottom Sheet -->
+        <div
+            v-if="showPurchaseDialog"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+            @click.self="cancelPurchase"
+        >
+            <div
+                class="bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 pb-8"
+            >
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        Confirm Purchase
+                    </h3>
+                    <button @click="cancelPurchase">
+                        <i class="pi pi-times text-gray-400"></i>
+                    </button>
+                </div>
+
+                <!-- Item row -->
+                <div class="flex items-center justify-between mb-5">
+                    <div>
+                        <p class="font-semibold text-gray-800">
+                            {{ selectedItem?.name }}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            from {{ shop.name }}
+                        </p>
+                    </div>
+                    <div class="text-right">
+                        <p
+                            v-if="selectedItem?.has_discount"
+                            class="text-xs text-gray-400 line-through"
+                        >
+                            ₱{{ formatCash(selectedItem?.cash_price) }}
+                        </p>
+                        <p class="text-lg font-bold text-green-600">
+                            ₱{{ formatCash(effectivePrice(selectedItem)) }}
+                        </p>
+                        <p class="text-xs text-gray-400">per item</p>
+                    </div>
+                </div>
+
+                <!-- Quantity -->
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm font-semibold text-gray-700"
+                        >Quantity</span
+                    >
+                    <div class="flex items-center gap-3">
+                        <button
+                            @click="decreaseQuantity"
+                            :disabled="purchaseQuantity <= 1"
+                            class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                            <i class="pi pi-minus text-sm text-green-600"></i>
+                        </button>
+                        <input
+                            v-model.number="purchaseQuantity"
+                            type="number"
+                            :min="1"
+                            :max="getMaxQuantity(selectedItem)"
+                            @input="validateQuantity"
+                            class="w-14 text-center text-lg font-bold text-gray-800 border-none focus:ring-0"
+                        />
+                        <button
+                            @click="increaseQuantity"
+                            :disabled="
+                                purchaseQuantity >= getMaxQuantity(selectedItem)
+                            "
+                            class="w-9 h-9 rounded-xl bg-gray-100 hover:bg-gray-200 disabled:opacity-50 flex items-center justify-center"
+                        >
+                            <i class="pi pi-plus text-sm text-green-600"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Totals -->
+                <div
+                    class="bg-gray-50 rounded-xl p-4 space-y-2 mb-5 border border-gray-200"
+                >
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">Total cost</span>
+                        <span class="font-bold text-green-600">
+                            ₱{{ formatCash(getTotalCost()) }}
+                        </span>
+                    </div>
+                    <div class="flex justify-between text-sm">
+                        <span class="text-gray-600">After purchase</span>
+                        <span
+                            :class="
+                                getBalanceAfterPurchase() >= 0
+                                    ? 'text-gray-700'
+                                    : 'text-red-600'
+                            "
+                            class="font-semibold"
+                        >
+                            ₱{{ formatCash(getBalanceAfterPurchase()) }}
+                        </span>
+                    </div>
+                </div>
+
+                <button
+                    @click="confirmPurchase"
+                    :disabled="processingPurchase || !canAffordPurchase()"
+                    class="w-full bg-green-500 hover:bg-green-600 text-white py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                    <i
+                        v-if="processingPurchase"
+                        class="pi pi-spin pi-spinner"
+                    ></i>
+                    {{
+                        !canAffordPurchase() ? "Not Enough Cash" : "Place Order"
+                    }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Review Bottom Sheet -->
+        <div
+            v-if="showReviewDialog"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-end md:items-center justify-center z-50"
+            @click.self="showReviewDialog = false"
+        >
+            <div
+                class="bg-white rounded-t-3xl md:rounded-3xl w-full md:max-w-md p-6 pb-8"
+            >
+                <div class="flex items-center justify-between mb-5">
+                    <h3 class="text-lg font-bold text-gray-800">
+                        Review {{ shop.name }}
+                    </h3>
+                    <button @click="showReviewDialog = false">
+                        <i class="pi pi-times text-gray-400"></i>
+                    </button>
+                </div>
+
+                <form @submit.prevent="submitReview">
+                    <div class="mb-4">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-2"
+                        >
+                            Rating
+                        </label>
+                        <div class="flex items-center gap-1">
+                            <button
+                                v-for="star in 5"
+                                :key="star"
+                                type="button"
+                                @click="newReview.rating = star"
+                                :class="
+                                    star <= newReview.rating
+                                        ? 'text-yellow-500'
+                                        : 'text-gray-300'
+                                "
+                                class="text-3xl hover:text-yellow-500 transition-colors"
                             >
-                                Comment (Optional)
-                            </label>
-                            <textarea
-                                v-model="newReview.comment"
-                                rows="4"
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                                placeholder="Share your experience..."
-                            ></textarea>
+                                <i class="pi pi-star-fill"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <div class="flex gap-3 mt-6">
-                        <button
-                            type="button"
-                            @click="showReviewDialog = false"
-                            class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    <div class="mb-5">
+                        <label
+                            class="block text-sm font-medium text-gray-700 mb-1"
                         >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            :disabled="!newReview.rating || submittingReview"
-                            class="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
-                        >
-                            <i
-                                v-if="submittingReview"
-                                class="pi pi-spin pi-spinner mr-2"
-                            ></i>
-                            Submit Review
-                        </button>
+                            Comment (optional)
+                        </label>
+                        <textarea
+                            v-model="newReview.comment"
+                            rows="4"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                            placeholder="Share your experience..."
+                        ></textarea>
                     </div>
+
+                    <button
+                        type="submit"
+                        :disabled="!newReview.rating || submittingReview"
+                        class="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3.5 rounded-xl font-semibold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        <i
+                            v-if="submittingReview"
+                            class="pi pi-spin pi-spinner"
+                        ></i>
+                        Submit Review
+                    </button>
                 </form>
             </div>
         </div>
@@ -1010,7 +869,6 @@ export default {
             shop: null,
             items: { data: [] },
             purchases: { data: [] },
-            categories: [],
             currentUser: {},
             activeTab: "shop",
             pendingPurchasesCount: 0,
@@ -1026,10 +884,22 @@ export default {
                 sort: "name",
             },
 
+            sortOptions: [
+                { label: "Name", value: "name" },
+                { label: "Price ↑", value: "price_low" },
+                { label: "Price ↓", value: "price_high" },
+                { label: "Newest", value: "newest" },
+                { label: "Popular", value: "popular" },
+            ],
+
             // Purchase filters
             purchaseFilters: {
                 status: "",
             },
+
+            // Item detail dialog
+            showDetailDialog: false,
+            detailItem: null,
 
             // Purchase dialog
             showPurchaseDialog: false,
@@ -1057,10 +927,9 @@ export default {
                 this.loading = true;
                 const shopId = this.$route.params.id;
 
-                // Fetch shop data and user data separately
                 const [shopResponse, userResponse] = await Promise.all([
                     axios.get(`/api/shops/${shopId}`),
-                    axios.get("/api/user/profile"), // Get fresh user data
+                    axios.get("/api/user/profile"),
                 ]);
 
                 if (shopResponse.data.success) {
@@ -1069,7 +938,6 @@ export default {
                     this.isFollowing = shopResponse.data.is_following;
                     this.canReview = shopResponse.data.can_review;
 
-                    // Use fresh user data from profile endpoint
                     if (userResponse.data.success) {
                         this.currentUser = userResponse.data.user;
                     } else {
@@ -1079,7 +947,6 @@ export default {
                     this.$router.push("/shops");
                 }
 
-                // Fetch purchases to get pending count
                 await this.fetchPurchases();
             } catch (error) {
                 console.error("Error fetching shop:", error);
@@ -1099,7 +966,7 @@ export default {
                 this.purchasesLoading = true;
                 const params = new URLSearchParams({
                     page: page,
-                    shop_id: this.shop?.id, // Filter by current shop
+                    shop_id: this.shop?.id,
                     ...this.purchaseFilters,
                 });
 
@@ -1107,7 +974,6 @@ export default {
 
                 if (response.data.success) {
                     this.purchases = response.data.purchases;
-                    // Count pending purchases for this shop
                     this.pendingPurchasesCount = this.purchases.data.filter(
                         (p) =>
                             p.status === "pending" &&
@@ -1142,6 +1008,17 @@ export default {
             } finally {
                 this.itemsLoading = false;
             }
+        },
+
+        openDetail(item) {
+            this.detailItem = item;
+            this.showDetailDialog = true;
+        },
+
+        buyFromDetail() {
+            const item = this.detailItem;
+            this.showDetailDialog = false;
+            this.buyItem(item);
         },
 
         async toggleFollow() {
@@ -1241,17 +1118,14 @@ export default {
                         detail: response.data.message,
                     });
 
-                    // Update user cash balance
                     this.currentUser.cash = response.data.new_balance;
                     this.cancelPurchase();
 
-                    // Refresh shop data to update stock counts and fetch purchases
                     await Promise.all([
                         this.fetchShop(),
                         this.fetchPurchases(),
                     ]);
 
-                    // Switch to purchases tab to show the new purchase
                     this.activeTab = "purchases";
                 }
             } catch (error) {
@@ -1272,7 +1146,6 @@ export default {
             this.purchaseQuantity = 1;
         },
 
-        // Quantity management methods
         increaseQuantity() {
             const max = this.getMaxQuantity(this.selectedItem);
             if (this.purchaseQuantity < max) {
@@ -1295,7 +1168,6 @@ export default {
             }
         },
 
-        // The price the customer actually pays — discounted if the shop has a discount
         effectivePrice(item) {
             if (!item) return 0;
             return item.has_discount
@@ -1356,8 +1228,6 @@ export default {
             }, 500);
         },
 
-        // Add these debugging methods to your ShopView.vue methods section
-
         canBuyItem(item) {
             if (!this.currentUser) return false;
 
@@ -1368,18 +1238,18 @@ export default {
                 item.is_active &&
                 (item.stock === null || item.stock > 0) &&
                 userCash >= itemPrice &&
-                parseFloat(item.cash_price || 0) > 0 // valid listed price
+                parseFloat(item.cash_price || 0) > 0
             );
         },
 
         getButtonText(item) {
-            if (!this.currentUser) return "Login to Buy";
+            if (!this.currentUser) return "Login";
             if (!item.is_active) return "Unavailable";
-            if (item.stock !== null && item.stock <= 0) return "Out of Stock";
+            if (item.stock !== null && item.stock <= 0) return "Sold Out";
 
             const userCash = parseFloat(this.currentUser.cash || 0);
-            if (userCash < this.effectivePrice(item)) return "Not Enough Cash";
-            return "Buy Now";
+            if (userCash < this.effectivePrice(item)) return "No Cash";
+            return "Buy";
         },
 
         getPurchaseStatusColor(status) {
@@ -1430,7 +1300,7 @@ export default {
 
         activeTab(newTab) {
             if (newTab === "purchases") {
-                this.fetchPurchases();
+                this.fetchShop();
             }
         },
     },

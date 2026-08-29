@@ -108,7 +108,7 @@
                     <!-- Notification Dropdown -->
                     <div
                         v-if="showNotifications"
-                        class="absolute right-0 top-full mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-200 z-50 max-h-[32rem] overflow-hidden"
+                        class="fixed left-0 right-0 top-16 mt-0 w-full rounded-none sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-96 sm:rounded-lg bg-white shadow-xl border border-gray-200 z-50 max-h-[32rem] overflow-hidden"
                         @click.stop
                     >
                         <!-- Header -->
@@ -529,6 +529,43 @@
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             >
                 <div class="p-4">
+                    <!-- Mobile Stats Row (drawer only) -->
+                    <div class="md:hidden grid grid-cols-4 gap-2 mb-4">
+                        <div
+                            class="flex items-center justify-center gap-1 bg-green-50 px-2 py-2 rounded-lg border border-green-200"
+                        >
+                            <span class="text-xs font-semibold text-green-700"
+                                >₱{{ formatCash(user.cash || 0) }}</span
+                            >
+                        </div>
+                        <div
+                            class="flex items-center justify-center gap-1 bg-yellow-50 px-2 py-2 rounded-lg border border-yellow-200"
+                        >
+                            <i class="pi pi-star text-yellow-600 text-xs"></i>
+                            <span
+                                class="text-xs font-semibold text-yellow-700"
+                                >{{ formatPoints(user.stars || 0) }}</span
+                            >
+                        </div>
+                        <div
+                            class="flex items-center justify-center gap-1 bg-blue-50 px-2 py-2 rounded-lg border border-blue-200"
+                        >
+                            <i class="pi pi-prime text-blue-600 text-xs"></i>
+                            <span class="text-xs font-semibold text-blue-700">{{
+                                formatPoints(user.points || 0)
+                            }}</span>
+                        </div>
+                        <div
+                            class="flex items-center justify-center gap-1 bg-purple-50 px-2 py-2 rounded-lg border border-purple-200"
+                        >
+                            <i class="pi pi-trophy text-purple-600 text-xs"></i>
+                            <span
+                                class="text-xs font-semibold text-purple-700"
+                                >{{ userRank || "..." }}</span
+                            >
+                        </div>
+                    </div>
+
                     <nav class="space-y-1" @click="sidebarOpen = false">
                         <!-- Dashboard -->
                         <router-link
