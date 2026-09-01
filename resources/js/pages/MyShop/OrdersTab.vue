@@ -323,7 +323,11 @@
                                 }}</span>
                                 <button
                                     @click="addItem(item)"
-                                    class="text-purple-600"
+                                    :disabled="
+                                        item.stock !== null &&
+                                        getQty(item.id) >= item.stock
+                                    "
+                                    class="text-purple-600 disabled:text-gray-300"
                                 >
                                     <i class="pi pi-plus-circle text-xl"></i>
                                 </button>
@@ -552,6 +556,17 @@ export default {
             const existing = this.orderItems.find(
                 (i) => i.shop_item_id === item.id,
             );
+            const current = existing ? existing.quantity : 0;
+
+            if (item.stock !== null && current >= item.stock) {
+                this.$toast?.add({
+                    severity: "warn",
+                    summary: "Stock limit",
+                    detail: `Only ${item.stock} left in stock`,
+                });
+                return;
+            }
+
             if (existing) {
                 existing.quantity++;
             } else {
