@@ -119,26 +119,72 @@
                                         class="flex items-center space-x-2 text-sm"
                                     >
                                         <span class="text-gray-600"
-                                            >Unit Price:</span
+                                            >Customer Paid:</span
                                         >
                                         <span
                                             class="font-medium text-green-600"
                                         >
-                                            ₱{{ formatCash(order.price_paid) }}
-                                        </span>
-                                    </div>
-                                    <div
-                                        class="flex items-center space-x-2 text-sm"
-                                    >
-                                        <span class="text-gray-600"
-                                            >Total:</span
-                                        >
-                                        <span
-                                            class="font-semibold text-green-600 text-base"
-                                        >
                                             ₱{{
                                                 formatCash(
                                                     order.price_paid *
+                                                        order.quantity,
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div
+                                        v-if="order.shop_claim_amount"
+                                        class="flex items-center space-x-2 text-sm"
+                                    >
+                                        <span class="text-gray-600"
+                                            >You Earn:</span
+                                        >
+                                        <span
+                                            class="font-semibold text-purple-700 text-base"
+                                        >
+                                            ₱{{
+                                                formatCash(
+                                                    order.shop_claim_amount *
+                                                        order.quantity,
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Discount Breakdown (app orders only) -->
+                                <div
+                                    v-if="order.shop_claim_amount"
+                                    class="mt-2 text-xs text-gray-500 space-y-0.5"
+                                >
+                                    <div class="flex items-center gap-2">
+                                        <span>List price:</span>
+                                        <span class="line-through">
+                                            ₱{{
+                                                formatCash(
+                                                    order.list_price *
+                                                        order.quantity,
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span>Store discount:</span>
+                                        <span class="text-red-500">
+                                            −₱{{
+                                                formatCash(
+                                                    order.store_discount_amount *
+                                                        order.quantity,
+                                                )
+                                            }}
+                                        </span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span>Level Lounge discount:</span>
+                                        <span class="text-red-500">
+                                            −₱{{
+                                                formatCash(
+                                                    order.admin_discount_amount *
                                                         order.quantity,
                                                 )
                                             }}
@@ -228,6 +274,17 @@
                                                     order.quantity,
                                             )
                                         }}
+                                        <span
+                                            v-if="order.shop_claim_amount"
+                                            class="text-purple-700 font-medium"
+                                        >
+                                            • You earn: ₱{{
+                                                formatCash(
+                                                    order.shop_claim_amount *
+                                                        order.quantity,
+                                                )
+                                            }}
+                                        </span>
                                     </p>
                                 </div>
                                 <span

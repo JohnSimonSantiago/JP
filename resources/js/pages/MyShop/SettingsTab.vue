@@ -47,6 +47,46 @@
             </div>
         </div>
 
+        <!-- Discount Settings (read-only) -->
+        <div class="mb-6 bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div class="flex items-center justify-between mb-3">
+                <h4 class="text-md font-semibold text-purple-800">
+                    <i class="pi pi-percentage mr-1"></i>
+                    Discount Settings
+                </h4>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">
+                        Store Discount
+                    </p>
+                    <p class="text-2xl font-bold text-purple-700 mt-1">
+                        {{ shop.store_discount_percent || 0 }}%
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Comes out of your earnings
+                    </p>
+                </div>
+                <div class="bg-white rounded-lg p-3 text-center">
+                    <p class="text-xs text-gray-500 uppercase tracking-wide">
+                        Level Lounge Discount
+                    </p>
+                    <p class="text-2xl font-bold text-purple-700 mt-1">
+                        {{ shop.admin_discount_percent || 0 }}%
+                    </p>
+                    <p class="text-xs text-gray-400 mt-1">
+                        Covered by Level Lounge
+                    </p>
+                </div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">
+                <i class="pi pi-info-circle mr-1"></i>
+                These rates are set by Level Lounge and apply to app purchases
+                made with balance. To request a change, please contact the
+                admin.
+            </p>
+        </div>
+
         <form @submit.prevent="updateShop" class="space-y-6">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">

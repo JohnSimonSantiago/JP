@@ -692,7 +692,7 @@ class ShopItemController extends Controller
             ->get();
 
         $totalOrders  = $purchases->count();
-        $totalRevenue = $purchases->sum(fn($p) => $p->price_paid * $p->quantity);
+        $totalRevenue = $purchases->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity);
         $totalItems   = $purchases->sum('quantity');
         $walkInCount  = $purchases->where('customer_type', 'walk_in')->count();
         $memberCount  = $purchases->where('customer_type', 'user')->count();
@@ -770,9 +770,10 @@ class ShopItemController extends Controller
 
         $purchases = $query->with(['shopItem:id,name'])->get();
 
-        // Summary totals
+        // Summary totals — shop earns shop_claim_amount on discounted app orders,
+        // falls back to price_paid for walk-ins (no discount system)
         $summary = [
-            'revenue'    => (float) $purchases->sum(fn($p) => $p->price_paid * $p->quantity),
+            'revenue'    => (float) $purchases->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity),
             'orders'     => $purchases->count(),
             'items_sold' => (int) $purchases->sum('quantity'),
         ];
@@ -783,7 +784,7 @@ class ShopItemController extends Controller
             ->map(function ($group, $date) {
                 return [
                     'date'    => $date,
-                    'revenue' => (float) $group->sum(fn($p) => $p->price_paid * $p->quantity),
+                    'revenue' => (float) $group->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity),
                     'orders'  => $group->count(),
                 ];
             })
