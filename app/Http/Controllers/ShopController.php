@@ -117,12 +117,12 @@ class ShopController extends Controller
             
             // Sort items
             switch ($sort) {
-                case 'price_low':
-                    $itemsQuery->orderBy('price');
-                    break;
-                case 'price_high':
-                    $itemsQuery->orderByDesc('price');
-                    break;
+case 'price_low':
+    $itemsQuery->orderBy('cash_price');
+    break;
+case 'price_high':
+    $itemsQuery->orderByDesc('cash_price');
+    break;
                 case 'newest':
                     $itemsQuery->orderByDesc('created_at');
                     break;
