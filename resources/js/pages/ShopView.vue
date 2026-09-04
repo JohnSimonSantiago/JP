@@ -273,7 +273,7 @@
                             >
                                 <!-- Image -->
                                 <div
-                                    class="aspect-square bg-gray-100 flex items-center justify-center relative"
+                                    class="aspect-square w-full bg-gray-100 flex items-center justify-center relative overflow-hidden"
                                 >
                                     <img
                                         v-if="item.image_url"
