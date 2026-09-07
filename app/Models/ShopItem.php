@@ -15,6 +15,7 @@ class ShopItem extends Model
         'description',
         'price',
         'cash_price',
+        'cost_price',
         'image',
         'is_active',
         'is_active_in_point_shop',
@@ -24,6 +25,7 @@ class ShopItem extends Model
     protected $casts = [
         'price' => 'integer',
         'cash_price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
         'is_active' => 'boolean',
         'is_active_in_point_shop' => 'boolean',
         'stock' => 'integer'

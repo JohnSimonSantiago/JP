@@ -2,13 +2,22 @@
     <div>
         <div class="flex justify-between items-center mb-6">
             <h3 class="text-lg font-semibold">Shop Items</h3>
-            <button
-                @click="openCreate"
-                class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-                <i class="pi pi-plus mr-2"></i>
-                Add Item
-            </button>
+            <div class="flex gap-2">
+                <button
+                    @click="openRestock"
+                    class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                    <i class="pi pi-box mr-2"></i>
+                    Restock
+                </button>
+                <button
+                    @click="openCreate"
+                    class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                    <i class="pi pi-plus mr-2"></i>
+                    Add Item
+                </button>
+            </div>
         </div>
 
         <!-- Items List -->
@@ -179,6 +188,52 @@
                                     />
                                 </div>
                             </div>
+
+                            <div>
+                                <label
+                                    class="block text-sm font-medium text-gray-700 mb-1"
+                                >
+                                    Cost Price
+                                    <span class="text-gray-400 font-normal">
+                                        (what it costs you per unit)
+                                    </span>
+                                </label>
+                                <div class="relative">
+                                    <span
+                                        class="absolute left-3 top-2 text-gray-500"
+                                        >₱</span
+                                    >
+                                    <input
+                                        v-model.number="itemForm.cost_price"
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        class="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                        placeholder="0.00"
+                                    />
+                                </div>
+                                <p
+                                    v-if="
+                                        itemForm.cash_price > 0 &&
+                                        itemForm.cost_price > 0
+                                    "
+                                    class="text-xs mt-1"
+                                    :class="
+                                        itemForm.cash_price -
+                                            itemForm.cost_price >=
+                                        0
+                                            ? 'text-green-600'
+                                            : 'text-red-500'
+                                    "
+                                >
+                                    Profit per unit: ₱{{
+                                        formatCash(
+                                            itemForm.cash_price -
+                                                itemForm.cost_price,
+                                        )
+                                    }}
+                                </p>
+                            </div>
                         </div>
 
                         <!-- Stock Management Section -->
@@ -326,6 +381,109 @@
                 </form>
             </div>
         </div>
+
+        <!-- Bulk Restock Dialog -->
+        <div
+            v-if="showRestock"
+            class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        >
+            <div
+                class="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 max-h-[90vh] flex flex-col"
+            >
+                <h3 class="text-xl font-bold text-gray-800 mb-1">
+                    Restock / Dispose
+                </h3>
+                <p class="text-sm text-gray-500 mb-4">
+                    Use + to add stock, − to dispose. Leave at 0 to skip.
+                </p>
+
+                <!-- Scrollable item list -->
+                <div class="flex-1 overflow-y-auto space-y-2 pr-1">
+                    <div
+                        v-for="row in restockRows"
+                        :key="row.id"
+                        class="flex items-center gap-3 p-3 border border-gray-200 rounded-lg"
+                    >
+                        <img
+                            v-if="row.image"
+                            :src="`/storage/${row.image}`"
+                            :alt="row.name"
+                            class="w-10 h-10 object-cover rounded-lg flex-shrink-0"
+                        />
+                        <div
+                            v-else
+                            class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0"
+                        >
+                            <i class="pi pi-image text-gray-400 text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="font-medium truncate">{{ row.name }}</p>
+                            <p class="text-xs text-gray-500">
+                                Current: {{ row.stock }}
+                                <span
+                                    v-if="row.delta !== 0"
+                                    :class="
+                                        row.delta > 0
+                                            ? 'text-green-600'
+                                            : 'text-red-500'
+                                    "
+                                >
+                                    → {{ row.stock + row.delta }}
+                                </span>
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button
+                                type="button"
+                                @click="
+                                    row.delta = Math.max(
+                                        -row.stock,
+                                        row.delta - 1,
+                                    )
+                                "
+                                class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold"
+                            >
+                                −
+                            </button>
+                            <input
+                                v-model.number="row.delta"
+                                type="number"
+                                class="w-16 text-center px-2 py-1 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            />
+                            <button
+                                type="button"
+                                @click="row.delta = row.delta + 1"
+                                class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold"
+                            >
+                                +
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-5">
+                    <button
+                        type="button"
+                        @click="closeRestock"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        type="button"
+                        @click="saveRestock"
+                        :disabled="savingRestock || changedCount === 0"
+                        class="flex-1 bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+                    >
+                        <i
+                            v-if="savingRestock"
+                            class="pi pi-spin pi-spinner mr-2"
+                        ></i>
+                        Save {{ changedCount > 0 ? `(${changedCount})` : "" }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -344,17 +502,26 @@ export default {
             showEditItem: false,
             editingItem: null,
             savingItem: false,
+            showRestock: false,
+            restockRows: [],
+            savingRestock: false,
             itemForm: {
                 name: "",
                 description: "",
                 price: 0,
                 cash_price: 0,
+                cost_price: 0,
                 stock: 0,
                 unlimited_stock: false,
                 is_active: true,
                 image: null,
             },
         };
+    },
+    computed: {
+        changedCount() {
+            return this.restockRows.filter((r) => r.delta !== 0).length;
+        },
     },
     watch: {
         "itemForm.unlimited_stock"(newVal) {
@@ -370,6 +537,67 @@ export default {
             this.showCreateItem = true;
         },
 
+        openRestock() {
+            // Only limited-stock items can be adjusted; unlimited has no number
+            this.restockRows = this.items
+                .filter((i) => i.stock !== null)
+                .map((i) => ({
+                    id: i.id,
+                    name: i.name,
+                    image: i.image,
+                    stock: i.stock,
+                    delta: 0,
+                }));
+            this.showRestock = true;
+        },
+
+        closeRestock() {
+            this.showRestock = false;
+            this.restockRows = [];
+        },
+
+        async saveRestock() {
+            const changes = this.restockRows.filter((r) => r.delta !== 0);
+            if (changes.length === 0) return;
+
+            try {
+                this.savingRestock = true;
+
+                // One request per changed item; reason derived from sign
+                await Promise.all(
+                    changes.map((row) =>
+                        axios.post(
+                            `/api/shops/${this.shop.id}/items/${row.id}/adjust-stock`,
+                            {
+                                quantity: row.delta,
+                                reason: row.delta > 0 ? "restock" : "dispose",
+                            },
+                        ),
+                    ),
+                );
+
+                this.$toast?.add({
+                    severity: "success",
+                    summary: "Success",
+                    detail: `Updated ${changes.length} item(s)`,
+                });
+                this.closeRestock();
+                this.$emit("items-changed");
+            } catch (error) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message ||
+                        "Some items failed to update",
+                });
+                // Refresh anyway so the list reflects whatever did save
+                this.$emit("items-changed");
+            } finally {
+                this.savingRestock = false;
+            }
+        },
+
         async saveItem() {
             try {
                 this.savingItem = true;
@@ -378,6 +606,7 @@ export default {
                 formData.append("name", this.itemForm.name);
                 formData.append("description", this.itemForm.description || "");
                 formData.append("cash_price", this.itemForm.cash_price || 0);
+                formData.append("cost_price", this.itemForm.cost_price || 0);
                 formData.append(
                     "is_active",
                     this.itemForm.is_active ? "1" : "0",
@@ -444,6 +673,7 @@ export default {
                 description: item.description || "",
                 price: item.price || 0,
                 cash_price: item.cash_price || 0,
+                cost_price: item.cost_price || 0,
                 stock: item.stock || 0,
                 unlimited_stock: item.stock === null,
                 is_active: item.is_active,
@@ -489,6 +719,7 @@ export default {
                 description: "",
                 price: 0,
                 cash_price: 0,
+                cost_price: 0,
                 stock: 0,
                 unlimited_stock: false,
                 is_active: true,

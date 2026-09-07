@@ -185,6 +185,7 @@ class ShopItemController extends Controller
                 'is_active' => 'boolean',
                 'stock' => 'nullable|integer|min:0',
                 'unlimited_stock' => 'boolean',
+                'cost_price' => 'nullable|numeric|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ];
 
@@ -279,6 +280,7 @@ class ShopItemController extends Controller
                 'is_active' => 'boolean',
                 'stock' => 'nullable|integer|min:0',
                 'unlimited_stock' => 'boolean',
+                'cost_price' => 'nullable|numeric|min:0',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             ];
 
@@ -449,6 +451,102 @@ class ShopItemController extends Controller
                 ]
             ], 500);
         }
+    }
+
+    public function adjustStock(Request $request, Shop $shop, ShopItem $shopItem)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'quantity' => 'required|integer|not_in:0', // + to add, - to dispose
+            'reason'   => 'required|in:restock,dispose',
+        ]);
+
+        // Can't adjust an unlimited-stock item
+        if ($shopItem->stock === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This item has unlimited stock and cannot be adjusted.'
+            ], 400);
+        }
+
+        $newStock = $shopItem->stock + $request->quantity;
+
+        if ($newStock < 0) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot reduce below zero. Current stock: {$shopItem->stock}."
+            ], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($request, $shop, $shopItem, $user, $newStock) {
+                $shopItem->update(['stock' => $newStock]);
+
+                \App\Models\StockAdjustment::create([
+                    'shop_id'      => $shop->id,
+                    'shop_item_id' => $shopItem->id,
+                    'user_id'      => $user->id,
+                    'quantity'     => $request->quantity,
+                    'reason'       => $request->reason,
+                    'stock_after'  => $newStock,
+                ]);
+            });
+
+            return response()->json([
+                'success'   => true,
+                'message'   => 'Stock updated',
+                'new_stock' => $newStock,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to adjust stock: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function stockHistory(Request $request, Shop $shop)
+    {
+        $user = Auth::user();
+
+        if (!$user->isAdmin() && !$shop->canBeEditedBy($user)) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $perPage = min($request->get('per_page', 20), 100);
+        $from = $request->get('from'); // "YYYY-MM-DD" or null (all time)
+        $to   = $request->get('to');
+
+        $query = \App\Models\StockAdjustment::where('shop_id', $shop->id)
+            ->with(['shopItem:id,name,image', 'user:id,name'])
+            ->orderBy('created_at', 'desc');
+
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
+        $adjustments = $query->paginate($perPage);
+
+        $adjustments->getCollection()->transform(function ($adj) {
+            if ($adj->shopItem && $adj->shopItem->image) {
+                $adj->shopItem->image_url = \Storage::url($adj->shopItem->image);
+            }
+            return $adj;
+        });
+
+        return response()->json([
+            'success'     => true,
+            'adjustments' => $adjustments,
+        ]);
     }
 
     private function getItemStockStatus($item)
@@ -687,12 +785,15 @@ class ShopItemController extends Controller
             ->where('status', 'completed')
             ->whereMonth('created_at', $month)
             ->whereYear('created_at', $year)
-            ->with(['shopItem:id,name', 'user:id,name'])
+            ->with(['shopItem:id,name,cost_price', 'user:id,name'])
             ->orderBy('created_at')
             ->get();
 
         $totalOrders  = $purchases->count();
-        $totalRevenue = $purchases->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity);
+        $totalRevenue = $purchases->sum(fn($p) => ($p->shop_claim_amount > 0 ? $p->shop_claim_amount : $p->price_paid) * $p->quantity);
+        $totalCost    = $purchases->sum(fn($p) => ($p->shopItem->cost_price ?? 0) * $p->quantity);
+        $totalProfit  = $totalRevenue - $totalCost;
+        $totalMargin  = $totalRevenue > 0 ? round(($totalProfit / $totalRevenue) * 100, 1) : 0;
         $totalItems   = $purchases->sum('quantity');
         $walkInCount  = $purchases->where('customer_type', 'walk_in')->count();
         $memberCount  = $purchases->where('customer_type', 'user')->count();
@@ -711,9 +812,14 @@ class ShopItemController extends Controller
         fputcsv($handle, []);
         fputcsv($handle, ['Total Orders',    $totalOrders]);
         fputcsv($handle, ['Total Revenue',   '₱' . number_format($totalRevenue, 2)]);
+        fputcsv($handle, ['Total Cost',      '₱' . number_format($totalCost, 2)]);
+        fputcsv($handle, ['Total Profit',    '₱' . number_format($totalProfit, 2)]);
+        fputcsv($handle, ['Profit Margin',   $totalMargin . '%']);
         fputcsv($handle, ['Total Items Sold', $totalItems]);
         fputcsv($handle, ['Walk-in Orders',  $walkInCount]);
         fputcsv($handle, ['Member Orders',   $memberCount]);
+        fputcsv($handle, []);
+        fputcsv($handle, ['Note: items without a cost price set are counted as \u{20B1}0 cost.']);
         fputcsv($handle, []);
         fputcsv($handle, ['TOP 3 ITEMS']);
         foreach ($topItems as $name => $qty) {
@@ -721,14 +827,19 @@ class ShopItemController extends Controller
         }
         fputcsv($handle, []);
         fputcsv($handle, ['--- ORDER DETAILS ---']);
-        fputcsv($handle, ['Date', 'Item', 'Quantity', 'Unit Price', 'Total', 'Customer']);
+        fputcsv($handle, ['Date', 'Item', 'Quantity', 'Unit Price', 'Unit Cost', 'Total', 'Profit', 'Customer']);
         foreach ($purchases as $p) {
+            $unitCost   = $p->shopItem->cost_price ?? 0;
+            $rowRevenue = ($p->shop_claim_amount > 0 ? $p->shop_claim_amount : $p->price_paid) * $p->quantity;
+            $rowProfit  = $rowRevenue - ($unitCost * $p->quantity);
             fputcsv($handle, [
                 $p->created_at->format('Y-m-d H:i'),
-                $p->shopItem->name ?? 'N/A',
+                $p->shopItem->name ?? 'N/A',    
                 $p->quantity,
                 number_format($p->price_paid, 2),
-                number_format($p->price_paid * $p->quantity, 2),
+                number_format($unitCost, 2),
+                number_format($rowRevenue, 2),
+                number_format($rowProfit, 2),
                 $p->customer_type === 'walk_in'
                     ? ($p->walk_in_name ?? 'Walk-in')
                     : ($p->user->name ?? 'Member'),
@@ -768,14 +879,44 @@ class ShopItemController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
-        $purchases = $query->with(['shopItem:id,name'])->get();
+        $purchases = $query->with(['shopItem:id,name,cost_price'])->get();
 
         // Summary totals — shop earns shop_claim_amount on discounted app orders,
         // falls back to price_paid for walk-ins (no discount system)
+        $revenue = (float) $purchases->sum(fn($p) => ($p->shop_claim_amount > 0 ? $p->shop_claim_amount : $p->price_paid) * $p->quantity);
+        // Cost of goods sold — cost_price is the owner's per-unit estimate; 0 if unset
+        $cost = (float) $purchases->sum(fn($p) => ($p->shopItem->cost_price ?? 0) * $p->quantity);
+        $profit = $revenue - $cost;
+
+        // Waste — disposed stock in the same window (dispose rows have negative quantity)
+        $wasteQuery = \App\Models\StockAdjustment::where('shop_id', $shop->id)
+            ->where('reason', 'dispose')
+            ->with(['shopItem:id,cost_price']);
+
+        if ($from) {
+            $wasteQuery->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $wasteQuery->whereDate('created_at', '<=', $to);
+        }
+
+        $disposals = $wasteQuery->get();
+        // abs() because dispose quantities are stored negative
+        $wasteUnits = (int) $disposals->sum(fn($d) => abs($d->quantity));
+        $wasteCost  = (float) $disposals->sum(fn($d) => abs($d->quantity) * ($d->shopItem->cost_price ?? 0));
+        $netAfterWaste = $profit - $wasteCost;
+
         $summary = [
-            'revenue'    => (float) $purchases->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity),
-            'orders'     => $purchases->count(),
-            'items_sold' => (int) $purchases->sum('quantity'),
+            'revenue'         => $revenue,
+            'cost'            => $cost,
+            'profit'          => $profit,
+            // Margin % of revenue; guard against divide-by-zero when no sales
+            'margin'          => $revenue > 0 ? round(($profit / $revenue) * 100, 1) : 0,
+            'waste_cost'      => $wasteCost,
+            'waste_units'     => $wasteUnits,
+            'net_after_waste' => $netAfterWaste,
+            'orders'          => $purchases->count(),
+            'items_sold'      => (int) $purchases->sum('quantity'),
         ];
 
         // Grouped by day for the line/bar charts
@@ -784,7 +925,7 @@ class ShopItemController extends Controller
             ->map(function ($group, $date) {
                 return [
                     'date'    => $date,
-                    'revenue' => (float) $group->sum(fn($p) => ($p->shop_claim_amount ?? $p->price_paid) * $p->quantity),
+                    'revenue' => (float) $group->sum(fn($p) => ($p->shop_claim_amount > 0 ? $p->shop_claim_amount : $p->price_paid) * $p->quantity),
                     'orders'  => $group->count(),
                 ];
             })

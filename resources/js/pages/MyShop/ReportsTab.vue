@@ -8,10 +8,150 @@
             <DateRangePicker @change="onRangeChange" />
         </div>
 
-        <!-- Summary Stat Cards (driven by the selected range) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <!-- ── Money ── -->
+        <p
+            class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3"
+        >
+            Money
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- Revenue in range -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="pi pi-dollar text-green-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Revenue</p>
+                        <p class="text-2xl font-bold">
+                            ₱{{ formatCompact(stats.summary.revenue || 0) }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cost in range -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <i class="pi pi-arrow-down text-red-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Cost</p>
+                        <p class="text-2xl font-bold">
+                            ₱{{ formatCompact(stats.summary.cost || 0) }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profit in range -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
+                <div class="flex items-center">
+                    <div
+                        class="p-2 rounded-lg"
+                        :class="
+                            (stats.summary.profit || 0) >= 0
+                                ? 'bg-green-100'
+                                : 'bg-red-100'
+                        "
+                    >
+                        <i
+                            class="pi pi-wallet text-xl"
+                            :class="
+                                (stats.summary.profit || 0) >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                            "
+                        ></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Profit</p>
+                        <p
+                            class="text-2xl font-bold"
+                            :class="
+                                (stats.summary.profit || 0) >= 0
+                                    ? 'text-gray-900'
+                                    : 'text-red-600'
+                            "
+                        >
+                            ₱{{ formatCompact(stats.summary.profit || 0) }}
+                        </p>
+                        <p class="text-xs text-gray-400">revenue − item cost</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Waste in range -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
+                <div class="flex items-center">
+                    <div class="p-2 bg-orange-100 rounded-lg">
+                        <i class="pi pi-trash text-orange-600 text-xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Waste</p>
+                        <p class="text-2xl font-bold">
+                            ₱{{ formatCompact(stats.summary.waste_cost || 0) }}
+                        </p>
+                        <p class="text-xs text-gray-400">
+                            {{ stats.summary.waste_units || 0 }} item(s)
+                            disposed
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Net after waste -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
+                <div class="flex items-center">
+                    <div
+                        class="p-2 rounded-lg"
+                        :class="
+                            (stats.summary.net_after_waste || 0) >= 0
+                                ? 'bg-green-100'
+                                : 'bg-red-100'
+                        "
+                    >
+                        <i
+                            class="pi pi-check-circle text-xl"
+                            :class="
+                                (stats.summary.net_after_waste || 0) >= 0
+                                    ? 'text-green-600'
+                                    : 'text-red-600'
+                            "
+                        ></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm text-gray-600">Net After Waste</p>
+                        <p
+                            class="text-2xl font-bold"
+                            :class="
+                                (stats.summary.net_after_waste || 0) >= 0
+                                    ? 'text-gray-900'
+                                    : 'text-red-600'
+                            "
+                        >
+                            ₱{{
+                                formatCompact(
+                                    stats.summary.net_after_waste || 0,
+                                )
+                            }}
+                        </p>
+                        <p class="text-xs text-gray-400">profit − waste</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ── Activity ── -->
+        <p
+            class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-3"
+        >
+            Activity
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             <!-- Total Items (all-time count, not range-bound) -->
-            <div class="bg-white p-6 rounded-xl shadow border">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
                 <div class="flex items-center">
                     <div class="p-2 bg-blue-100 rounded-lg">
                         <i class="pi pi-box text-blue-600 text-xl"></i>
@@ -26,7 +166,7 @@
             </div>
 
             <!-- Orders in range -->
-            <div class="bg-white p-6 rounded-xl shadow border">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
                 <div class="flex items-center">
                     <div class="p-2 bg-green-100 rounded-lg">
                         <i
@@ -43,7 +183,7 @@
             </div>
 
             <!-- Items sold in range -->
-            <div class="bg-white p-6 rounded-xl shadow border">
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
                 <div class="flex items-center">
                     <div class="p-2 bg-yellow-100 rounded-lg">
                         <i class="pi pi-tags text-yellow-600 text-xl"></i>
@@ -57,21 +197,28 @@
                 </div>
             </div>
 
-            <!-- Revenue in range -->
-            <div class="bg-white p-6 rounded-xl shadow border">
+            <!-- Margin in range -->
+            <div class="bg-white p-4 sm:p-6 rounded-xl shadow border">
                 <div class="flex items-center">
-                    <div class="p-2 bg-green-100 rounded-lg">
-                        <i class="pi pi-dollar text-green-600 text-xl"></i>
+                    <div class="p-2 bg-purple-100 rounded-lg">
+                        <i class="pi pi-percentage text-purple-600 text-xl"></i>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm text-gray-600">Revenue</p>
+                        <p class="text-sm text-gray-600">Margin</p>
                         <p class="text-2xl font-bold">
-                            ₱{{ formatCash(stats.summary.revenue || 0) }}
+                            {{ stats.summary.margin || 0 }}%
                         </p>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Honest caveat about unset costs -->
+        <p class="text-xs text-gray-400 -mt-4 mb-8">
+            <i class="pi pi-info-circle mr-1"></i>
+            Items without a cost price set are counted as ₱0 cost, which can
+            make profit and margin look higher than reality.
+        </p>
 
         <!-- Loading -->
         <div v-if="loadingStats" class="flex justify-center py-12">
@@ -194,7 +341,17 @@ export default {
             loadingStats: false,
             range: { from: null, to: null },
             stats: {
-                summary: { revenue: 0, orders: 0, items_sold: 0 },
+                summary: {
+                    revenue: 0,
+                    cost: 0,
+                    profit: 0,
+                    margin: 0,
+                    waste_cost: 0,
+                    waste_units: 0,
+                    net_after_waste: 0,
+                    orders: 0,
+                    items_sold: 0,
+                },
                 by_day: [],
                 top_items: [],
             },
@@ -262,13 +419,25 @@ export default {
         formatCash(amount) {
             return parseFloat(amount || 0).toFixed(2);
         },
+        // Compact peso for cards: ₱228, ₱1.2k, ₱1.2M — no clipping on mobile
+        formatCompact(amount) {
+            const n = parseFloat(amount || 0);
+            const abs = Math.abs(n);
+            if (abs >= 1_000_000) {
+                return (n / 1_000_000).toFixed(1).replace(/\.0$/, "") + "M";
+            }
+            if (abs >= 1_000) {
+                return (n / 1_000).toFixed(1).replace(/\.0$/, "") + "k";
+            }
+            // Under 1000: show whole peso, or 2 decimals only if there are centavos
+            return Number.isInteger(n) ? String(n) : n.toFixed(2);
+        },
         monthName(m) {
             return new Date(2000, m - 1, 1).toLocaleString("default", {
                 month: "long",
             });
         },
         onRangeChange(range) {
-            console.log("Range emitted:", range);
             this.range = range;
             this.fetchStats();
         },

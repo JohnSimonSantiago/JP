@@ -111,6 +111,11 @@
                                 :shop="shop"
                             />
 
+                            <StockHistoryTab
+                                v-if="activeTab === 'stock-history'"
+                                :shop="shop"
+                            />
+
                             <EarningsTab
                                 v-if="activeTab === 'earnings'"
                                 :shop="shop"
@@ -195,6 +200,7 @@ import LoyaltyTab from "./MyShop/LoyaltyTab.vue";
 import SettingsTab from "./MyShop/SettingsTab.vue";
 import ReportsTab from "./MyShop/ReportsTab.vue";
 import EarningsTab from "./MyShop/EarningsTab.vue";
+import StockHistoryTab from "./MyShop/StockHistoryTab.vue";
 
 export default {
     components: {
@@ -204,6 +210,7 @@ export default {
         SettingsTab,
         ReportsTab,
         EarningsTab,
+        StockHistoryTab,
     },
 
     data() {
@@ -240,6 +247,11 @@ export default {
         tabs() {
             return [
                 { id: "items", name: "Items", icon: "pi pi-box" },
+                {
+                    id: "stock-history",
+                    name: "Stock History",
+                    icon: "pi pi-history",
+                },
                 {
                     id: "orders",
                     name: "Orders",

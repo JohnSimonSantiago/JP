@@ -133,7 +133,6 @@
                                         </span>
                                     </div>
                                     <div
-                                        v-if="order.shop_claim_amount"
                                         class="flex items-center space-x-2 text-sm"
                                     >
                                         <span class="text-gray-600"
@@ -144,7 +143,9 @@
                                         >
                                             ₱{{
                                                 formatCash(
-                                                    order.shop_claim_amount *
+                                                    (order.shop_claim_amount > 0
+                                                        ? order.shop_claim_amount
+                                                        : order.price_paid) *
                                                         order.quantity,
                                                 )
                                             }}
@@ -275,15 +276,16 @@
                                             )
                                         }}
                                         <span
-                                            v-if="order.shop_claim_amount"
+                                            v-if="order.shop_claim_amount > 0"
                                             class="text-purple-700 font-medium"
                                         >
-                                            • You earn: ₱{{
+                                            • You earn ₱{{
                                                 formatCash(
                                                     order.shop_claim_amount *
                                                         order.quantity,
                                                 )
                                             }}
+                                            in payouts
                                         </span>
                                     </p>
                                 </div>

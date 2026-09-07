@@ -18,6 +18,9 @@ class Purchase extends Model
         'quantity',
         'status',
         'rejection_reason',
+        'customer_type',
+        'walk_in_name',
+        'payment_method',
         'counts_for_loyalty',
         'loyalty_card_id',
         // Frozen "receipt" numbers for the discount/payout system

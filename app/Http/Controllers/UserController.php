@@ -139,9 +139,10 @@ public function signUp(Request $request)
     try {
         $validIdPath = $request->file('valid_id')->store('valid_ids', 'public');
 
-        $newUser = new User();
+$newUser = new User();
 $newUser->name = $request->name;
         $newUser->username = $request->name;
+        $newUser->full_name = $request->full_name;
         $newUser->password = Hash::make($request->password);
         $newUser->valid_id = $validIdPath;
         $newUser->password = Hash::make($request->password);

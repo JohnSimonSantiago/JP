@@ -141,7 +141,11 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/walk-in-order', [ShopItemController::class, 'walkInOrder']);
             Route::get('/sales-report', [ShopItemController::class, 'salesReport']);
             Route::get('/sales-stats', [ShopItemController::class, 'salesStats']);
+            Route::get('/stock-history', [ShopItemController::class, 'stockHistory']);
             Route::get('/payouts', [PayoutController::class, 'show']); // Balance + history (owner or admin)
+
+            // Stock adjustment (restock / dispose) — two-segment path, safe before bare wildcards
+            Route::post('/{shopItem}/adjust-stock', [ShopItemController::class, 'adjustStock']);
 
             // Wildcard item routes LAST so literal paths above win
             Route::post('/{shopItem}', [ShopItemController::class, 'update']); // Update item (POST for file uploads)
