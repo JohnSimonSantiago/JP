@@ -345,36 +345,107 @@
                     />
                     <div class="flex gap-2">
                         <div ref="balancesList" class="flex-1 space-y-1">
-                            <button
+                            <div
                                 v-for="u in filteredBalances"
                                 :key="u.id"
                                 :data-letter="
                                     (u.name || '').charAt(0).toUpperCase()
                                 "
-                                @click="selectFromBalances(u)"
-                                class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
                             >
-                                <div>
-                                    <p
-                                        class="text-sm font-medium text-gray-800"
-                                    >
-                                        {{ u.name }}
-                                    </p>
-                                    <p class="text-xs text-gray-400">
-                                        @{{ u.username }}
-                                    </p>
-                                </div>
-                                <span
-                                    class="text-xs font-semibold px-2 py-0.5 rounded-full"
-                                    :class="
-                                        u.consumable_minutes < 0
-                                            ? 'bg-red-50 text-red-600'
-                                            : 'bg-green-50 text-green-600'
-                                    "
+                                <button
+                                    @click="selectFromBalances(u)"
+                                    class="w-full flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-50 text-left transition-colors"
                                 >
-                                    {{ formatMinutes(u.consumable_minutes) }}
-                                </span>
-                            </button>
+                                    <div>
+                                        <p
+                                            class="text-sm font-medium text-gray-800"
+                                        >
+                                            {{ u.name }}
+                                        </p>
+                                        <p class="text-xs text-gray-400">
+                                            @{{ u.username }}
+                                        </p>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span
+                                            class="text-xs font-semibold px-2 py-0.5 rounded-full"
+                                            :class="
+                                                u.consumable_minutes < 0
+                                                    ? 'bg-red-50 text-red-600'
+                                                    : 'bg-green-50 text-green-600'
+                                            "
+                                        >
+                                            {{
+                                                formatMinutes(
+                                                    u.consumable_minutes,
+                                                )
+                                            }}
+                                        </span>
+                                        <i
+                                            @click.stop="openEdit(u)"
+                                            class="pi pi-pencil text-gray-400 hover:text-indigo-600 text-sm"
+                                        ></i>
+                                    </div>
+                                </button>
+
+                                <!-- Inline overwrite panel -->
+                                <div
+                                    v-if="editingId === u.id"
+                                    class="bg-indigo-50 rounded-lg p-3 mt-1 mb-2"
+                                >
+                                    <p class="text-xs text-indigo-500 mb-2">
+                                        Set exact balance for
+                                        <strong>{{ u.name }}</strong>
+                                    </p>
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <div class="flex-1">
+                                            <label class="text-xs text-gray-500"
+                                                >Hours</label
+                                            >
+                                            <input
+                                                v-model.number="editHours"
+                                                type="number"
+                                                class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </div>
+                                        <div class="flex-1">
+                                            <label class="text-xs text-gray-500"
+                                                >Minutes</label
+                                            >
+                                            <input
+                                                v-model.number="editMinutes"
+                                                type="number"
+                                                class="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                            />
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-indigo-600 mb-2">
+                                        New balance:
+                                        <strong>{{
+                                            formatMinutes(editTotalMinutes)
+                                        }}</strong>
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <button
+                                            @click="saveOverwrite(u)"
+                                            :disabled="savingEdit"
+                                            class="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-300 text-white text-sm font-medium py-1.5 rounded-lg"
+                                        >
+                                            {{
+                                                savingEdit
+                                                    ? "Saving..."
+                                                    : "Save"
+                                            }}
+                                        </button>
+                                        <button
+                                            @click="cancelEdit"
+                                            class="px-4 bg-white border border-gray-200 text-gray-600 text-sm rounded-lg hover:bg-gray-50"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex flex-col text-base leading-snug">
                             <button
@@ -582,6 +653,11 @@ export default {
             totalMinutes: 0,
             owingCount: 0,
             loadingBalances: false,
+
+            editingId: null,
+            editHours: 0,
+            editMinutes: 0,
+            savingEdit: false,
         };
     },
     computed: {
@@ -593,6 +669,12 @@ export default {
                     u.name?.toLowerCase().includes(q) ||
                     u.username?.toLowerCase().includes(q),
             );
+        },
+        editTotalMinutes() {
+            const h = Number(this.editHours) || 0;
+            const m = Number(this.editMinutes) || 0;
+            const sign = h < 0 || m < 0 ? -1 : 1;
+            return sign * (Math.abs(h) * 60 + Math.abs(m));
         },
         availableLetters() {
             const set = new Set();
@@ -641,6 +723,53 @@ export default {
                 console.error("Failed to fetch balances:", error);
             } finally {
                 this.loadingBalances = false;
+            }
+        },
+
+        openEdit(u) {
+            this.editingId = u.id;
+            const abs = Math.abs(u.consumable_minutes);
+            const sign = u.consumable_minutes < 0 ? -1 : 1;
+            this.editHours = sign * Math.floor(abs / 60);
+            this.editMinutes = abs % 60;
+        },
+
+        cancelEdit() {
+            this.editingId = null;
+            this.editHours = 0;
+            this.editMinutes = 0;
+        },
+
+        async saveOverwrite(u) {
+            this.savingEdit = true;
+            try {
+                const response = await axios.post(
+                    "/api/lounge/consumable/overwrite",
+                    {
+                        user_id: u.id,
+                        minutes: this.editTotalMinutes,
+                    },
+                );
+                if (response.data.success) {
+                    u.consumable_minutes =
+                        response.data.user.consumable_minutes;
+                    this.$toast?.add({
+                        severity: "success",
+                        summary: "Updated",
+                        detail: response.data.message,
+                    });
+                    this.cancelEdit();
+                    this.fetchBalances();
+                }
+            } catch (error) {
+                this.$toast?.add({
+                    severity: "error",
+                    summary: "Error",
+                    detail:
+                        error.response?.data?.message || "Failed to update.",
+                });
+            } finally {
+                this.savingEdit = false;
             }
         },
 

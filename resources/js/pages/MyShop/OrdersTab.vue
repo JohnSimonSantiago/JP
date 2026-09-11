@@ -133,22 +133,22 @@
                                         </span>
                                     </div>
                                     <div
+                                        v-if="order.shop_claim_amount > 0"
                                         class="flex items-center space-x-2 text-sm"
                                     >
                                         <span class="text-gray-600"
-                                            >You Earn:</span
+                                            >You earn:</span
                                         >
                                         <span
                                             class="font-semibold text-purple-700 text-base"
                                         >
                                             ₱{{
                                                 formatCash(
-                                                    (order.shop_claim_amount > 0
-                                                        ? order.shop_claim_amount
-                                                        : order.price_paid) *
+                                                    order.shop_claim_amount *
                                                         order.quantity,
                                                 )
                                             }}
+                                            in payouts
                                         </span>
                                     </div>
                                 </div>

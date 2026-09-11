@@ -124,6 +124,36 @@ class LoungeController extends Controller
         ]);
     }
 
+    public function overwriteConsumableBalance(Request $request)
+    {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'minutes' => 'required|integer|min:-100000|max:100000',
+        ]);
+
+        $user = User::findOrFail($request->user_id);
+
+        if ($user->level !== 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only Level 1 members have consumable time.',
+            ], 422);
+        }
+
+        $user->update(['consumable_minutes' => $request->minutes]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Balance updated.',
+            'user' => [
+                'id'                 => $user->id,
+                'name'               => $user->name,
+                'cash'               => $user->cash,
+                'consumable_minutes' => $user->consumable_minutes,
+            ],
+        ]);
+    }
+
     public function consumableBalances(Request $request)
     {
         $users = User::where('level', 1)
