@@ -298,6 +298,15 @@
                                             Out of Stock
                                         </span>
                                     </div>
+                                    <div
+                                        v-if="
+                                            item.has_discount &&
+                                            discountPercent(item) > 0
+                                        "
+                                        class="absolute top-1.5 left-1.5 bg-red-600 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded"
+                                    >
+                                        {{ discountPercent(item) }}% off
+                                    </div>
                                 </div>
 
                                 <!-- Body -->
@@ -1173,6 +1182,14 @@ export default {
             return item.has_discount
                 ? parseFloat(item.discounted_price)
                 : parseFloat(item.cash_price);
+        },
+
+        // Combined admin+store discount %, derived from the price the backend returns
+        discountPercent(item) {
+            const list = parseFloat(item.cash_price) || 0;
+            const pays = parseFloat(item.discounted_price) || 0;
+            if (!item.has_discount || list <= 0) return 0;
+            return Math.round(((list - pays) / list) * 100);
         },
 
         getMaxQuantity(item) {

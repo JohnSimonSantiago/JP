@@ -280,9 +280,7 @@
                                         }}
                                     </p>
                                     <p class="text-xs text-gray-500">
-                                        {{
-                                            payoutData.claimable_orders || 0
-                                        }}
+                                        {{ payoutData.claimable_orders || 0 }}
                                         completed order{{
                                             (payoutData.claimable_orders ||
                                                 0) === 1
@@ -348,6 +346,15 @@
                                                 new Date(
                                                     p.created_at,
                                                 ).toLocaleDateString()
+                                            }}
+                                            ·
+                                            {{
+                                                new Date(
+                                                    p.created_at,
+                                                ).toLocaleTimeString([], {
+                                                    hour: "2-digit",
+                                                    minute: "2-digit",
+                                                })
                                             }}
                                             · {{ p.order_count }} orders
                                             <span v-if="p.processed_by"
