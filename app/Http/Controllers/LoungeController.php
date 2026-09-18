@@ -340,6 +340,7 @@ class LoungeController extends Controller
         foreach ($sessions as $s) {
             $line = [
                 'id'            => $s->id,
+                'user_id'       => $s->user_id,
                 'customer_name' => $s->customer_name,
                 'is_free'       => (bool) $s->is_free,
                 'billing_mode'  => $s->billing_mode,
