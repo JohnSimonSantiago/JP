@@ -255,7 +255,7 @@ class LoungeController extends Controller
             $isFree = in_array($userLevel, [2, 3]);
         }
 
-        // Consumable mode only makes sense for Level 1 members with a positive balance
+        // Consumable mode is Level 1 only — balance may be 0 or negative, it just counts down past zero
         if ($billingMode === 'consumable') {
             if (!$request->user_id || $userLevel !== 1 || !isset($user)) {
                 return response()->json([
@@ -264,12 +264,6 @@ class LoungeController extends Controller
                 ], 422);
             }
 
-            if ($user->consumable_minutes <= 0) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This member has no consumable time balance. Please buy time first.',
-                ], 422);
-            }
         }
 
         // Free (Level 2/3) and walk-ins always stay hourly
