@@ -287,7 +287,7 @@
                                 </span>
                                 <input
                                     type="file"
-                                    accept="image/jpeg,image/png"
+                                    accept="image/*"
                                     class="hidden"
                                     @change="onFileChange"
                                 />
@@ -295,15 +295,19 @@
                         </div>
                         <button
                             type="submit"
-                            :disabled="!isFormValid"
+                            :disabled="!isFormValid || submitting"
                             class="w-full text-white font-medium rounded-lg text-sm px-5 py-2.5 text-center transition-colors duration-200"
                             :class="
-                                isFormValid
+                                isFormValid && !submitting
                                     ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800'
                                     : 'bg-gray-400 cursor-not-allowed'
                             "
                         >
-                            Create an account
+                            {{
+                                submitting
+                                    ? "Creating account..."
+                                    : "Create an account"
+                            }}
                         </button>
                         <p
                             class="text-sm font-light text-gray-500 dark:text-gray-400 text-center"
@@ -337,6 +341,7 @@ export default {
             showConfirmPassword: false,
             validId: null,
             validIdName: "",
+            submitting: false,
         };
     },
     computed: {
@@ -351,12 +356,54 @@ export default {
         },
     },
     methods: {
-        onFileChange(e) {
+        async onFileChange(e) {
             const file = e.target.files[0];
-            if (file) {
-                this.validId = file;
-                this.validIdName = file.name;
+            if (!file) return;
+            this.validId = null;
+            this.validIdName = "";
+            try {
+                this.validId = await this.compressImage(file);
+            } catch (err) {
+                this.validId = file; // fallback: send original
             }
+            this.validIdName = file.name;
+        },
+        compressImage(file, maxSize = 1600, quality = 0.8) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                const url = URL.createObjectURL(file);
+                img.onload = () => {
+                    let { width, height } = img;
+                    if (width > maxSize || height > maxSize) {
+                        const scale = maxSize / Math.max(width, height);
+                        width = Math.round(width * scale);
+                        height = Math.round(height * scale);
+                    }
+                    const canvas = document.createElement("canvas");
+                    canvas.width = width;
+                    canvas.height = height;
+                    canvas.getContext("2d").drawImage(img, 0, 0, width, height);
+                    canvas.toBlob(
+                        (blob) => {
+                            URL.revokeObjectURL(url);
+                            if (!blob)
+                                return reject(new Error("Compression failed"));
+                            resolve(
+                                new File([blob], "valid_id.jpg", {
+                                    type: "image/jpeg",
+                                }),
+                            );
+                        },
+                        "image/jpeg",
+                        quality,
+                    );
+                };
+                img.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    reject(new Error("Cannot read image"));
+                };
+                img.src = url;
+            });
         },
         signup() {
             if (this.password !== this.confirmPassword) {
@@ -371,6 +418,9 @@ export default {
                 alert("Please upload a valid ID.");
                 return;
             }
+
+            if (this.submitting) return;
+            this.submitting = true;
 
             const data = new FormData();
             data.append("name", this.name);
@@ -409,6 +459,9 @@ export default {
                     } else {
                         alert("Signup failed. Please try again.");
                     }
+                })
+                .finally(() => {
+                    this.submitting = false;
                 });
         },
     },
