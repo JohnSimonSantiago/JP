@@ -184,7 +184,7 @@ class LoungeController extends Controller
             $query->where('created_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
         }
 
-        $purchases = $query->limit(200)->get();
+        $purchases = $query->get();
 
         return response()->json([
             'success'        => true,

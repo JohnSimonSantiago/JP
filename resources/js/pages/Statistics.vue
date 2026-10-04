@@ -35,14 +35,25 @@
 import BuyTimeReport from "@/pages/reports/BuyTimeReport.vue";
 import LoungeReport from "@/pages/reports/LoungeReport.vue";
 import ConsumableTimeBoughtReport from "@/pages/reports/ConsumableTimeBoughtReport.vue";
+import GeneralReport from "@/pages/reports/GeneralReport.vue";
 
 export default {
     name: "Statistics",
-    components: { BuyTimeReport, LoungeReport, ConsumableTimeBoughtReport },
+    components: {
+        BuyTimeReport,
+        LoungeReport,
+        ConsumableTimeBoughtReport,
+        GeneralReport,
+    },
     data() {
         return {
-            active: "buyTime",
+            active: "general",
             tabs: [
+                {
+                    key: "general",
+                    label: "General",
+                    component: "GeneralReport",
+                },
                 {
                     key: "buyTime",
                     label: "Buy Time",
