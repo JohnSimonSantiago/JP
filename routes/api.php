@@ -17,6 +17,7 @@ use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\LoungeController;
 use App\Http\Controllers\PayoutController;
+use App\Http\Controllers\CoinController;
 
 /*
 |--------------------------------------------------------------------------
@@ -223,6 +224,13 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
     Route::post('/memberships/gift', [MembershipController::class, 'gift']);
+
+    // Coins wheel (admin only, web only)
+    Route::get('/coins/search', [CoinController::class, 'search']);
+    Route::get('/coins/wheel', [CoinController::class, 'wheel']);
+    Route::post('/coins/spin', [CoinController::class, 'spin']);
+    Route::get('/coins/history', [CoinController::class, 'history']);
+    Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last 
 
     // Lounge pricing (admin only)
     Route::get('/lounge/pricing', [LoungeController::class, 'getPricing']);

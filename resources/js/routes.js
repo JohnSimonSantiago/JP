@@ -19,6 +19,7 @@ import AdminMembershipManagement from "./pages/AdminMembershipManagement.vue";
 import LoungeSessionsDashboard from "./pages/LoungeSessionsDashboard.vue";
 import LoungeSettings from "./pages/LoungeSettings.vue";
 import LoungeBuyTime from "./pages/LoungeBuyTime.vue";
+import CoinsWheel from "./pages/CoinsWheel.vue";
 import Statistics from "@/pages/Statistics.vue";
 
 const requiresShopOwner = (to, from, next) => {
@@ -194,6 +195,12 @@ export const routes = [
         path: "/admin/statistics",
         name: "statistics",
         component: Statistics,
+        beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/admin/coins",
+        name: "admin-coins",
+        component: CoinsWheel,
         beforeEnter: requiresAdmin,
     },
 ];

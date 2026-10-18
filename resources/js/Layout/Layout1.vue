@@ -850,6 +850,47 @@
                             >
                         </router-link>
 
+                        <!-- Coins Wheel (Admin Only) -->
+                        <router-link
+                            v-if="isAdmin"
+                            active-class="bg-indigo-50 text-indigo-700 border-r-2 border-indigo-600"
+                            to="/admin/coins"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 group"
+                        >
+                            <svg
+                                viewBox="0 0 24 24"
+                                class="w-[18px] h-[18px] group-hover:scale-110 transition-transform"
+                                fill="none"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <circle cx="12" cy="12" r="9.5" />
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="6.5"
+                                    stroke-width="1.2"
+                                />
+                                <text
+                                    x="12"
+                                    y="12.5"
+                                    text-anchor="middle"
+                                    dominant-baseline="middle"
+                                    font-size="8"
+                                    font-weight="700"
+                                    fill="currentColor"
+                                    stroke="none"
+                                >
+                                    ₱
+                                </text>
+                            </svg>
+                            <span class="font-medium">Coins</span>
+                            <span
+                                class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
+                                >Admin</span
+                            >
+                        </router-link>
+
                         <!-- Statistics (Admin Only) -->
                         <router-link
                             v-if="isAdmin"
