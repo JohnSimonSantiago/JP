@@ -5,19 +5,38 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class CoinController extends Controller
 {
     /**
-     * 20 slices: 17 x 5 (85%), 2 x 10 (10%), 1 x 15 (5%)
-     * Big prizes are spread out so the wheel looks balanced.
+     * Weights are out of 1000 (like 1000 raffle tickets).
+     * 5 = 94%, 10 = 5%, 15 = 1%
+     * Slice size on the wheel matches its weight.
      */
     private const WHEEL = [
-        5, 5, 5, 5, 10,
-        5, 5, 5, 5, 5,
-        15, 5, 5, 5, 5,
-        10, 5, 5, 5, 5,
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 10, 'weight' => 25],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 15, 'weight' => 10],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 10, 'weight' => 25],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
+        ['value' => 5,  'weight' => 47],
     ];
 
     /**
@@ -104,8 +123,17 @@ class CoinController extends Controller
             'user_id' => 'required|exists:users,id',
         ]);
 
-        $index  = random_int(0, count(self::WHEEL) - 1);
-        $amount = self::WHEEL[$index];
+        // Draw one of 1000 tickets, then find which slice owns it
+        $roll  = random_int(1, 1000);
+        $index = 0;
+        foreach (self::WHEEL as $i => $slice) {
+            $roll -= $slice['weight'];
+            if ($roll <= 0) {
+                $index = $i;
+                break;
+            }
+        }
+        $amount = self::WHEEL[$index]['value'];
 
         $member = DB::transaction(function () use ($request, $amount) {
             $member = User::lockForUpdate()->findOrFail($request->user_id);

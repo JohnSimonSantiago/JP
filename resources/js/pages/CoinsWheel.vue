@@ -122,24 +122,24 @@
                                 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)',
                         }"
                     >
-                        <g v-for="(value, i) in slices" :key="i">
+                        <g v-for="(s, i) in slices" :key="i">
                             <path
                                 :d="slicePath(i)"
-                                :fill="sliceColor(value, i)"
+                                :fill="sliceColor(s.value, i)"
                                 stroke="#ffffff"
                                 stroke-width="1.5"
                             />
                             <text
                                 :x="labelPos(i).x"
                                 :y="labelPos(i).y"
-                                :transform="`rotate(${labelPos(i).angle}, ${labelPos(i).x}, ${labelPos(i).y})`"
+                                :transform="`rotate(${labelPos(i).rotate}, ${labelPos(i).x}, ${labelPos(i).y})`"
                                 text-anchor="middle"
                                 dominant-baseline="middle"
-                                font-size="14"
+                                :font-size="labelPos(i).size"
                                 font-weight="700"
-                                :fill="value === 5 ? '#3730a3' : '#ffffff'"
+                                :fill="s.value >= 10 ? '#ffffff' : '#3730a3'"
                             >
-                                {{ value }}
+                                {{ s.value }}
                             </text>
                         </g>
                         <circle
@@ -315,7 +315,7 @@ export default {
 
             selectedUser: null,
 
-            slices: [],
+            slices: [], // [{ value, weight }]
             rotation: 0,
             spinning: false,
             result: null,
@@ -330,6 +330,18 @@ export default {
             scanError: null,
             scanBusy: false,
         };
+    },
+    computed: {
+        // Start/end angle (degrees) of each slice, sized by weight
+        sliceAngles() {
+            let start = 0;
+            return this.slices.map(() => {
+                const size = 360 / this.slices.length; // equal slices (odds stay weighted on the server)
+                const range = { start, end: start + size, size };
+                start += size;
+                return range;
+            });
+        },
     },
     methods: {
         async fetchWheel() {
@@ -382,37 +394,44 @@ export default {
             this.search = "";
         },
 
-        // ── Wheel drawing ──
+        // ── Wheel drawing (slice size = its real chance) ──
         slicePath(i) {
-            const n = this.slices.length;
+            const { start, end, size } = this.sliceAngles[i];
             const cx = 150,
                 cy = 150,
                 r = 145;
-            const a0 = ((i * 360) / n) * (Math.PI / 180);
-            const a1 = (((i + 1) * 360) / n) * (Math.PI / 180);
+            const largeArc = size > 180 ? 1 : 0;
+            const a0 = start * (Math.PI / 180);
+            const a1 = end * (Math.PI / 180);
             const x0 = cx + r * Math.sin(a0);
             const y0 = cy - r * Math.cos(a0);
             const x1 = cx + r * Math.sin(a1);
             const y1 = cy - r * Math.cos(a1);
-            return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 0 1 ${x1} ${y1} Z`;
+            return `M ${cx} ${cy} L ${x0} ${y0} A ${r} ${r} 0 ${largeArc} 1 ${x1} ${y1} Z`;
         },
 
         labelPos(i) {
-            const n = this.slices.length;
-            const angle = ((i + 0.5) * 360) / n;
+            const { start, end, size } = this.sliceAngles[i];
+            const angle = (start + end) / 2;
             const rad = angle * (Math.PI / 180);
-            const r = 115;
+            const thin = size < 15; // thin slices get small, outward-facing labels
+            const r = thin ? 118 : 110;
             return {
                 x: 150 + r * Math.sin(rad),
                 y: 150 - r * Math.cos(rad),
-                angle,
+                rotate: thin ? angle - 90 : angle,
+                size: thin ? 10 : 16,
             };
         },
 
         sliceColor(value, i) {
-            if (value === 15) return "#f59e0b";
-            if (value === 10) return "#6366f1";
-            return i % 2 === 0 ? "#c7d2fe" : "#e0e7ff";
+            if (value === 15) return "#f59e0b"; // gold
+            if (value === 10) return "#6366f1"; // indigo
+            // Alternate two shades across the 5 slices, like the old wheel
+            const fivesBefore = this.slices
+                .slice(0, i)
+                .filter((s) => s.value === 5).length;
+            return fivesBefore % 2 === 0 ? "#c7d2fe" : "#e0e7ff";
         },
 
         // ── Spin: server picks the slice, wheel just lands on it ──
@@ -430,9 +449,11 @@ export default {
 
                 if (!response.data.success) throw new Error();
 
-                const n = this.slices.length;
-                const index = response.data.slice_index;
-                const target = (360 - ((index + 0.5) * 360) / n) % 360;
+                // Land at a random spot inside the winning slice (not dead center)
+                const { start, size } =
+                    this.sliceAngles[response.data.slice_index];
+                const point = start + size * (0.2 + Math.random() * 0.6);
+                const target = (360 - point) % 360;
                 const base = this.rotation - (this.rotation % 360);
                 this.rotation = base + 360 * 6 + target;
 
