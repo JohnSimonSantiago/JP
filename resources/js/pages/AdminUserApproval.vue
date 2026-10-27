@@ -509,10 +509,20 @@
                     class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4"
                 >
                     <h3
-                        class="text-lg font-semibold text-gray-900 dark:text-white mb-4"
+                        class="text-lg font-semibold text-gray-900 dark:text-white mb-1"
                     >
                         Valid ID — {{ idModalUser.name }}
                     </h3>
+                    <div
+                        class="mb-4 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2"
+                    >
+                        <div class="text-xs text-gray-400">Full Name</div>
+                        <div
+                            class="text-sm font-semibold text-gray-800 dark:text-white"
+                        >
+                            {{ idModalUser.full_name || "Not provided" }}
+                        </div>
+                    </div>
                     <img
                         :src="`/storage/${idModalUser.valid_id}`"
                         alt="Valid ID"

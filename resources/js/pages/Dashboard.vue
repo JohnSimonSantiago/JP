@@ -134,9 +134,9 @@
                                 ₱100 / 3 hours · ₱200 / day.
                             </li>
                             <li>
-                                Charged in 30-minute blocks, with 10 minutes of
-                                grace on each block. Stay 34 minutes and you're
-                                charged for 30; stay 42 minutes and you're
+                                Charged in 30-minute blocks, with 5 minutes of
+                                grace on each block. Stay 31 minutes and you're
+                                charged for 30; stay 35 minutes and you're
                                 charged for a full hour.
                             </li>
                             <li>

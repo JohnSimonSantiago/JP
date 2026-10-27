@@ -150,6 +150,41 @@
                 </div>
             </div>
 
+            <!-- Best days -->
+            <div
+                v-if="hasData"
+                class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6"
+            >
+                <div class="bg-indigo-50 rounded-lg p-3">
+                    <p class="text-xs text-indigo-400">Best buy time day</p>
+                    <p class="text-lg font-bold text-indigo-700">
+                        ₱{{ bestBuyDay ? money(bestBuyDay.value) : 0 }}
+                    </p>
+                    <p class="text-xs text-indigo-400 mt-0.5">
+                        <template v-if="bestBuyDay">
+                            {{ dayLabelLong(bestBuyDay.key) }} ·
+                            {{ formatMinutes(bestBuyDay.day.buyMinutes) }} sold
+                        </template>
+                        <template v-else>—</template>
+                    </p>
+                </div>
+                <div class="bg-green-50 rounded-lg p-3">
+                    <p class="text-xs text-green-400">Best lounge day</p>
+                    <p class="text-lg font-bold text-green-600">
+                        ₱{{ bestLoungeDay ? money(bestLoungeDay.value) : 0 }}
+                    </p>
+                    <p class="text-xs text-green-400 mt-0.5">
+                        <template v-if="bestLoungeDay">
+                            {{ dayLabelLong(bestLoungeDay.key) }} ·
+                            {{ bestLoungeDay.day.visits }} visit{{
+                                bestLoungeDay.day.visits === 1 ? "" : "s"
+                            }}
+                        </template>
+                        <template v-else>—</template>
+                    </p>
+                </div>
+            </div>
+
             <!-- Customer mix + top customers -->
             <div
                 v-if="sessions.length"
@@ -390,11 +425,15 @@ export default {
         byDay() {
             const map = {};
             this.days.forEach(
-                (d) => (map[d] = { buy: 0, lounge: 0, visits: 0 }),
+                (d) =>
+                    (map[d] = { buy: 0, buyMinutes: 0, lounge: 0, visits: 0 }),
             );
             this.purchases.forEach((p) => {
                 const d = this.dayKey(p.created_at);
-                if (map[d]) map[d].buy += Number(p.amount || 0);
+                if (map[d]) {
+                    map[d].buy += Number(p.amount || 0);
+                    map[d].buyMinutes += Number(p.minutes_added || 0);
+                }
             });
             this.sessions.forEach((s) => {
                 const d = this.dayKey(s.checked_in_at);
@@ -409,6 +448,12 @@ export default {
             return Object.values(this.byDay).filter(
                 (d) => d.buy > 0 || d.visits > 0,
             ).length;
+        },
+        bestBuyDay() {
+            return this.topDay("buy");
+        },
+        bestLoungeDay() {
+            return this.topDay("lounge");
         },
         busiestWeekday() {
             // Average revenue per weekday (e.g. total of all Saturdays ÷ number of Saturdays)
@@ -587,6 +632,24 @@ export default {
         },
         shortLabel(key) {
             return new Date(key + "T00:00:00").toLocaleDateString("en-PH", {
+                month: "short",
+                day: "numeric",
+            });
+        },
+        topDay(field) {
+            // Highest-value day for the given field ("buy" or "lounge")
+            let best = null;
+            this.days.forEach((d) => {
+                const v = this.byDay[d][field];
+                if (v > 0 && (!best || v > best.value)) {
+                    best = { key: d, value: v, day: this.byDay[d] };
+                }
+            });
+            return best;
+        },
+        dayLabelLong(key) {
+            return new Date(key + "T00:00:00").toLocaleDateString("en-PH", {
+                weekday: "short",
                 month: "short",
                 day: "numeric",
             });

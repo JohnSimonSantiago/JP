@@ -82,10 +82,25 @@
                                 type="text"
                                 name="name"
                                 id="name"
-                                placeholder="Username"
+                                placeholder="e.g. juan123"
+                                autocomplete="username"
+                                autocapitalize="none"
                                 required
                                 class="bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                             />
+                            <p
+                                class="mt-1 text-xs text-gray-500 dark:text-gray-400"
+                            >
+                                At least 4 characters. Letters and numbers only.
+                                No spaces or symbols. Don't use your email (e.g.
+                                username@gmail.com).
+                            </p>
+                            <p
+                                v-if="usernameError"
+                                class="mt-1 text-sm text-red-600 dark:text-red-400"
+                            >
+                                {{ usernameError }}
+                            </p>
                         </div>
                         <div>
                             <label
@@ -345,9 +360,21 @@ export default {
         };
     },
     computed: {
+        usernameError() {
+            const u = this.name;
+            if (u.length === 0) return "";
+            if (/\s/.test(u)) return "Username cannot contain spaces.";
+            if (u.includes("@")) return "Don't use your email as a username.";
+            if (!/^[A-Za-z0-9]+$/.test(u))
+                return "Only letters and numbers are allowed.";
+            if (u.length < 4)
+                return `Username must be at least 4 characters (${u.length}/4).`;
+            return "";
+        },
         isFormValid() {
             return (
-                this.name.trim() !== "" &&
+                this.name.length >= 4 &&
+                !this.usernameError &&
                 this.full_name.trim() !== "" &&
                 this.password.length >= 8 &&
                 this.password === this.confirmPassword &&
@@ -406,6 +433,13 @@ export default {
             });
         },
         signup() {
+            if (this.usernameError || this.name.length < 4) {
+                alert(
+                    this.usernameError ||
+                        "Username must be at least 4 characters.",
+                );
+                return;
+            }
             if (this.password !== this.confirmPassword) {
                 alert("Passwords do not match!");
                 return;
