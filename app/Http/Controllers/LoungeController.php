@@ -426,14 +426,15 @@ class LoungeController extends Controller
         $hourlyRate   = $pricing->hourly_rate;
         $halfHourRate = $pricing->half_hour_rate;
 
-        // Grace: 10 free minutes past each hour mark before the next block starts
+        // Grace: under 5 minutes past each 30-min mark before the next block starts
+        // e.g. 34 min = 30 min block, 35 min = full hour; 1h04m = 1 hr, 1h05m = 1h30m
         $fullHours     = floor($elapsedMinutes / 60);
         $remainingMins = $elapsedMinutes - ($fullHours * 60);
 
-        if ($remainingMins <= 10) {
+        if ($remainingMins < 5) {
             $extraHalfHours = 0;              // within grace, ignore the leftover
-        } elseif ($remainingMins <= 40) {
-            $extraHalfHours = 1;              // half-hour block (+10 min grace)
+        } elseif ($remainingMins < 35) {
+            $extraHalfHours = 1;              // half-hour block (+5 min grace)
         } else {
             $extraHalfHours = 2;              // rounds up to a full hour
         }

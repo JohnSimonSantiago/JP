@@ -119,7 +119,7 @@
                         v-else-if="!session.is_free"
                         class="text-xs text-gray-400 mb-3 text-center"
                     >
-                        ⏱ 10-min grace period per hour applies
+                        ⏱ 5-min grace period per 30-min block applies
                     </p>
 
                     <div class="flex gap-2">
