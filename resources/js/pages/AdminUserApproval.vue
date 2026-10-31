@@ -235,7 +235,7 @@
                             class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700"
                         >
                             <tr
-                                v-for="user in filteredUsers"
+                                v-for="user in pagedUsers"
                                 :key="user.id"
                                 :data-letter="
                                     (user.name || '').charAt(0).toUpperCase()
@@ -461,6 +461,18 @@
                             </tr>
                         </tbody>
                     </table>
+                    <div
+                        v-if="visibleCount < filteredUsers.length"
+                        class="flex justify-center py-4"
+                    >
+                        <button
+                            @click="visibleCount += pageSize"
+                            class="px-4 py-2 text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                        >
+                            Load more ({{ filteredUsers.length - visibleCount }}
+                            remaining)
+                        </button>
+                    </div>
                 </div>
                 <!-- A-Z jump strip -->
                 <div class="flex flex-col text-base leading-snug pt-12">
@@ -556,6 +568,8 @@ export default {
             searchQuery: "",
             sortAlphabetical: false,
             alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""),
+            pageSize: 50,
+            visibleCount: 50,
         };
     },
     computed: {
@@ -585,6 +599,9 @@ export default {
 
             return result;
         },
+        pagedUsers() {
+            return this.filteredUsers.slice(0, this.visibleCount);
+        },
         pendingCount() {
             return this.users.filter((user) => !user.is_approved).length;
         },
@@ -601,6 +618,17 @@ export default {
                 if (c >= "A" && c <= "Z") set.add(c);
             });
             return set;
+        },
+    },
+    watch: {
+        activeTab() {
+            this.visibleCount = this.pageSize;
+        },
+        searchQuery() {
+            this.visibleCount = this.pageSize;
+        },
+        sortAlphabetical() {
+            this.visibleCount = this.pageSize;
         },
     },
     methods: {
@@ -891,6 +919,12 @@ export default {
 
         scrollToLetter(letter) {
             if (!this.availableLetters.has(letter)) return;
+            const idx = this.filteredUsers.findIndex(
+                (u) => (u.name || "").charAt(0).toUpperCase() === letter,
+            );
+            if (idx >= this.visibleCount) {
+                this.visibleCount = idx + this.pageSize;
+            }
             this.$nextTick(() => {
                 const target = document.querySelector(
                     `tr[data-letter="${letter}"]`,

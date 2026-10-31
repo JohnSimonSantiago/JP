@@ -9,6 +9,7 @@ use App\Models\LoungeSession;
 use App\Models\LoungePricing;
 use App\Models\ConsumablePurchase;
 use App\Models\LoungeReceipt;
+use App\Models\CoinWheelSetting;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
@@ -102,24 +103,42 @@ class LoungeController extends Controller
         }
 
         $user->increment('consumable_minutes', $minutesToAdd);
+
+        // Wheel spins: 1 per hour, cash purchases only, and only while the wheel is ON.
+        // Uses first() instead of current() so a missing settings row never blocks a sale.
+        $wheelOn = (bool) (CoinWheelSetting::first()?->is_enabled ?? false);
+        $spinsAwarded = ($wheelOn && $request->payment_method === 'cash') ? $hours : 0;
+
+        if ($spinsAwarded > 0) {
+            $user->increment('spin_credits', $spinsAwarded);
+        }
+
         $user->refresh();
 
         ConsumablePurchase::create([
             'user_id'        => $user->id,
             'amount'         => $amount,
             'minutes_added'  => $minutesToAdd,
+            'spins_awarded'  => $spinsAwarded,
             'payment_method' => $request->payment_method,
             'purchased_by'   => Auth::id(),
         ]);
 
+        $message = "Added {$hours} hour(s) for ₱{$amount}.";
+        if ($spinsAwarded > 0) {
+            $message .= " +{$spinsAwarded} wheel spin(s).";
+        }
+
         return response()->json([
-            'success' => true,
-            'message' => "Added {$hours} hour(s) for ₱{$amount}.",
+            'success'       => true,
+            'message'       => $message,
+            'spins_awarded' => $spinsAwarded,
             'user' => [
                 'id'                 => $user->id,
                 'name'               => $user->name,
                 'cash'               => $user->cash,
                 'consumable_minutes' => $user->consumable_minutes,
+                'spin_credits'       => $user->spin_credits,
             ],
         ]);
     }

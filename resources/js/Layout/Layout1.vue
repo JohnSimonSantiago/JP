@@ -884,7 +884,7 @@
                                     ₱
                                 </text>
                             </svg>
-                            <span class="font-medium">Coins</span>
+                            <span class="font-medium">Coin Wheel Settings</span>
                             <span
                                 class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
                                 >Admin</span

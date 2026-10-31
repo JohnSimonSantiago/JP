@@ -130,8 +130,8 @@
                             class="text-sm text-gray-600 space-y-1.5 list-disc pl-5"
                         >
                             <li>
-                                Rates (per head): ₱25 / 30 min · ₱40 / hour ·
-                                ₱100 / 3 hours · ₱200 / day.
+                                Rates (per head): ₱25 / 30 min · ₱50 / hour ·
+                                ₱120 / 3 hours · ₱200 / day.
                             </li>
                             <li>
                                 Charged in 30-minute blocks, with 5 minutes of
@@ -142,7 +142,7 @@
                             <li>
                                 The grace period is not extra playtime — it's
                                 for packing up and heading out. Past the
-                                10-minute mark, the next block begins.
+                                5-minute mark, the next block begins.
                             </li>
                             <li>
                                 Walk-in time cannot be paused, saved, or
@@ -152,8 +152,8 @@
                             </li>
                             <li>
                                 Example: 45 minutes, then a return visit of 1h
-                                15m, costs ₱40 + ₱65 = ₱105. It cannot be
-                                combined into one 2-hour session for ₱80.
+                                15m, costs ₱50 + ₱75 = ₱125. It cannot be
+                                combined into one 2-hour session for ₱100.
                             </li>
                             <li>
                                 Leftover time is not saved for walk-in
@@ -295,13 +295,13 @@
                         class="pi pi-exclamation-triangle text-yellow-500 text-sm flex-shrink-0"
                     ></i>
                     <p class="text-xs text-yellow-700">
-                        <span class="font-semibold">10-Minute Grace Period</span
+                        <span class="font-semibold">5-Minute Grace Period</span
                         ><br />
-                        Time is charged in 30-minute blocks, and you get 10
-                        minutes of grace on each one — go 38 minutes and you're
+                        Time is charged in 30-minute blocks, and you get 5
+                        minutes of grace on each one — go 34 minutes and you're
                         still only charged for 30. Note: the grace isn't extra
                         time to use — it's for packing up and heading out, not
-                        for staying longer. Past 10 minutes and the next block
+                        for staying longer. Past 5 minutes and the next block
                         starts.
                     </p>
                 </div>
@@ -375,6 +375,12 @@
                     </p>
                 </div>
             </div>
+
+            <!-- Lucky Spin wheel (only shows when the admin turns it ON) -->
+            <SpinWheelCard
+                :level="user.level"
+                @cash-updated="user.cash = $event"
+            />
 
             <!-- Profile + Membership Row -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -599,10 +605,11 @@
 
 <script>
 import QrcodeVue from "qrcode.vue";
+import SpinWheelCard from "./SpinWheelCard.vue";
 
 export default {
     name: "Dashboard",
-    components: { QrcodeVue },
+    components: { QrcodeVue, SpinWheelCard },
     data() {
         return {
             user: {

@@ -242,6 +242,12 @@
                 </div>
 
                 <p
+                    v-if="paymentMethod === 'balance'"
+                    class="text-xs text-gray-400 mb-3"
+                >
+                    App Balance purchases don't earn wheel spins.
+                </p>
+                <p
                     v-if="
                         paymentMethod === 'balance' &&
                         selectedUser.cash < computedPrice
@@ -568,6 +574,7 @@
                                 <th class="py-2 font-medium">Amount</th>
                                 <th class="py-2 font-medium">Time Added</th>
                                 <th class="py-2 font-medium">Payment</th>
+                                <th class="py-2 font-medium">Spins</th>
                                 <th class="py-2 font-medium">By</th>
                                 <th class="py-2 font-medium">Date</th>
                             </tr>
@@ -602,6 +609,15 @@
                                                 : "App Balance"
                                         }}
                                     </span>
+                                </td>
+                                <td class="py-2">
+                                    <span
+                                        v-if="p.spins_awarded > 0"
+                                        class="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600"
+                                    >
+                                        +{{ p.spins_awarded }}
+                                    </span>
+                                    <span v-else class="text-gray-300">—</span>
                                 </td>
                                 <td class="py-2 text-gray-500">
                                     {{ p.purchased_by?.name || "—" }}

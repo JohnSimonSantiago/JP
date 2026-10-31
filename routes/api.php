@@ -73,6 +73,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Current user route (for getting basic user info)
     Route::get('/user', [UserController::class, 'getCurrentUser']);
+
+    // Coins wheel — members spin with their own spin credits
+    Route::get('/coins/my-wheel', [CoinController::class, 'myWheel']);
+    Route::post('/coins/spin', [CoinController::class, 'memberSpin'])->middleware('throttle:30,1');
     
     // User profile routes
     Route::prefix('user')->group(function () {
@@ -225,12 +229,14 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
     Route::post('/memberships/gift', [MembershipController::class, 'gift']);
 
-    // Coins wheel (admin only, web only)
+    // Coins wheel — admin settings (members spin for themselves)
+    Route::get('/coins/settings', [CoinController::class, 'settings']);
+    Route::post('/coins/toggle', [CoinController::class, 'toggle']);
+    Route::put('/coins/prizes', [CoinController::class, 'updatePrizes']);
     Route::get('/coins/search', [CoinController::class, 'search']);
-    Route::get('/coins/wheel', [CoinController::class, 'wheel']);
-    Route::post('/coins/spin', [CoinController::class, 'spin']);
+    Route::post('/coins/grant', [CoinController::class, 'grant']);
     Route::get('/coins/history', [CoinController::class, 'history']);
-    Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last 
+    Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last
 
     // Lounge pricing (admin only)
     Route::get('/lounge/pricing', [LoungeController::class, 'getPricing']);

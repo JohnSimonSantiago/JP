@@ -286,8 +286,14 @@
                             <label
                                 class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                             >
-                                Valid ID
+                                School ID, Selfie, or Valid ID
                             </label>
+                            <p
+                                class="mb-2 text-xs text-gray-500 dark:text-gray-400"
+                            >
+                                Upload one of the following: your school ID, a
+                                clear selfie, or any government-issued ID.
+                            </p>
                             <label
                                 class="flex items-center justify-center w-full p-4 border-2 border-dashed rounded-lg cursor-pointer border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
                             >
@@ -449,7 +455,7 @@ export default {
                 return;
             }
             if (!this.validId) {
-                alert("Please upload a valid ID.");
+                alert("Please upload a school ID, selfie, or valid ID.");
                 return;
             }
 
