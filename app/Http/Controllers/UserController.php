@@ -132,9 +132,9 @@ public function signUp(Request $request)
         'password.min' => 'Password must be at least 8 characters.',
         'password.confirmed' => 'Password confirmation does not match.',
         'full_name.required' => 'Full name is required.',
-        'valid_id.required' => 'A valid ID is required.',
-        'valid_id.mimes' => 'Valid ID must be a JPG, PNG, or PDF.',
-        'valid_id.max' => 'Valid ID must be under 5MB.',
+        'valid_id.required' => 'Please upload a school ID, selfie, or valid ID.',
+        'valid_id.mimes' => 'Your ID or selfie must be a JPG, PNG, or PDF.',
+        'valid_id.max' => 'Your ID or selfie must be under 5MB.',
     ]);
 
     try {
@@ -227,25 +227,21 @@ public function getProfile()
     try {
         $user = Auth::user();
         
-        // Get the most recent active membership
+        // Mark any approved memberships that have already ended as expired
+        Membership::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('end_date', '<=', Carbon::now())
+            ->update(['status' => 'expired']);
+
+        // Get the current active membership (approved and not yet ended)
         $membership = Membership::where('user_id', $user->id)
+            ->where('status', 'approved')
+            ->where('end_date', '>', Carbon::now())
             ->orderBy('created_at', 'desc')
             ->first();
 
-        // Update is_premium status based on membership
         $rank = User::where('stars', '>', $user->stars)->count() + 1;
-$isPremium = false; 
-        if ($membership && $membership->status === 'approved') {
-            $now = Carbon::now();
-            $endDate = Carbon::parse($membership->end_date);
-            
-            if ($endDate->isAfter($now)) {
-                $isPremium = true;
-            } else {
-                // Membership expired, update status
-                $membership->update(['status' => 'expired']);
-            }
-        }
+        $isPremium = (bool) $membership;
 
         // Update user's is_premium status
         if ($user->is_premium !== $isPremium) {

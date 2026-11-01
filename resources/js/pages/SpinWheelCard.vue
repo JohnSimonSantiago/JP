@@ -14,7 +14,7 @@
                 <div>
                     <p class="font-semibold text-gray-800">Lucky Spin</p>
                     <p class="text-xs text-gray-400">
-                        1 spin for every hour of time bought with cash
+                        1 spin for every hour of time bought
                     </p>
                 </div>
             </div>
@@ -116,7 +116,7 @@
             >
                 {{
                     Number(level) === 1
-                        ? "Buy time at the counter with cash to earn more spins."
+                        ? "Buy time at the counter to earn more spins."
                         : "Watch out for bonus spins during events and promos!"
                 }}
             </p>

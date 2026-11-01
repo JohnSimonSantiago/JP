@@ -11,6 +11,12 @@
                 </p>
             </div>
 
+            <!-- Lucky Spin wheel (only shows when the admin turns it ON) -->
+            <SpinWheelCard
+                :level="user.level"
+                @cash-updated="user.cash = $event"
+            />
+
             <!-- Session QR — shown for both time-in and time-out -->
             <div
                 v-if="user.id"
@@ -40,34 +46,45 @@
 
             <!-- House Rules (collapsible) -->
             <div
-                class="bg-white rounded-xl shadow-sm border border-gray-100 mb-6 overflow-hidden"
+                class="bg-white rounded-xl shadow-sm border border-amber-200 mb-6 overflow-hidden"
             >
                 <button
-                    @click="showRules = !showRules"
-                    class="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
+                    @click="toggleRules"
+                    class="w-full flex items-center justify-between gap-3 p-4 bg-amber-50 hover:bg-amber-100 transition-colors text-left"
                 >
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
                         <div
-                            class="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center flex-shrink-0"
+                            class="relative w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0"
                         >
-                            <i class="pi pi-info-circle text-amber-500"></i>
+                            <i class="pi pi-info-circle text-amber-600"></i>
+                            <span
+                                v-if="!rulesSeen"
+                                class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-red-500 rounded-full ring-2 ring-white"
+                            ></span>
                         </div>
-                        <div class="text-left">
+                        <div class="min-w-0">
                             <p class="font-semibold text-gray-800">
                                 Lounge Rules & Rates
                             </p>
-                            <p class="text-xs text-gray-400">
-                                House rules, walk-in rates, and member billing
+                            <p class="text-xs text-amber-700">
+                                Walk-in ₱50/hr · Member ₱40/hr · 5-min grace
                             </p>
                         </div>
                     </div>
-                    <i
-                        class="pi text-gray-400"
-                        :class="showRules ? 'pi-chevron-up' : 'pi-chevron-down'"
-                    ></i>
+                    <span
+                        class="flex items-center gap-1 px-3 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-full flex-shrink-0"
+                    >
+                        {{ showRules ? "Hide" : "Read" }}
+                        <i
+                            class="pi text-xs"
+                            :class="
+                                showRules ? 'pi-chevron-up' : 'pi-chevron-down'
+                            "
+                        ></i>
+                    </span>
                 </button>
 
-                <div v-if="showRules" class="px-5 pb-5 space-y-5">
+                <div v-if="showRules" class="px-5 pt-4 pb-5 space-y-5">
                     <!-- House Rules -->
                     <div>
                         <h4
@@ -376,12 +393,6 @@
                 </div>
             </div>
 
-            <!-- Lucky Spin wheel (only shows when the admin turns it ON) -->
-            <SpinWheelCard
-                :level="user.level"
-                @cash-updated="user.cash = $event"
-            />
-
             <!-- Profile + Membership Row -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <!-- Profile Card -->
@@ -469,9 +480,18 @@
                                 </p>
                                 <p
                                     v-if="membership && membership.end_date"
-                                    class="text-xs text-gray-400"
+                                    class="text-xs"
+                                    :class="
+                                        isMembershipExpired
+                                            ? 'text-red-500'
+                                            : 'text-gray-400'
+                                    "
                                 >
-                                    Expires
+                                    {{
+                                        isMembershipExpired
+                                            ? "Expired"
+                                            : "Expires"
+                                    }}
                                     {{ formatDate(membership.end_date) }}
                                 </p>
                                 <p v-else class="text-xs text-gray-400">
@@ -627,6 +647,7 @@ export default {
             membership: null,
             userRank: null,
             showRules: false,
+            rulesSeen: true,
             loungeSession: null,
             loungeStats: { total_time: "0h 0m", total_visits: 0 },
             recentActivity: [],
@@ -636,6 +657,10 @@ export default {
     },
 
     computed: {
+        isMembershipExpired() {
+            if (!this.membership?.end_date) return false;
+            return new Date(this.membership.end_date) < new Date();
+        },
         isConsumableNegative() {
             return (
                 this.loungeSession?.billing_mode === "consumable" &&
@@ -657,6 +682,12 @@ export default {
         if (token)
             axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+        try {
+            this.rulesSeen = localStorage.getItem("rules-seen-v1") === "1";
+        } catch (e) {
+            this.rulesSeen = true;
+        }
+
         await this.fetchUser();
         await Promise.all([
             this.fetchRank(),
@@ -673,6 +704,16 @@ export default {
     },
 
     methods: {
+        toggleRules() {
+            this.showRules = !this.showRules;
+            if (this.showRules && !this.rulesSeen) {
+                this.rulesSeen = true;
+                try {
+                    localStorage.setItem("rules-seen-v1", "1");
+                } catch (e) {}
+            }
+        },
+
         async fetchUser() {
             try {
                 const res = await axios.get("/api/user/profile");
