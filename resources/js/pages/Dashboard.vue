@@ -13,6 +13,7 @@
 
             <!-- Lucky Spin wheel (only shows when the admin turns it ON) -->
             <SpinWheelCard
+                ref="spinWheel"
                 :level="user.level"
                 @cash-updated="user.cash = $event"
             />
@@ -147,7 +148,7 @@
                             class="text-sm text-gray-600 space-y-1.5 list-disc pl-5"
                         >
                             <li>
-                                Rates (per head): ₱25 / 30 min · ₱50 / hour ·
+                                Rates (per head): ₱35 / 30 min · ₱50 / hour ·
                                 ₱120 / 3 hours · ₱200 / day.
                             </li>
                             <li>
@@ -169,7 +170,7 @@
                             </li>
                             <li>
                                 Example: 45 minutes, then a return visit of 1h
-                                15m, costs ₱50 + ₱75 = ₱125. It cannot be
+                                15m, costs ₱50 + ₱85 = ₱135. It cannot be
                                 combined into one 2-hour session for ₱100.
                             </li>
                             <li>
@@ -653,6 +654,8 @@ export default {
             recentActivity: [],
             elapsedTime: "00:00:00",
             tickInterval: null,
+            pollInterval: null,
+            isRefreshing: false,
         };
     },
 
@@ -697,13 +700,47 @@ export default {
         ]);
 
         this.tickInterval = setInterval(() => this.updateTimer(), 1000);
+
+        // Auto-refresh every 15s (skips while the tab is hidden)
+        this.pollInterval = setInterval(() => this.refreshLive(), 15000);
+        document.addEventListener("visibilitychange", this.onVisibilityChange);
     },
 
     beforeUnmount() {
         clearInterval(this.tickInterval);
+        clearInterval(this.pollInterval);
+        document.removeEventListener(
+            "visibilitychange",
+            this.onVisibilityChange,
+        );
     },
 
     methods: {
+        onVisibilityChange() {
+            if (document.visibilityState === "visible") this.refreshLive();
+        },
+
+        async refreshLive() {
+            if (document.visibilityState !== "visible" || this.isRefreshing)
+                return;
+            this.isRefreshing = true;
+            const hadSession = !!this.loungeSession;
+            try {
+                await Promise.all([
+                    this.fetchUser(),
+                    this.fetchLoungeSession(),
+                    this.$refs.spinWheel?.refresh(),
+                ]);
+                // Just timed out → refresh visit stats too
+                if (hadSession && !this.loungeSession) {
+                    await this.fetchLoungeStats();
+                }
+                this.updateTimer();
+            } finally {
+                this.isRefreshing = false;
+            }
+        },
+
         toggleRules() {
             this.showRules = !this.showRules;
             if (this.showRules && !this.rulesSeen) {
@@ -747,7 +784,7 @@ export default {
                     this.loungeSession = res.data.session || null;
                 }
             } catch (e) {
-                this.loungeSession = null;
+                // Keep last known session on network errors (prevents the card flickering away)
             }
         },
 

@@ -602,10 +602,20 @@
                                     v-for="u in userResults"
                                     :key="u.id"
                                     @click="selectUser(u)"
-                                    class="px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm flex items-center justify-between"
+                                    class="px-3 py-2 text-sm flex items-center justify-between"
+                                    :class="
+                                        memberBlockReason(u.id)
+                                            ? 'opacity-50 cursor-not-allowed'
+                                            : 'hover:bg-gray-50 cursor-pointer'
+                                    "
                                 >
                                     <span>{{ u.name }}</span>
-                                    <span class="text-xs text-gray-400"
+                                    <span
+                                        v-if="memberBlockReason(u.id)"
+                                        class="text-xs text-red-500 font-medium"
+                                        >{{ memberBlockReason(u.id) }}</span
+                                    >
+                                    <span v-else class="text-xs text-gray-400"
                                         >Level {{ u.level }}</span
                                     >
                                 </div>
@@ -1072,8 +1082,8 @@ export default {
             return `${m}m`;
         },
 
-        async fetchSessions() {
-            this.loadingSessions = true;
+        async fetchSessions(silent = false) {
+            if (!silent) this.loadingSessions = true;
             try {
                 const res = await axios.get("/api/lounge/active-sessions", {
                     headers: this.headers(),
@@ -1231,7 +1241,31 @@ export default {
             }, 300);
         },
 
+        // ── Duplicate guards ──
+        isCheckedIn(userId) {
+            const id = Number(userId);
+            return this.activeSessions.some(
+                (s) => Number(s.user_id ?? s.user?.id) === id,
+            );
+        },
+        isQueued(userId) {
+            const id = Number(userId);
+            return this.pendingGroup.some((p) => Number(p.user_id) === id);
+        },
+        memberBlockReason(userId) {
+            if (!userId) return null;
+            if (this.isCheckedIn(userId)) return "Already checked in";
+            if (this.isQueued(userId)) return "Already in this group";
+            return null;
+        },
+
         selectUser(u) {
+            const blocked = this.memberBlockReason(u.id);
+            if (blocked) {
+                this.checkInError = `${u.name} — ${blocked.toLowerCase()}.`;
+                return;
+            }
+            this.checkInError = null;
             this.selectedUser = u;
             this.checkInForm.user_id = u.id;
             this.checkInForm.customer_name = u.name;
@@ -1381,7 +1415,25 @@ export default {
             const durationMinutes = this.checkInForm.duration_minutes;
 
             this.checkingIn = true;
+            const done = []; // people the server accepted
             try {
+                // Re-check the whole list against the latest sessions before sending anything
+                await this.fetchSessions(true);
+                const seen = new Set();
+                for (const p of people) {
+                    if (!p.user_id) continue; // walk-ins have no account to check
+                    const id = Number(p.user_id);
+                    if (seen.has(id)) {
+                        this.checkInError = `${p.customer_name} is in the list twice.`;
+                        return;
+                    }
+                    if (this.isCheckedIn(id)) {
+                        this.checkInError = `${p.customer_name} is already checked in.`;
+                        return;
+                    }
+                    seen.add(id);
+                }
+
                 // Check each person in, all sharing the same group_id (may be null for solo)
                 for (const person of people) {
                     await axios.post(
@@ -1393,6 +1445,7 @@ export default {
                         },
                         { headers: this.headers() },
                     );
+                    done.push(person);
                 }
 
                 // One CN number per check-in event (whole group shares one)
@@ -1422,8 +1475,23 @@ export default {
                 this.resetCheckIn();
                 await this.fetchSessions();
             } catch (e) {
-                this.checkInError =
-                    e.response?.data?.message || "Check-in failed.";
+                let msg = e.response?.data?.message || "Check-in failed.";
+
+                if (done.length > 0) {
+                    // Some got in before the failure — remove them so a retry only sends the rest
+                    const formDone = done.some(
+                        (p) => !this.pendingGroup.includes(p),
+                    );
+                    this.pendingGroup = this.pendingGroup.filter(
+                        (p) => !done.includes(p),
+                    );
+                    if (formDone) this.clearPersonFields();
+
+                    msg += ` (${done.map((p) => p.customer_name).join(", ")} already checked in — press Check In again for the rest)`;
+                    await this.fetchSessions(true);
+                }
+
+                this.checkInError = msg;
             } finally {
                 this.checkingIn = false;
             }

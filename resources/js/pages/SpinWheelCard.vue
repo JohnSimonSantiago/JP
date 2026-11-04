@@ -164,8 +164,8 @@ export default {
         },
     },
     methods: {
-        async fetchWheel() {
-            this.loading = true;
+        async fetchWheel(silent = false) {
+            if (!silent) this.loading = true;
             try {
                 // Child components start before the Dashboard sets the token,
                 // so on a hard refresh we attach it ourselves.
@@ -176,6 +176,8 @@ export default {
                 }
 
                 const res = await axios.get("/api/coins/my-wheel");
+                // A spin started while this was loading — drop the stale result
+                if (silent && this.spinning) return;
                 if (res.data.success) {
                     this.enabled = res.data.enabled;
                     this.slices = res.data.slices || [];
@@ -183,10 +185,17 @@ export default {
                 }
             } catch (error) {
                 console.error("Failed to load wheel:", error);
-                this.enabled = false;
+                // On background refresh, keep the last known state (no flicker on weak WiFi)
+                if (!silent) this.enabled = false;
             } finally {
                 this.loading = false;
             }
+        },
+
+        // Called by the Dashboard's auto-refresh. Skips while the wheel is turning.
+        refresh() {
+            if (this.spinning) return;
+            return this.fetchWheel(true);
         },
 
         // Server picks the prize; the wheel just animates to it

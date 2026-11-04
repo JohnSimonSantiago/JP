@@ -290,20 +290,43 @@ class LoungeController extends Controller
             $billingMode = 'hourly';
         }
 
-        $session = LoungeSession::create([
-            'customer_name'  => $request->customer_name,
-            'school'         => $request->school,
-            'user_id'        => $request->user_id,
-            'customer_type'  => $request->customer_type,
-            'user_level'     => $userLevel,
-            'group_id'       => $request->group_id,
-            'receipt_number' => $request->receipt_number,
-            'checked_in_at'  => now(),
-            'status'         => 'active',
-            'is_free'        => $isFree,
-            'billing_mode'   => $billingMode,
-            'checked_in_by'  => Auth::id(),
-        ]);
+        // One active session per member. The row lock makes a second simultaneous
+        // check-in (kiosk + web at the same second) wait, then see the first one.
+        $session = DB::transaction(function () use ($request, $userLevel, $isFree, $billingMode) {
+            if ($request->user_id) {
+                User::where('id', $request->user_id)->lockForUpdate()->first();
+
+                $alreadyIn = LoungeSession::where('user_id', $request->user_id)
+                    ->where('status', 'active')
+                    ->exists();
+
+                if ($alreadyIn) {
+                    return null;
+                }
+            }
+
+            return LoungeSession::create([
+                'customer_name'  => $request->customer_name,
+                'school'         => $request->school,
+                'user_id'        => $request->user_id,
+                'customer_type'  => $request->customer_type,
+                'user_level'     => $userLevel,
+                'group_id'       => $request->group_id,
+                'receipt_number' => $request->receipt_number,
+                'checked_in_at'  => now(),
+                'status'         => 'active',
+                'is_free'        => $isFree,
+                'billing_mode'   => $billingMode,
+                'checked_in_by'  => Auth::id(),
+            ]);
+        });
+
+        if (!$session) {
+            return response()->json([
+                'success' => false,
+                'message' => "{$request->customer_name} is already checked in.",
+            ], 422);
+        }
 
         return response()->json(['success' => true, 'session' => $session]);
     }
