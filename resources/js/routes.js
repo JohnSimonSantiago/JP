@@ -19,6 +19,7 @@ import AdminMembershipManagement from "./pages/AdminMembershipManagement.vue";
 import LoungeSessionsDashboard from "./pages/LoungeSessionsDashboard.vue";
 import LoungeSettings from "./pages/LoungeSettings.vue";
 import LoungeBuyTime from "./pages/LoungeBuyTime.vue";
+import LoungeDisplay from "./pages/LoungeDisplay.vue"; // customer screen (2nd monitor)
 import CoinsWheel from "./pages/CoinsWheel.vue";
 import Statistics from "@/pages/Statistics.vue";
 
@@ -177,6 +178,12 @@ export const routes = [
         path: "/lounge",
         name: "lounge",
         component: LoungeSessionsDashboard,
+        beforeEnter: requiresStaffOrAdmin,
+    },
+    {
+        path: "/lounge/display",
+        name: "lounge-display",
+        component: LoungeDisplay,
         beforeEnter: requiresStaffOrAdmin,
     },
     {

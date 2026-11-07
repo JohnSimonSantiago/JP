@@ -11,12 +11,45 @@
                         {{ activeSessions.length }} active session(s)
                     </p>
                 </div>
-                <button
-                    @click="openCheckIn()"
-                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
-                >
-                    <i class="pi pi-plus"></i> Check In
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        @click="connectRfid"
+                        :disabled="rfidConnected"
+                        class="border px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                        :class="
+                            rfidConnected
+                                ? 'border-green-200 bg-green-50 text-green-700'
+                                : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                        "
+                    >
+                        <i class="pi pi-id-card"></i>
+                        {{ rfidConnected ? "RFID ready" : "Connect RFID" }}
+                    </button>
+                    <button
+                        @click="openCheckIn()"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                        <i class="pi pi-plus"></i> Check In
+                    </button>
+                </div>
+            </div>
+
+            <!-- RFID tap result -->
+            <div
+                v-if="rfidStatus"
+                class="mb-4 rounded-lg px-4 py-3 text-sm font-medium border"
+                :class="{
+                    'bg-green-50 border-green-200 text-green-700':
+                        rfidStatus.type === 'success',
+                    'bg-indigo-50 border-indigo-200 text-indigo-700':
+                        rfidStatus.type === 'info',
+                    'bg-yellow-50 border-yellow-200 text-yellow-700':
+                        rfidStatus.type === 'warn',
+                    'bg-red-50 border-red-200 text-red-700':
+                        rfidStatus.type === 'error',
+                }"
+            >
+                <i class="pi pi-id-card mr-2"></i>{{ rfidStatus.text }}
             </div>
 
             <!-- Loading / empty -->
@@ -907,10 +940,217 @@
                     </button>
                 </div>
             </div>
+
+            <!-- ── Link RFID Card Modal ── -->
+            <div
+                v-if="showLinkCard"
+                class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            >
+                <div
+                    class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+                >
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">
+                        Link RFID Card
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        New card
+                        <span class="font-mono font-semibold">{{
+                            linkUid
+                        }}</span>
+                        — pick the member who owns it.
+                    </p>
+                    <input
+                        v-model="linkSearch"
+                        @input="searchLinkUsers"
+                        type="text"
+                        placeholder="Type a name..."
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                    />
+                    <div
+                        v-if="linkResults.length > 0"
+                        class="border border-gray-200 rounded-lg mt-1 max-h-48 overflow-y-auto shadow-sm"
+                    >
+                        <div
+                            v-for="u in linkResults"
+                            :key="u.id"
+                            @click="linkCardTo(u)"
+                            class="px-3 py-2 text-sm flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+                            :class="
+                                linking ? 'opacity-50 pointer-events-none' : ''
+                            "
+                        >
+                            <span>{{ u.name }}</span>
+                            <span class="text-xs text-gray-400"
+                                >Level {{ u.level }}</span
+                            >
+                        </div>
+                    </div>
+                    <div v-if="linkError" class="text-red-500 text-sm mt-3">
+                        {{ linkError }}
+                    </div>
+                    <button
+                        @click="closeLinkCard"
+                        class="w-full mt-4 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
+            <!-- ── Not Enough Time Modal (RFID time out, short balance) ── -->
+            <div
+                v-if="notEnough"
+                class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            >
+                <div
+                    class="bg-white rounded-xl shadow-xl w-full max-w-md mx-4 p-6"
+                >
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">
+                        Not enough time
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        <span class="font-semibold text-gray-700">{{
+                            notEnough.user.name
+                        }}</span>
+                        is short by
+                        <span class="font-semibold text-red-600">{{
+                            formatMinutesBalance(notEnough.shortMinutes)
+                        }}</span>
+                        ({{ notEnough.shortMinutes }} min).
+                    </p>
+
+                    <!-- Buy Time -->
+                    <div
+                        v-if="!notEnough.bought"
+                        class="border border-gray-200 rounded-lg p-4 mb-4"
+                    >
+                        <p class="text-sm font-medium text-gray-700 mb-2">
+                            Buy Time
+                        </p>
+                        <div class="flex items-center gap-3 mb-3">
+                            <button
+                                @click="
+                                    notEnough.hours = Math.max(
+                                        1,
+                                        notEnough.hours - 1,
+                                    )
+                                "
+                                class="w-9 h-9 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+                            >
+                                <i class="pi pi-minus text-xs"></i>
+                            </button>
+                            <span
+                                class="text-lg font-bold text-gray-800 w-12 text-center"
+                                >{{ notEnough.hours }}h</span
+                            >
+                            <button
+                                @click="
+                                    notEnough.hours = Math.min(
+                                        24,
+                                        notEnough.hours + 1,
+                                    )
+                                "
+                                class="w-9 h-9 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50"
+                            >
+                                <i class="pi pi-plus text-xs"></i>
+                            </button>
+                            <span class="ml-auto text-lg font-bold text-indigo-600"
+                                >₱{{ consumablePrice(notEnough.hours) }}</span
+                            >
+                        </div>
+                        <div class="flex gap-2 mb-2">
+                            <button
+                                v-for="pm in [
+                                    { key: 'cash', label: 'Cash' },
+                                    {
+                                        key: 'balance',
+                                        label: `App balance (₱${Number(notEnough.user.cash || 0).toFixed(2)})`,
+                                    },
+                                ]"
+                                :key="pm.key"
+                                @click="notEnough.paymentMethod = pm.key"
+                                class="flex-1 border rounded-lg px-3 py-2 text-sm transition-colors"
+                                :class="
+                                    notEnough.paymentMethod === pm.key
+                                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700 font-medium'
+                                        : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                                "
+                            >
+                                {{ pm.label }}
+                            </button>
+                        </div>
+                        <p
+                            v-if="
+                                notEnough.paymentMethod === 'balance' &&
+                                Number(notEnough.user.cash || 0) <
+                                    consumablePrice(notEnough.hours)
+                            "
+                            class="text-xs text-red-500 mb-2"
+                        >
+                            Not enough app balance for this amount.
+                        </p>
+                        <p class="text-xs text-gray-500">
+                            Balance after time out:
+                            <span class="font-semibold">{{
+                                formatMinutesBalance(
+                                    notEnough.newBalance + notEnough.hours * 60,
+                                )
+                            }}</span>
+                        </p>
+                    </div>
+                    <div
+                        v-else
+                        class="bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-sm mb-4"
+                    >
+                        {{ notEnough.hours }}h bought. Only the time out is left.
+                    </div>
+
+                    <div
+                        v-if="notEnough.error"
+                        class="text-red-500 text-sm mb-3"
+                    >
+                        {{ notEnough.error }}
+                    </div>
+
+                    <button
+                        @click="buyAndTimeOut"
+                        :disabled="
+                            notEnough.busy ||
+                            (!notEnough.bought &&
+                                notEnough.paymentMethod === 'balance' &&
+                                Number(notEnough.user.cash || 0) <
+                                    consumablePrice(notEnough.hours))
+                        "
+                        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                    >
+                        {{
+                            notEnough.busy
+                                ? "Working..."
+                                : notEnough.bought
+                                  ? "Retry Time Out"
+                                  : "Buy & Time Out"
+                        }}
+                    </button>
+                    <button
+                        v-if="!notEnough.bought"
+                        @click="timeOutWithoutBuying"
+                        :disabled="notEnough.busy"
+                        class="w-full mt-2 border border-gray-200 text-gray-600 py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors disabled:opacity-50"
+                    >
+                        Time Out Without Buying
+                    </button>
+                    <button
+                        @click="closeNotEnough"
+                        :disabled="notEnough.busy"
+                        class="w-full mt-2 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                    >
+                        Cancel (stay checked in)
+                    </button>
+                </div>
+            </div>
         </div>
     </Layout>
 </template>
-
 <script>
 export default {
     name: "LoungeSessionsDashboard",
@@ -957,6 +1197,27 @@ export default {
             confirmingCheckout: false,
             overrideOn: false,
             overrideTotal: null,
+
+            // RFID reader (ESP32 on USB, read through Chrome's Web Serial)
+            rfidConnected: false,
+            rfidBusy: false,
+            rfidLastUid: null,
+            rfidLastAt: 0,
+            rfidStatus: null, // { type: 'success' | 'info' | 'warn' | 'error', text }
+            rfidStatusTimer: null,
+            rfidKeepReading: false,
+
+            // Link-a-card modal
+            showLinkCard: false,
+            linkUid: null,
+            linkSearch: "",
+            linkResults: [],
+            linkError: null,
+            linking: false,
+            linkSearchTimeout: null,
+
+            // "Not enough time" window (RFID time out with a short balance)
+            notEnough: null,
         };
     },
 
@@ -1036,10 +1297,26 @@ export default {
         this.tickInterval = setInterval(() => {
             this.tick++;
         }, 1000);
+
+        this.autoConnectRfid();
+
+        // Customer screen (/lounge/display) listens on this channel
+        if ("BroadcastChannel" in window) {
+            this._displayChannel = new BroadcastChannel("level-lounge-display");
+        }
     },
 
     beforeUnmount() {
         clearInterval(this.tickInterval);
+        clearTimeout(this.rfidStatusTimer);
+        if ("serial" in navigator && this._onSerialConnect) {
+            navigator.serial.removeEventListener(
+                "connect",
+                this._onSerialConnect,
+            );
+        }
+        this.disconnectRfid();
+        this._displayChannel?.close();
     },
 
     methods: {
@@ -1637,6 +1914,7 @@ export default {
         // ── Checkout flows ──
         // soloOut = true forces just this person even if they're in a group
         async openCheckout(session, soloOut = false) {
+            this._rfidHourlyOut = null; // set again by rfidTimeOut when it's a card tap
             this.checkoutSession = session;
             this.checkoutGroup = null;
             this.checkoutResult = null;
@@ -1648,6 +1926,7 @@ export default {
         },
 
         async openGroupCheckout(group) {
+            this._rfidHourlyOut = null;
             this.checkoutGroup = group;
             this.checkoutSession = null;
             this.checkoutResult = null;
@@ -1684,11 +1963,21 @@ export default {
             }
             try {
                 const soloParam = this.checkoutSolo ? "?solo=1" : "";
-                await axios.post(
+                const res = await axios.post(
                     `/api/lounge/check-out/${this._checkoutId}${soloParam}`,
                     payload,
                     { headers: this.headers() },
                 );
+                if (this._rfidHourlyOut) {
+                    this.postDisplay({
+                        kind: "out",
+                        name: this._rfidHourlyOut.name,
+                        mode: "hourly",
+                        used: res.data.line_items?.[0]?.duration,
+                        total: res.data.total_bill,
+                    });
+                    this._rfidHourlyOut = null;
+                }
                 this.showCheckOut = false;
                 this.checkoutResult = null;
                 await this.fetchSessions();
@@ -1697,6 +1986,456 @@ export default {
                 console.error(e);
             } finally {
                 this.confirmingCheckout = false;
+            }
+        },
+
+        // ── RFID reader ──
+        // Chrome/Edge only. First time: click "Connect RFID" and pick the ESP32 (COM5).
+        // After that the browser remembers it and reconnects by itself.
+        // The port lives in this._rfidPort (not in data) because Vue's reactivity
+        // wrapper breaks the browser's SerialPort object.
+        async autoConnectRfid() {
+            if (!("serial" in navigator)) return;
+
+            // Reconnect by itself if the cable is unplugged and plugged back in
+            this._onSerialConnect = (e) => {
+                if (!this.rfidConnected) this.openRfidPort(e.target);
+            };
+            navigator.serial.addEventListener("connect", this._onSerialConnect);
+
+            try {
+                const ports = await navigator.serial.getPorts();
+                if (ports.length > 0) await this.openRfidPort(ports[0]);
+            } catch (e) {
+                console.error("RFID auto-connect failed", e);
+            }
+        },
+
+        async connectRfid() {
+            if (!("serial" in navigator)) {
+                this.showRfidStatus(
+                    "error",
+                    "This browser can't read USB devices. Use Chrome or Edge.",
+                );
+                return;
+            }
+            try {
+                const port = await navigator.serial.requestPort();
+                await this.openRfidPort(port);
+            } catch (e) {
+                // NotFoundError = the picker was closed without choosing
+                if (e.name !== "NotFoundError") {
+                    this.showRfidStatus(
+                        "error",
+                        "Couldn't open the reader. Close PowerShell or Arduino IDE if they're using it.",
+                    );
+                }
+                console.error(e);
+            }
+        },
+
+        async openRfidPort(port) {
+            if (this.rfidConnected) return;
+            await port.open({ baudRate: 115200 });
+            // Same signals as the PowerShell test that worked
+            await port.setSignals({
+                dataTerminalReady: true,
+                requestToSend: false,
+            });
+            this._rfidPort = port;
+            this.rfidConnected = true;
+            this.rfidKeepReading = true;
+            this.showRfidStatus("info", "RFID reader connected. Tap a card.");
+            this._rfidLoop = this.readRfidLoop(port); // runs in the background
+        },
+
+        // Reads the board's text line by line and picks out "Card: 43 A8 7D 1A"
+        async readRfidLoop(port) {
+            const decoder = new TextDecoder();
+            let buffer = "";
+
+            while (port.readable && this.rfidKeepReading) {
+                const reader = port.readable.getReader();
+                this._rfidReader = reader;
+                try {
+                    while (true) {
+                        const { value, done } = await reader.read();
+                        if (done) break;
+                        buffer += decoder.decode(value, { stream: true });
+                        const lines = buffer.split(/\r?\n/);
+                        buffer = lines.pop(); // keep the unfinished line
+                        for (const line of lines) {
+                            const m = line.match(
+                                /Card:\s*((?:[0-9A-F]{2}\s*){4,10})/i,
+                            );
+                            if (m) {
+                                this.onRfidTap(
+                                    m[1].replace(/\s+/g, "").toUpperCase(),
+                                );
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error("RFID read error", e); // e.g. cable pulled
+                } finally {
+                    reader.releaseLock();
+                    this._rfidReader = null;
+                }
+            }
+
+            try {
+                await port.close();
+            } catch (e) {
+                // already closed
+            }
+            const unexpected = this.rfidKeepReading;
+            this._rfidPort = null;
+            this.rfidConnected = false;
+            this.rfidKeepReading = false;
+            if (unexpected) {
+                this.showRfidStatus(
+                    "error",
+                    "RFID reader disconnected. Plug it back in (it reconnects by itself) or click Connect RFID.",
+                );
+            }
+        },
+
+        async disconnectRfid() {
+            this.rfidKeepReading = false;
+            try {
+                if (this._rfidReader) await this._rfidReader.cancel();
+            } catch (e) {
+                console.error(e);
+            }
+            if (this._rfidLoop) await this._rfidLoop; // the loop closes the port
+        },
+
+        showRfidStatus(type, text) {
+            this.rfidStatus = { type, text };
+            clearTimeout(this.rfidStatusTimer);
+            this.rfidStatusTimer = setTimeout(() => {
+                this.rfidStatus = null;
+            }, 6000);
+        },
+
+        // One tap = time in if outside, time out if inside
+        async onRfidTap(uid) {
+            // Same card again within 5 seconds = the same tap (card left on the reader)
+            const now = Date.now();
+            if (uid === this.rfidLastUid && now - this.rfidLastAt < 5000)
+                return;
+            this.rfidLastUid = uid;
+            this.rfidLastAt = now;
+
+            if (this.rfidBusy) return;
+            if (
+                this.showCheckIn ||
+                this.showCheckOut ||
+                this.showLinkCard ||
+                this.notEnough
+            ) {
+                this.showRfidStatus(
+                    "warn",
+                    "Finish or close the open window first, then tap again.",
+                );
+                this.rfidLastUid = null; // allow an immediate retry
+                return;
+            }
+
+            this.rfidBusy = true;
+            try {
+                const res = await axios.post(
+                    "/api/lounge/rfid/lookup",
+                    { uid },
+                    { headers: this.headers() },
+                );
+                const data = res.data;
+
+                if (!data.linked) {
+                    this.postDisplay({ kind: "unknown" });
+                    this.openLinkCard(data.uid);
+                    return;
+                }
+
+                if (data.active_session) {
+                    await this.rfidTimeOut(data.active_session, data.user);
+                    return;
+                }
+
+                await this.rfidCheckIn(data.user);
+            } catch (e) {
+                this.showRfidStatus(
+                    "error",
+                    e.response?.data?.message ||
+                        "Card lookup failed. Check the internet connection.",
+                );
+            } finally {
+                this.rfidBusy = false;
+            }
+        },
+
+        // Card tapped by someone already inside. The preview says what the
+        // time out would do, then:
+        //   free (Level 2/3)              -> time out right away
+        //   consumable, enough balance    -> time out right away
+        //   consumable, balance too low   -> "Not enough time" window
+        //   pays hourly                   -> normal bill window (cash to collect)
+        // Always solo=1, so one card never takes the rest of a group out.
+        async rfidTimeOut(session, user) {
+            const res = await axios.post(
+                `/api/lounge/check-out/${session.id}?preview=1&solo=1`,
+                {},
+                { headers: this.headers() },
+            );
+            const line = res.data.line_items?.[0];
+            if (!line) throw new Error("No preview");
+
+            if (line.is_free) {
+                const done = await this.rfidCheckout(session.id);
+                this.showRfidStatus("success", `${user.name} timed out`);
+                this.postDisplay({
+                    kind: "out",
+                    name: user.name,
+                    mode: "free",
+                    used: done.duration,
+                });
+                return;
+            }
+
+            if (line.billing_mode === "consumable") {
+                if (line.new_balance >= 0) {
+                    const done = await this.rfidCheckout(session.id);
+                    this.showRfidStatus(
+                        "success",
+                        `${user.name} timed out — ${this.formatMinutesBalance(done.new_balance)} left`,
+                    );
+                    this.postDisplay({
+                        kind: "out",
+                        name: user.name,
+                        mode: "consumable",
+                        used: done.duration,
+                        balance: done.new_balance,
+                    });
+                } else {
+                    this.openNotEnough(session, user, line);
+                }
+                return;
+            }
+
+            this.showRfidStatus(
+                "info",
+                `${user.name} — timing out. Confirm the bill.`,
+            );
+            await this.openCheckout(session, true);
+            // Tell the customer screen once staff confirm the bill (confirmCheckout)
+            this._rfidHourlyOut = { name: user.name };
+        },
+
+        // Sends one RFID result to the customer screen. Never breaks the counter
+        // if the display tab isn't open.
+        postDisplay(msg) {
+            try {
+                this._displayChannel?.postMessage(msg);
+            } catch (e) {
+                console.error("Display message failed", e);
+            }
+        },
+
+        // Real (non-preview) time out for one person. Returns their line item.
+        async rfidCheckout(sessionId) {
+            const res = await axios.post(
+                `/api/lounge/check-out/${sessionId}?solo=1`,
+                {},
+                { headers: this.headers() },
+            );
+            await this.fetchSessions(true);
+            await this.fetchHistory();
+            return res.data.line_items?.[0] || {};
+        },
+
+        // ── "Not enough time" window ──
+        openNotEnough(session, user, line) {
+            const short = -line.new_balance;
+            this.notEnough = {
+                session,
+                user,
+                shortMinutes: short,
+                newBalance: line.new_balance,
+                hours: Math.min(24, Math.max(1, Math.ceil(short / 60))),
+                paymentMethod: "cash",
+                bought: false, // time already bought, only the time out is left
+                busy: false,
+                error: null,
+            };
+        },
+
+        closeNotEnough() {
+            this.notEnough = null;
+            this.rfidLastUid = null; // allow an immediate re-tap
+        },
+
+        // Same prices as the Buy Time page: ₱100 per 3 hours, ₱40 per extra hour
+        // (the backend charges the real amount)
+        consumablePrice(hours) {
+            return Math.floor(hours / 3) * 100 + (hours % 3) * 40;
+        },
+
+        async buyAndTimeOut() {
+            const n = this.notEnough;
+            if (!n || n.busy) return;
+            n.busy = true;
+            n.error = null;
+
+            if (!n.bought) {
+                try {
+                    await axios.post(
+                        "/api/lounge/consumable/buy",
+                        {
+                            user_id: n.user.id,
+                            hours: n.hours,
+                            payment_method: n.paymentMethod,
+                        },
+                        { headers: this.headers() },
+                    );
+                    n.bought = true;
+                } catch (e) {
+                    n.error =
+                        e.response?.data?.message ||
+                        "Couldn't buy the time. Nothing was charged.";
+                    n.busy = false;
+                    return;
+                }
+            }
+
+            await this.finishNotEnough(`bought ${n.hours}h and timed out`);
+        },
+
+        async timeOutWithoutBuying() {
+            const n = this.notEnough;
+            if (!n || n.busy) return;
+            n.busy = true;
+            n.error = null;
+            await this.finishNotEnough("timed out");
+        },
+
+        async finishNotEnough(action) {
+            const n = this.notEnough;
+            try {
+                const done = await this.rfidCheckout(n.session.id);
+                const bal = done.new_balance ?? 0;
+                const balText =
+                    bal >= 0
+                        ? `${this.formatMinutesBalance(bal)} left`
+                        : `balance ${this.formatMinutesBalance(bal)}`;
+                this.notEnough = null;
+                this.showRfidStatus(
+                    bal >= 0 ? "success" : "warn",
+                    `${n.user.name} ${action} — ${balText}`,
+                );
+                this.postDisplay({
+                    kind: "out",
+                    name: n.user.name,
+                    mode: "consumable",
+                    used: done.duration,
+                    balance: bal,
+                });
+            } catch (e) {
+                n.error =
+                    (n.bought
+                        ? "The time was bought, but the time out failed: "
+                        : "Time out failed: ") +
+                    (e.response?.data?.message || "check the connection.");
+                n.busy = false;
+            }
+        },
+
+        // Time in through the same flow as the Check In button
+        // (same rules, same CN number, same printed slip)
+        async rfidCheckIn(user) {
+            this.resetCheckIn();
+            this.checkInForm.customer_type = "member";
+            this.selectUser(user); // picks consumable time if they have a balance
+            if (this.checkInError) {
+                this.showRfidStatus("warn", this.checkInError);
+                this.resetCheckIn();
+                return;
+            }
+
+            // Read before submitting (the form resets afterwards)
+            const mode = [2, 3].includes(user.level)
+                ? "free"
+                : this.checkInForm.billing_mode; // 'consumable' or 'hourly'
+
+            await this.submitCheckIn();
+
+            if (this.checkInError) {
+                this.showRfidStatus("error", this.checkInError);
+                this.resetCheckIn();
+            } else {
+                this.showRfidStatus("success", `${user.name} timed in.`);
+                this.postDisplay({
+                    kind: "in",
+                    name: user.name,
+                    mode,
+                    balance: user.consumable_minutes ?? 0,
+                });
+            }
+        },
+
+        // ── Link a new card ──
+        openLinkCard(uid) {
+            this.linkUid = uid;
+            this.linkSearch = "";
+            this.linkResults = [];
+            this.linkError = null;
+            this.showLinkCard = true;
+        },
+
+        closeLinkCard() {
+            this.showLinkCard = false;
+            this.linkUid = null;
+            this.rfidLastUid = null; // allow an immediate re-tap
+        },
+
+        searchLinkUsers() {
+            clearTimeout(this.linkSearchTimeout);
+            if (this.linkSearch.length < 2) {
+                this.linkResults = [];
+                return;
+            }
+            this.linkSearchTimeout = setTimeout(async () => {
+                try {
+                    const res = await axios.get("/api/users/search", {
+                        headers: this.headers(),
+                        params: { q: this.linkSearch },
+                    });
+                    this.linkResults = res.data.users || [];
+                } catch (e) {
+                    this.linkResults = [];
+                }
+            }, 300);
+        },
+
+        async linkCardTo(u) {
+            if (this.linking) return;
+            this.linking = true;
+            this.linkError = null;
+            try {
+                await axios.post(
+                    "/api/lounge/rfid/link",
+                    { uid: this.linkUid, user_id: u.id },
+                    { headers: this.headers() },
+                );
+                this.closeLinkCard();
+                this.showRfidStatus(
+                    "success",
+                    `Card linked to ${u.name}. Tap again to time in.`,
+                );
+            } catch (e) {
+                this.linkError =
+                    e.response?.data?.message || "Couldn't link the card.";
+            } finally {
+                this.linking = false;
             }
         },
     },

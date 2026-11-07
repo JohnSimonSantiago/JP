@@ -44,6 +44,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'rfid_uid', // card IDs can be copied onto a blank card, so never send them out
     ];
 
     /**

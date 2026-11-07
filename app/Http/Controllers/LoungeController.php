@@ -624,4 +624,72 @@ class LoungeController extends Controller
 
         return response()->json(['success' => true, 'number' => $number]);
     }
+
+    // ─── RFID cards ─────────────────────────────────────────────────────────────
+
+    // "43 a8 7d 1a" -> "43A87D1A" so spacing or letter case never causes a mismatch
+    private function normalizeUid(string $uid): string
+    {
+        return strtoupper(preg_replace('/[^0-9A-Fa-f]/', '', $uid));
+    }
+
+    // A card was tapped: whose card is it, and are they already inside?
+    public function rfidLookup(Request $request)
+    {
+        $request->validate(['uid' => 'required|string|max:64']);
+        $uid = $this->normalizeUid($request->uid);
+
+        if ($uid === '') {
+            return response()->json(['success' => false, 'message' => 'Invalid card.'], 422);
+        }
+
+        $user = User::where('rfid_uid', $uid)
+            ->select('id', 'name', 'username', 'level', 'consumable_minutes', 'cash')
+            ->first();
+
+        if (!$user) {
+            return response()->json(['success' => true, 'linked' => false, 'uid' => $uid]);
+        }
+
+        $session = LoungeSession::with('user:id,name,level,profile_image,consumable_minutes')
+            ->where('user_id', $user->id)
+            ->where('status', 'active')
+            ->first();
+
+        return response()->json([
+            'success'        => true,
+            'linked'         => true,
+            'uid'            => $uid,
+            'user'           => $user,
+            'active_session' => $session,
+        ]);
+    }
+
+    // Link a card to a member. One card per member: a new card replaces the old one.
+    public function rfidLink(Request $request)
+    {
+        $request->validate([
+            'uid'     => 'required|string|max:64',
+            'user_id' => 'required|exists:users,id',
+        ]);
+        $uid = $this->normalizeUid($request->uid);
+
+        if ($uid === '') {
+            return response()->json(['success' => false, 'message' => 'Invalid card.'], 422);
+        }
+
+        $owner = User::where('rfid_uid', $uid)->first();
+        if ($owner && $owner->id != $request->user_id) {
+            return response()->json([
+                'success' => false,
+                'message' => "This card already belongs to {$owner->name}.",
+            ], 422);
+        }
+
+        $user = User::findOrFail($request->user_id);
+        $user->rfid_uid = $uid; // set directly, so it doesn't need to be in $fillable
+        $user->save();
+
+        return response()->json(['success' => true, 'message' => "Card linked to {$user->name}."]);
+    }
 }
