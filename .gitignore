@@ -17,3 +17,9 @@ yarn-error.log
 /.fleet
 /.idea
 /.vscode
+
+# Junk files (Windows download metadata, stray shell output, accidental SSH keys)
+*:Zone.Identifier
+/10000
+/admin,
+/eval *
