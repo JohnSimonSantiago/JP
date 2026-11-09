@@ -378,6 +378,7 @@ class LoungeController extends Controller
                 'id'            => $s->id,
                 'user_id'       => $s->user_id,
                 'customer_name' => $s->customer_name,
+                'checked_in_at' => $s->checked_in_at, // display only: each person's own time in
                 'is_free'       => (bool) $s->is_free,
                 'billing_mode'  => $s->billing_mode,
                 'duration'      => null,

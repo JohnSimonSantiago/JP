@@ -220,6 +220,9 @@
                                 <span v-else class="text-xs text-blue-600"
                                     >Lv{{ m.user_level }}</span
                                 >
+                                <p class="text-xs text-gray-400">
+                                    In {{ formatTime(m.checked_in_at) }}
+                                </p>
                             </div>
                             <div class="flex items-center gap-2">
                                 <p
@@ -851,7 +854,9 @@
                                         {{ line.customer_name }}
                                     </p>
                                     <p class="text-xs text-gray-400">
-                                        {{ line.duration }}
+                                        In
+                                        {{ formatTime(line.checked_in_at) }}
+                                        · {{ line.duration }}
                                         <span v-if="line.breakdown"
                                             >· {{ line.breakdown }}</span
                                         >
