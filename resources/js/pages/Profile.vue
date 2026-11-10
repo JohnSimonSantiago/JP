@@ -1177,10 +1177,10 @@
 
                         <!-- Quick link to browse shops -->
                         <button
-                            @click="$inertia.visit('/shops')"
+                            @click="$router.push('/shops')"
                             class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-colors"
                         >
-                            Browse Shops
+                            Browse the Coins Shop
                         </button>
                     </div>
                 </div>
@@ -1239,13 +1239,13 @@ export default {
                     key: "level_2",
                     label: "Level 2",
                     price: "₱2,500/mo",
-                    sub: "₱1,000 cash credit • deals & discounts",
+                    sub: "1,000 Coins credit • deals & discounts",
                 },
                 {
                     key: "level_3",
                     label: "Level 3",
                     price: "₱3,000/mo",
-                    sub: "₱1,500 cash credit • higher discounts than Level 2",
+                    sub: "1,500 Coins credit • higher discounts than Level 2",
                 },
             ],
         };
@@ -1557,7 +1557,7 @@ export default {
         },
 
         visitShop(shopId) {
-            this.$inertia.visit(`/shops/${shopId}`);
+            this.$router.push(`/shop/${shopId}`); // route is /shop/:id (ShopView), same as ShopsIndex
         },
         async fetchUserData() {
             try {

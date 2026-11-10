@@ -164,13 +164,12 @@
                             </div>
                         </div>
 
-                        <!-- Cash balance -->
+                        <!-- Coins balance (API field: currentUser.cash) -->
                         <div
                             class="mt-4 bg-green-50 border border-green-200 rounded-lg px-4 py-2 inline-flex items-center gap-2"
                         >
-                            <i class="pi pi-wallet text-green-600 text-sm"></i>
                             <span class="text-sm font-bold text-green-700">
-                                ₱{{ formatCash(currentUser.cash || 0) }}
+                                <CoinAmount :value="currentUser.cash || 0" />
                                 available
                             </span>
                         </div>
@@ -330,19 +329,22 @@
                                         <span
                                             class="text-base font-bold text-green-600"
                                         >
-                                            ₱{{
-                                                formatCash(
+                                            <CoinAmount
+                                                :value="
                                                     item.has_discount
                                                         ? item.discounted_price
-                                                        : item.cash_price,
-                                                )
-                                            }}
+                                                        : item.cash_price
+                                                "
+                                            />
                                         </span>
                                         <span
                                             v-if="item.has_discount"
                                             class="text-xs text-gray-400 line-through"
                                         >
-                                            ₱{{ formatCash(item.cash_price) }}
+                                            <CoinAmount
+                                                :value="item.cash_price"
+                                                :label="false"
+                                            />
                                         </span>
                                     </div>
 
@@ -487,12 +489,13 @@
                                             {{ purchase.shop_item.name }}
                                         </h3>
                                         <p class="text-xs text-gray-500 mt-0.5">
-                                            Qty: {{ purchase.quantity }} · ₱{{
-                                                formatCash(
+                                            Qty: {{ purchase.quantity }} ·
+                                            <CoinAmount
+                                                :value="
                                                     purchase.price_paid *
-                                                        purchase.quantity,
-                                                )
-                                            }}
+                                                    purchase.quantity
+                                                "
+                                            />
                                         </p>
                                         <p class="text-xs text-gray-400 mt-0.5">
                                             {{
@@ -623,19 +626,22 @@
                     <!-- Price -->
                     <div class="mt-2 flex items-baseline gap-2">
                         <span class="text-2xl font-bold text-green-600">
-                            ₱{{
-                                formatCash(
+                            <CoinAmount
+                                :value="
                                     detailItem.has_discount
                                         ? detailItem.discounted_price
-                                        : detailItem.cash_price,
-                                )
-                            }}
+                                        : detailItem.cash_price
+                                "
+                            />
                         </span>
                         <span
                             v-if="detailItem.has_discount"
                             class="text-sm text-gray-400 line-through"
                         >
-                            ₱{{ formatCash(detailItem.cash_price) }}
+                            <CoinAmount
+                                :value="detailItem.cash_price"
+                                :label="false"
+                            />
                         </span>
                     </div>
 
@@ -711,10 +717,13 @@
                             v-if="selectedItem?.has_discount"
                             class="text-xs text-gray-400 line-through"
                         >
-                            ₱{{ formatCash(selectedItem?.cash_price) }}
+                            <CoinAmount
+                                :value="selectedItem?.cash_price"
+                                :label="false"
+                            />
                         </p>
                         <p class="text-lg font-bold text-green-600">
-                            ₱{{ formatCash(effectivePrice(selectedItem)) }}
+                            <CoinAmount :value="effectivePrice(selectedItem)" />
                         </p>
                         <p class="text-xs text-gray-400">per item</p>
                     </div>
@@ -760,7 +769,7 @@
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-600">Total cost</span>
                         <span class="font-bold text-green-600">
-                            ₱{{ formatCash(getTotalCost()) }}
+                            <CoinAmount :value="getTotalCost()" />
                         </span>
                     </div>
                     <div class="flex justify-between text-sm">
@@ -773,7 +782,7 @@
                             "
                             class="font-semibold"
                         >
-                            ₱{{ formatCash(getBalanceAfterPurchase()) }}
+                            <CoinAmount :value="getBalanceAfterPurchase()" />
                         </span>
                     </div>
                 </div>
@@ -788,7 +797,7 @@
                         class="pi pi-spin pi-spinner"
                     ></i>
                     {{
-                        !canAffordPurchase() ? "Not Enough Cash" : "Place Order"
+                        !canAffordPurchase() ? "Not Enough Coins" : "Place Order"
                     }}
                 </button>
             </div>
@@ -869,7 +878,9 @@
 </template>
 
 <script>
+import CoinAmount from "@/components/CoinAmount.vue";
 export default {
+    components: { CoinAmount },
     data() {
         return {
             loading: true,
@@ -1265,7 +1276,7 @@ export default {
             if (item.stock !== null && item.stock <= 0) return "Sold Out";
 
             const userCash = parseFloat(this.currentUser.cash || 0);
-            if (userCash < this.effectivePrice(item)) return "No Cash";
+            if (userCash < this.effectivePrice(item)) return "No Coins";
             return "Buy";
         },
 

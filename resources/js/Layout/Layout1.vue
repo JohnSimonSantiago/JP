@@ -39,12 +39,13 @@
 
                 <!-- User Stats Cards -->
                 <div class="hidden md:flex items-center gap-3">
-                    <!-- Cash Display -->
+                    <!-- Coins (app wallet; API field is still user.cash) -->
                     <div
                         class="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-lg border border-green-200"
+                        title="Your Coins"
                     >
                         <span class="text-xs font-semibold text-green-700">
-                            ₱{{ formatCash(user.cash || 0) }}
+                            <CoinAmount :value="user.cash || 0" />
                         </span>
                     </div>
 
@@ -535,8 +536,8 @@
                             class="flex items-center justify-center gap-1 bg-green-50 px-2 py-2 rounded-lg border border-green-200"
                         >
                             <span class="text-xs font-semibold text-green-700"
-                                >₱{{ formatCash(user.cash || 0) }}</span
-                            >
+                                ><CoinAmount :value="user.cash || 0" :label="false"
+                            /></span>
                         </div>
                         <div
                             class="flex items-center justify-center gap-1 bg-yellow-50 px-2 py-2 rounded-lg border border-yellow-200"
@@ -660,10 +661,12 @@
                             to="/shops"
                             class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-gray-50 transition-all duration-200 group"
                         >
-                            <i
-                                class="pi pi-money-bill text-lg group-hover:scale-110 transition-transform"
-                            ></i>
-                            <span class="font-medium">Shops</span>
+                            <CoinIcon
+                                outline
+                                size="18px"
+                                class="group-hover:scale-110 transition-transform"
+                            />
+                            <span class="font-medium">Coins Shop</span>
                         </router-link>
 
                         <router-link
@@ -857,33 +860,11 @@
                             to="/admin/coins"
                             class="flex items-center gap-3 px-3 py-2 text-gray-700 rounded-lg hover:bg-indigo-50 hover:text-indigo-700 transition-all duration-200 group"
                         >
-                            <svg
-                                viewBox="0 0 24 24"
-                                class="w-[18px] h-[18px] group-hover:scale-110 transition-transform"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <circle cx="12" cy="12" r="9.5" />
-                                <circle
-                                    cx="12"
-                                    cy="12"
-                                    r="6.5"
-                                    stroke-width="1.2"
-                                />
-                                <text
-                                    x="12"
-                                    y="12.5"
-                                    text-anchor="middle"
-                                    dominant-baseline="middle"
-                                    font-size="8"
-                                    font-weight="700"
-                                    fill="currentColor"
-                                    stroke="none"
-                                >
-                                    ₱
-                                </text>
-                            </svg>
+                            <CoinIcon
+                                outline
+                                size="18px"
+                                class="group-hover:scale-110 transition-transform"
+                            />
                             <span class="font-medium">Coin Wheel Settings</span>
                             <span
                                 class="ml-auto px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded-full"
@@ -964,10 +945,14 @@
 
 <script>
 import Button from "primevue/button";
+import CoinIcon from "@/components/CoinIcon.vue";
+import CoinAmount from "@/components/CoinAmount.vue";
 
 export default {
     components: {
         Button,
+        CoinIcon,
+        CoinAmount,
     },
     data() {
         return {

@@ -235,9 +235,10 @@
                                 : 'text-gray-500'
                         "
                     >
-                        <i class="pi pi-wallet mr-1"></i> App Balance (₱{{
-                            formatCash(selectedUser.cash)
-                        }})
+                        <CoinIcon class="mr-1" /> Coins (<CoinAmount
+                            :value="selectedUser.cash"
+                            :label="false"
+                        />)
                     </button>
                 </div>
 
@@ -245,7 +246,7 @@
                     v-if="paymentMethod === 'balance'"
                     class="text-xs text-gray-400 mb-3"
                 >
-                    App Balance purchases don't earn wheel spins.
+                    Coins purchases don't earn wheel spins.
                 </p>
                 <p
                     v-if="
@@ -254,7 +255,7 @@
                     "
                     class="text-xs text-red-500 mb-3"
                 >
-                    Insufficient app balance for this amount.
+                    Not enough Coins for this amount.
                 </p>
                 <p v-if="errorMessage" class="text-xs text-red-500 mb-3">
                     {{ errorMessage }}
@@ -537,7 +538,9 @@
                         </p>
                     </div>
                     <div class="bg-blue-50 rounded-lg p-3">
-                        <p class="text-xs text-blue-400">App Balance</p>
+                        <p class="text-xs text-blue-400">
+                            Coins <span class="text-blue-300">(1 Coin = ₱1)</span>
+                        </p>
                         <p class="text-lg font-bold text-blue-600">
                             ₱{{ totalBalance }}
                         </p>
@@ -606,7 +609,7 @@
                                         {{
                                             p.payment_method === "cash"
                                                 ? "Cash"
-                                                : "App Balance"
+                                                : "Coins"
                                         }}
                                     </span>
                                 </td>
@@ -635,8 +638,11 @@
 </template>
 
 <script>
+import CoinIcon from "@/components/CoinIcon.vue";
+import CoinAmount from "@/components/CoinAmount.vue";
 export default {
     name: "LoungeBuyTime",
+    components: { CoinIcon, CoinAmount },
     data() {
         return {
             search: "",

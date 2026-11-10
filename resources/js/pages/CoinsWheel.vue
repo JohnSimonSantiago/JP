@@ -6,7 +6,7 @@
                 <h2 class="text-xl font-bold text-gray-800">Coins Wheel</h2>
                 <p class="text-sm text-gray-500">
                     Members earn 1 spin per hour of buy-time paid in cash, then
-                    spin on their dashboard. Winnings go to their app balance.
+                    spin on their dashboard. Winnings go to their Coins.
                 </p>
             </div>
 
@@ -522,7 +522,7 @@
                                         <th class="py-2 font-medium">Member</th>
                                         <th class="py-2 font-medium">Won</th>
                                         <th class="py-2 font-medium">
-                                            New Balance
+                                            New Coins Balance
                                         </th>
                                         <th class="py-2 font-medium">
                                             Spun By
@@ -550,7 +550,10 @@
                                             </span>
                                         </td>
                                         <td class="py-2 text-gray-700">
-                                            ₱{{ formatCash(s.new_cash) }}
+                                            <CoinAmount
+                                                :value="s.new_cash"
+                                                :label="false"
+                                            />
                                         </td>
                                         <td class="py-2 text-gray-500">
                                             {{ s.admin_name || "Member" }}
@@ -654,9 +657,11 @@
 
 <script>
 import { Html5Qrcode } from "html5-qrcode";
+import CoinAmount from "@/components/CoinAmount.vue";
 
 export default {
     name: "CoinsWheel",
+    components: { CoinAmount },
     data() {
         return {
             // Settings

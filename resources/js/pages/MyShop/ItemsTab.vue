@@ -170,7 +170,7 @@
                                 <label
                                     class="block text-sm font-medium text-gray-700 mb-1"
                                 >
-                                    Cash Price *
+                                    Price (₱) *
                                 </label>
                                 <div class="relative">
                                     <span
@@ -187,6 +187,10 @@
                                         placeholder="0.00"
                                     />
                                 </div>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Online buyers pay this in Coins (1 Coin =
+                                    ₱1). Counter orders pay it in cash.
+                                </p>
                             </div>
 
                             <div>

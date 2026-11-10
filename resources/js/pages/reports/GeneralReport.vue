@@ -79,7 +79,7 @@
                             class="flex justify-between text-xs pl-2"
                         >
                             <span class="text-gray-400"
-                                >of which app balance</span
+                                >of which paid with Coins (1 Coin = ₱1)</span
                             >
                             <span class="text-gray-400">
                                 ₱{{ money(totalBuyBalance) }}

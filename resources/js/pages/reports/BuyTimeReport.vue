@@ -19,7 +19,9 @@
                     </p>
                 </div>
                 <div class="bg-blue-50 rounded-lg p-3">
-                    <p class="text-xs text-blue-400">App Balance</p>
+                    <p class="text-xs text-blue-400">
+                        Coins <span class="text-blue-300">(1 Coin = ₱1)</span>
+                    </p>
                     <p class="text-lg font-bold text-blue-600">
                         ₱{{ totalBalance }}
                     </p>

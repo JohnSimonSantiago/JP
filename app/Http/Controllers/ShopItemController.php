@@ -217,7 +217,7 @@ class ShopItemController extends Controller
                 if (($data['price'] <= 0) && ($data['cash_price'] <= 0)) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'At least one price (points or cash) must be greater than 0'
+                        'message' => 'At least one price (points or ₱) must be greater than 0'
                     ], 422);
                 }
             } else {
@@ -317,7 +317,7 @@ class ShopItemController extends Controller
                 if ($newPrice <= 0 && $newCashPrice <= 0) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'At least one price (points or cash) must be greater than 0'
+                        'message' => 'At least one price (points or ₱) must be greater than 0'
                     ], 422);
                 }
             } else {
@@ -688,10 +688,20 @@ class ShopItemController extends Controller
                 $purchase->update($updateData);
             });
 
+            // Wallet ("Coins") refunds say how many Coins came back; points refunds keep the old text
+            $refundText = 'Your order was rejected and your payment has been refunded.';
+            if ($purchase->currency_type === 'cash') {
+                $refunded = $purchase->price_paid * $purchase->quantity;
+                $refundedText = fmod((float) $refunded, 1.0) == 0.0
+                    ? number_format($refunded)
+                    : number_format($refunded, 2);
+                $refundText = "Your order was rejected and your {$refundedText} Coins have been refunded.";
+            }
+
             PushNotificationService::send(
                 $purchase->user->push_token,
                 'Order Rejected',
-                'Your order was rejected and your payment has been refunded.'
+                $refundText
             );
 
             return response()->json([
@@ -743,7 +753,7 @@ class ShopItemController extends Controller
                         $customer = \App\Models\User::findOrFail($request->user_id);
                         $cost = $item->cash_price * $quantity;
                         if ($customer->cash < $cost) {
-                            throw new \Exception("Insufficient balance for user.");
+                            throw new \Exception("Not enough Coins for this member.");
                         }
                         $customer->decrement('cash', $cost);
                     }

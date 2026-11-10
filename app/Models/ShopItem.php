@@ -90,7 +90,7 @@ class ShopItem extends Model
             // Regular shop items use cash
             $totalCost = $this->cash_price * $quantity;
             if ($user->cash < $totalCost) {
-                return 'Not enough cash';
+                return 'Not enough Coins';
             }
         }
 

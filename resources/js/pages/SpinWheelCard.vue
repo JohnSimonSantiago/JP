@@ -87,7 +87,7 @@
                     You won
                     <strong class="text-lg">{{ result.amount }}</strong> coins!
                     New balance:
-                    <strong>₱{{ formatCash(result.new_cash) }}</strong>
+                    <strong><CoinAmount :value="result.new_cash" /></strong>
                 </p>
             </div>
 
@@ -125,8 +125,10 @@
 </template>
 
 <script>
+import CoinAmount from "@/components/CoinAmount.vue";
 export default {
     name: "SpinWheelCard",
+    components: { CoinAmount },
     props: {
         level: { type: [Number, String], default: 1 },
     },

@@ -2,6 +2,19 @@
     <Layout>
         <div class="min-h-screen bg-gray-50 p-4">
             <div class="max-w-7xl mx-auto space-y-4">
+                <!-- Page title -->
+                <div class="flex items-center gap-2">
+                    <CoinIcon size="28px" />
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800">
+                            Coins Shop
+                        </h1>
+                        <p class="text-sm text-gray-500">
+                            Spend your Coins at Level Lounge shops
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Filters and Search -->
                 <div class="bg-white rounded-xl shadow-lg p-6">
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -336,7 +349,9 @@
 </template>
 
 <script>
+import CoinIcon from "@/components/CoinIcon.vue";
 export default {
+    components: { CoinIcon },
     data() {
         return {
             loading: true,
