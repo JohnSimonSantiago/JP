@@ -51,7 +51,7 @@ class LoungeController extends Controller
     {
         $request->validate(['q' => 'nullable|string|max:100']);
 
-        $query = User::where('level', 1);
+        $query = User::notKiosk()->where('level', 1);
 
         if ($request->q) {
             $query->where(function ($sub) use ($request) {
@@ -115,11 +115,7 @@ class LoungeController extends Controller
 
         $user->refresh();
 
-        // Buying time pays off a negative balance first (increment above). Once the
-        // balance is back to 0 or more, they're off the "Needs payment" list.
-        if ($user->consumable_minutes >= 0) {
-            $this->clearPaymentPending($user->id);
-        }
+        // (Buying time pays off a negative balance first: the increment above just adds.)
 
         ConsumablePurchase::create([
             'user_id'        => $user->id,
@@ -167,11 +163,6 @@ class LoungeController extends Controller
 
         $user->update(['consumable_minutes' => $request->minutes]);
 
-        // Set to 0 or more by staff: nothing owed anymore, off the "Needs payment" list
-        if ($user->consumable_minutes >= 0) {
-            $this->clearPaymentPending($user->id);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Balance updated.',
@@ -186,7 +177,7 @@ class LoungeController extends Controller
 
     public function consumableBalances(Request $request)
     {
-        $users = User::where('level', 1)
+        $users = User::notKiosk()->where('level', 1)
             ->where('consumable_minutes', '!=', 0)
             ->select('id', 'name', 'username', 'cash', 'consumable_minutes')
             ->orderBy('consumable_minutes', 'asc')
@@ -479,30 +470,20 @@ class LoungeController extends Controller
             ]);
         }
 
-        $pendingIds = []; // sessions that ended with a negative balance
         foreach ($sessions as $s) {
             $line = collect($lineItems)->firstWhere('id', $s->id);
 
             if ($s->billing_mode === 'consumable') {
-                // Deduct elapsed minutes from the member's balance (can go negative, no cap)
-                $owes = false;
+                // Deduct elapsed minutes from the member's balance (can go negative, no cap;
+                // their next time purchase pays the negative off first)
                 if ($s->user) {
                     $s->user->decrement('consumable_minutes', $line['minutes_used']);
-                    $owes = $s->user->consumable_minutes < 0;
-                }
-
-                // Still negative after timing out -> onto the "Needs payment" list.
-                // One entry per member: an older unpaid entry is replaced by this one.
-                if ($owes) {
-                    $this->clearPaymentPending($s->user_id);
-                    $pendingIds[] = $s->id;
                 }
 
                 $s->update([
-                    'checked_out_at'     => $checkedOutAt,
-                    'status'             => 'completed',
-                    'total_bill'         => 0,
-                    'payment_pending_at' => $owes ? $checkedOutAt : null,
+                    'checked_out_at' => $checkedOutAt,
+                    'status'         => 'completed',
+                    'total_bill'     => 0,
                 ]);
                 continue;
             }
@@ -516,82 +497,11 @@ class LoungeController extends Controller
             ]);
         }
 
-        foreach ($lineItems as $i => $line) {
-            $lineItems[$i]['payment_pending'] = in_array($line['id'], $pendingIds);
-        }
-
         return response()->json([
             'success'    => true,
             'total_bill' => $finalTotal,
             'line_items' => $lineItems,
         ]);
-    }
-
-    // ─── Needs payment ──────────────────────────────────────────────────────────
-
-    // Members who timed out with a negative balance and haven't paid yet.
-    public function needsPayment()
-    {
-        return response()->json(['success' => true, 'needs_payment' => $this->needsPaymentList()]);
-    }
-
-    private function needsPaymentList(): array
-    {
-        $rows = LoungeSession::with('user:id,name,username,level,consumable_minutes,cash')
-            ->whereNotNull('payment_pending_at')
-            ->orderBy('payment_pending_at')
-            ->get();
-
-        $list = [];
-        foreach ($rows as $s) {
-            $balance = (int) ($s->user->consumable_minutes ?? 0);
-
-            // Already back to 0+ some other way (e.g. balance edited): tidy up, skip
-            if (!$s->user || $balance >= 0) {
-                $s->update(['payment_pending_at' => null]);
-                continue;
-            }
-
-            $list[] = [
-                'session_id'         => $s->id,
-                'user_id'            => $s->user_id,
-                'name'               => $s->user->name,
-                'checked_in_at'      => $s->checked_in_at,
-                'checked_out_at'     => $s->checked_out_at,
-                'payment_pending_at' => $s->payment_pending_at,
-                'minutes_used'       => (int) Carbon::parse($s->checked_in_at)->diffInMinutes($s->checked_out_at),
-                'balance'            => $balance,     // e.g. -25
-                'owed_minutes'       => -$balance,    // e.g. 25
-                'user'               => $s->user,     // for the Buy time window
-            ];
-        }
-
-        return $list;
-    }
-
-    // "Pay next visit": off the list now; the balance stays negative and is paid
-    // off automatically by their next time purchase.
-    public function payLater($id)
-    {
-        $session = LoungeSession::with('user:id,name')->findOrFail($id);
-
-        if (!$session->payment_pending_at) {
-            return response()->json(['success' => false, 'message' => 'This member is not on the Needs payment list.'], 422);
-        }
-
-        $this->clearPaymentPending($session->user_id);
-
-        $name = $session->user->name ?? $session->customer_name;
-        return response()->json(['success' => true, 'message' => "{$name} will pay next visit."]);
-    }
-
-    // Take a member off the "Needs payment" list (all of their unpaid entries).
-    private function clearPaymentPending(?int $userId): void
-    {
-        if (!$userId) return;
-        LoungeSession::where('user_id', $userId)
-            ->whereNotNull('payment_pending_at')
-            ->update(['payment_pending_at' => null]);
     }
 
     // ─── Override split ─────────────────────────────────────────────────────────
@@ -875,7 +785,7 @@ class LoungeController extends Controller
     // Who does a detected code belong to? (QR = user ID, RFID = linked card)
     private function findScanUser(array $code): ?User
     {
-        $query = User::select('id', 'name', 'username', 'level', 'consumable_minutes', 'cash');
+        $query = User::notKiosk()->select('id', 'name', 'username', 'level', 'consumable_minutes', 'cash');
         return $code['source'] === 'qr'
             ? $query->where('id', $code['user_id'])->first()
             : $query->where('rfid_uid', $code['uid'])->first();
@@ -893,7 +803,8 @@ class LoungeController extends Controller
 
     // THE time in/out decision for a scanned card or member QR, used by the staff
     // dashboard and by kiosk screens. Reuses startSession() and runCheckout().
-    //   result: in | out | unknown | see_staff | duplicate
+    //   result: in | out | short (staff) | unknown | see_staff | duplicate
+    //   A time out that would leave the balance below zero is never done by a scan.
     public function scan(Request $request)
     {
         $request->validate(['code' => 'required|string|max:255']);
@@ -969,7 +880,7 @@ class LoungeController extends Controller
                 'result'         => 'in',
                 'mode'           => $mode,
                 'balance'        => $mode === 'consumable' ? $balance : null,
-                'owes_minutes'   => $mode === 'consumable' && $balance < 0 ? -$balance : 0,
+                'short_minutes'  => $mode === 'consumable' && $balance < 0 ? -$balance : 0, // already negative
                 'session_id'     => $session['id'],
                 'receipt_number' => $session['receipt_number'],
                 'message'        => "{$user->name} timed in.",
@@ -986,24 +897,56 @@ class LoungeController extends Controller
             ]);
         }
 
-        // ── Inside: time out (free or consumable), just this person ──
+        // ── Inside, consumable: would timing out leave them below zero? ──
+        // Then a scan does NOT time them out; the session stays active.
+        //   kiosk -> "see_staff" (reason "short") for the customer screen
+        //   staff -> "short" with what the "Not enough time" window needs
+        if (!$active->is_free) {
+            $preview = $this->runCheckout($active->id, true, true)->getData(true)['line_items'][0] ?? [];
+            $after = (int) ($preview['new_balance'] ?? 0);
+
+            if ($after < 0) {
+                $short = -$after;
+                $shortInfo = [
+                    'mode'          => 'consumable',
+                    'balance'       => (int) $user->consumable_minutes, // nothing deducted yet
+                    'balance_after' => $after,                           // if timed out now
+                    'short_minutes' => $short,
+                    'used'          => $preview['duration'] ?? null,
+                    'minutes_used'  => $preview['minutes_used'] ?? null,
+                    'session_id'    => $active->id,
+                ];
+
+                if ($request->user()->role === 'kiosk') {
+                    return response()->json($base + $shortInfo + [
+                        'result'  => 'see_staff',
+                        'reason'  => 'short',
+                        'message' => 'Not enough time — negative balance -' . $this->minutesText($short) . '. Please see staff to time out.',
+                    ]);
+                }
+
+                return response()->json($base + $shortInfo + [
+                    'result'  => 'short',
+                    'wallet'  => ['cash' => $user->cash], // staff only: for paying with Coins
+                    'message' => "{$user->name} — not enough time, would end with a negative balance of -" . $this->minutesText($short) . '.',
+                ]);
+            }
+        }
+
+        // ── Inside: time out (free, or consumable with enough time), just this person ──
         $out = $this->runCheckout($active->id, false, true)->getData(true);
         $line = $out['line_items'][0] ?? [];
-        $balance = (int) $user->fresh()->consumable_minutes;
+        $balance = (int) $user->fresh()->consumable_minutes; // after the deduction
         $mode = !empty($line['is_free']) ? 'free' : 'consumable';
-        $owes = $mode === 'consumable' && $balance < 0;
 
         return response()->json($base + [
-            'result'          => 'out',
-            'mode'            => $mode,
-            'used'            => $line['duration'] ?? null,
-            'balance'         => $mode === 'consumable' ? $balance : null,
-            'owes_minutes'    => $owes ? -$balance : 0,
-            'payment_pending' => (bool) ($line['payment_pending'] ?? false),
-            'session_id'      => $active->id,
-            'message'         => $owes
-                ? "{$user->name} timed out — owes " . $this->minutesText(-$balance) . '. Please see staff.'
-                : "{$user->name} timed out.",
+            'result'        => 'out',
+            'mode'          => $mode,
+            'used'          => $line['duration'] ?? null,
+            'balance'       => $mode === 'consumable' ? $balance : null,
+            'short_minutes' => $mode === 'consumable' && $balance < 0 ? -$balance : 0,
+            'session_id'    => $active->id,
+            'message'       => "{$user->name} timed out.",
         ]);
     }
 
@@ -1050,16 +993,6 @@ class LoungeController extends Controller
         if ($kiosk) $kiosk->tokens()->delete();
 
         return response()->json(['success' => true, 'message' => "Removed {$count} kiosk screen(s)."]);
-    }
-
-    // Kiosk/staff: who is waiting to pay, as short names for the public screen.
-    public function kioskWaiting()
-    {
-        $names = collect($this->needsPaymentList())
-            ->map(fn ($row) => $this->shortName($row['name']))
-            ->values();
-
-        return response()->json(['success' => true, 'waiting' => $names]);
     }
 
     // Shared answer for every scan: who is it, and are they already inside?

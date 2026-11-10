@@ -16,11 +16,6 @@
                          always listening; refocuses itself unless you're typing in a text box. -->
                     <input
                         ref="scanInput"
-                        v-model="scanBuffer"
-                        @keydown.enter.prevent="submitScanInput"
-                        @keydown.tab.prevent="submitScanInput"
-                        @focus="scannerFocused = true"
-                        @blur="scannerFocused = false"
                         type="text"
                         autocomplete="off"
                         autocapitalize="off"
@@ -31,35 +26,47 @@
                     <span
                         class="hidden sm:flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg border"
                         :class="
-                            scannerFocused
+                            scannerState.scannerFocused
                                 ? 'border-green-200 bg-green-50 text-green-700'
                                 : 'border-gray-200 text-gray-400'
                         "
                         :title="
-                            scannerFocused
+                            scannerState.scannerFocused
                                 ? 'QR scanner is listening'
                                 : 'Paused while you type in a box. Click an empty spot to resume.'
                         "
                     >
                         <span
                             class="w-2 h-2 rounded-full"
-                            :class="scannerFocused ? 'bg-green-500' : 'bg-gray-300'"
+                            :class="
+                                scannerState.scannerFocused
+                                    ? 'bg-green-500'
+                                    : 'bg-gray-300'
+                            "
                         ></span>
                         <i class="pi pi-qrcode"></i>
-                        {{ scannerFocused ? "Scanner ready" : "Scanner paused" }}
+                        {{
+                            scannerState.scannerFocused
+                                ? "Scanner ready"
+                                : "Scanner paused"
+                        }}
                     </span>
                     <button
                         @click="connectRfid"
-                        :disabled="rfidConnected"
+                        :disabled="scannerState.rfidConnected"
                         class="border px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                         :class="
-                            rfidConnected
+                            scannerState.rfidConnected
                                 ? 'border-green-200 bg-green-50 text-green-700'
                                 : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                         "
                     >
                         <i class="pi pi-id-card"></i>
-                        {{ rfidConnected ? "RFID ready" : "Connect RFID" }}
+                        {{
+                            scannerState.rfidConnected
+                                ? "RFID ready"
+                                : "Connect RFID"
+                        }}
                     </button>
                     <button
                         @click="openCheckIn()"
@@ -133,6 +140,14 @@
                         <div>
                             <p class="font-semibold text-gray-800">
                                 {{ session.customer_name }}
+                                <span
+                                    v-if="shortMinutes(session) > 0"
+                                    class="ml-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5 align-middle"
+                                    >Negative balance
+                                    {{
+                                        formatMinutesBalance(-shortMinutes(session))
+                                    }}</span
+                                >
                             </p>
                             <div class="flex items-center gap-2 mt-0.5">
                                 <span
@@ -252,6 +267,14 @@
                             <div>
                                 <p class="text-sm font-medium text-gray-800">
                                     {{ m.customer_name }}
+                                    <span
+                                        v-if="shortMinutes(m) > 0"
+                                        class="ml-1 text-xs font-semibold text-red-600 bg-red-50 border border-red-200 rounded-full px-2 py-0.5"
+                                        >Negative balance
+                                        {{
+                                            formatMinutesBalance(-shortMinutes(m))
+                                        }}</span
+                                    >
                                 </p>
                                 <span
                                     v-if="m.is_free"
@@ -1030,7 +1053,7 @@
                 </div>
             </div>
 
-            <!-- ── Not Enough Time Modal (RFID time out, short balance) ── -->
+            <!-- ── Not Enough Time Modal (staff scan of a member who'd end below zero) ── -->
             <div
                 v-if="notEnough"
                 class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
@@ -1045,9 +1068,9 @@
                         <span class="font-semibold text-gray-700">{{
                             notEnough.user.name
                         }}</span>
-                        is short by
+                        would end with a negative balance of
                         <span class="font-semibold text-red-600">{{
-                            formatMinutesBalance(notEnough.shortMinutes)
+                            formatMinutesBalance(-notEnough.shortMinutes)
                         }}</span>
                         ({{ notEnough.shortMinutes }} min).
                     </p>
@@ -1190,6 +1213,7 @@
 <script>
 import CoinAmount from "@/components/CoinAmount.vue";
 import { RECEIPTS_ENABLED } from "@/config/features";
+import { createLoungeScanner } from "@/lounge/scanner";
 export default {
     name: "LoungeSessionsDashboard",
     components: { CoinAmount },
@@ -1237,23 +1261,14 @@ export default {
             overrideOn: false,
             overrideTotal: null,
 
-            // RFID reader (ESP32 on USB, read through Chrome's Web Serial)
-            rfidConnected: false,
-            rfidBusy: false, // one scan (RFID or QR) at a time
-
-            // Shared scan flow (RFID card or QR) — debounce covers both sources
-            scanLastCode: null, // same raw code again within 5s = same scan
-            scanLastAt: 0,
-            scanLastUserId: null, // same PERSON again within 5s (card then QR) = same scan
-            scanLastUserAt: 0,
-            activeScanSource: null, // 'rfid' | 'qr' while a scan is being handled (for the badge)
-
-            // QR scanner (keyboard-style) input
-            scanBuffer: "",
-            scannerFocused: false,
-            rfidStatus: null, // { type: 'success' | 'info' | 'warn' | 'error', text }
+            // Scanners (RFID reader + T27H QR) — shared module, same as the kiosk screen.
+            // scannerState is the module's reactive state: rfidConnected, scannerFocused, busy.
+            scannerState: { rfidConnected: false, scannerFocused: false, busy: false },
+            rfidStatus: null, // { type: 'success' | 'info' | 'warn' | 'error', text, source }
             rfidStatusTimer: null,
-            rfidKeepReading: false,
+
+            // "Not enough time" window: staff scanned a member who'd end below zero
+            notEnough: null,
 
             // Link-a-card modal
             showLinkCard: false,
@@ -1264,12 +1279,20 @@ export default {
             linking: false,
             linkSearchTimeout: null,
 
-            // "Not enough time" window (RFID time out with a short balance)
-            notEnough: null,
         };
     },
 
     computed: {
+        // A staff window is open (scans still work; only results that need a window wait)
+        anyWindowOpen() {
+            return (
+                this.showCheckIn ||
+                this.showCheckOut ||
+                this.showLinkCard ||
+                !!this.notEnough
+            );
+        },
+
         // Sessions with no group_id
         soloSessions() {
             return this.activeSessions.filter((s) => !s.group_id);
@@ -1355,13 +1378,21 @@ export default {
             this.tick++;
         }, 1000);
 
-        this.autoConnectRfid();
+        // Scanners: same module (and same /lounge/scan decision) as the kiosk screen
+        this._scanner = createLoungeScanner({
+            getToken: () => localStorage.getItem("auth-token"),
+            onResult: (data) => this.onScanResult(data),
+            onError: (message) => this.showRfidStatus("error", message),
+            onStatus: (type, text) => this.showRfidStatus(type, text),
+        });
+        this.scannerState = this._scanner.state;
+        this._scanner.attachInput(this.$refs.scanInput);
+        this._scanner.autoConnectRfid();
 
-        // QR scanner: keep its hidden input focused (checked twice a second + on focus changes)
-        this._scanFocusTimer = setInterval(() => this.keepScannerFocused(), 500);
-        this._onFocusOut = () => setTimeout(() => this.keepScannerFocused(), 0);
-        document.addEventListener("focusout", this._onFocusOut);
-        this.$nextTick(() => this.keepScannerFocused());
+        // Kiosk screens scan without this page, so refresh every 10 seconds
+        this._refreshTimer = setInterval(() => {
+            if (!document.hidden) this.refreshLounge();
+        }, 10000);
 
         // Customer screen (/lounge/display) listens on this channel
         if ("BroadcastChannel" in window) {
@@ -1372,16 +1403,9 @@ export default {
     beforeUnmount() {
         clearInterval(this.tickInterval);
         clearTimeout(this.rfidStatusTimer);
-        if ("serial" in navigator && this._onSerialConnect) {
-            navigator.serial.removeEventListener(
-                "connect",
-                this._onSerialConnect,
-            );
-        }
-        this.disconnectRfid();
+        clearInterval(this._refreshTimer);
+        this._scanner?.destroy();
         this._displayChannel?.close();
-        clearInterval(this._scanFocusTimer);
-        document.removeEventListener("focusout", this._onFocusOut);
     },
 
     methods: {
@@ -1968,7 +1992,7 @@ export default {
         // ── Checkout flows ──
         // soloOut = true forces just this person even if they're in a group
         async openCheckout(session, soloOut = false) {
-            this._rfidHourlyOut = null; // set again by rfidTimeOut when it's a card tap
+            this._rfidHourlyOut = null; // set again by onScanResult for a scanned hourly session
             this.checkoutSession = session;
             this.checkoutGroup = null;
             this.checkoutResult = null;
@@ -2065,330 +2089,128 @@ export default {
             }
         },
 
-        // ── RFID reader ──
-        // Chrome/Edge only. First time: click "Connect RFID" and pick the ESP32 (COM5).
-        // After that the browser remembers it and reconnects by itself.
-        // The port lives in this._rfidPort (not in data) because Vue's reactivity
-        // wrapper breaks the browser's SerialPort object.
-        async autoConnectRfid() {
-            if (!("serial" in navigator)) return;
-
-            // Reconnect by itself if the cable is unplugged and plugged back in
-            this._onSerialConnect = (e) => {
-                if (!this.rfidConnected) this.openRfidPort(e.target);
-            };
-            navigator.serial.addEventListener("connect", this._onSerialConnect);
-
-            try {
-                const ports = await navigator.serial.getPorts();
-                if (ports.length > 0) await this.openRfidPort(ports[0]);
-            } catch (e) {
-                console.error("RFID auto-connect failed", e);
-            }
+        // ── Scanning (RFID + QR) ──
+        // The shared scanner module reads both scanners and calls /lounge/scan, where
+        // the backend decides time in / time out. This page shows the result and adds
+        // the staff-only extras: link a new card, bill an old hourly session.
+        connectRfid() {
+            this._scanner?.connectRfid();
         },
 
-        async connectRfid() {
-            if (!("serial" in navigator)) {
-                this.showRfidStatus(
-                    "error",
-                    "This browser can't read USB devices. Use Chrome or Edge.",
-                );
-                return;
-            }
-            try {
-                const port = await navigator.serial.requestPort();
-                await this.openRfidPort(port);
-            } catch (e) {
-                // NotFoundError = the picker was closed without choosing
-                if (e.name !== "NotFoundError") {
-                    this.showRfidStatus(
-                        "error",
-                        "Couldn't open the reader. Close PowerShell or Arduino IDE if they're using it.",
-                    );
-                }
-                console.error(e);
-            }
-        },
-
-        async openRfidPort(port) {
-            if (this.rfidConnected) return;
-            await port.open({ baudRate: 115200 });
-            // Same signals as the PowerShell test that worked
-            await port.setSignals({
-                dataTerminalReady: true,
-                requestToSend: false,
-            });
-            this._rfidPort = port;
-            this.rfidConnected = true;
-            this.rfidKeepReading = true;
-            this.showRfidStatus("info", "RFID reader connected. Tap a card.");
-            this._rfidLoop = this.readRfidLoop(port); // runs in the background
-        },
-
-        // Reads the board's text line by line and picks out "Card: 43 A8 7D 1A"
-        async readRfidLoop(port) {
-            const decoder = new TextDecoder();
-            let buffer = "";
-
-            while (port.readable && this.rfidKeepReading) {
-                const reader = port.readable.getReader();
-                this._rfidReader = reader;
-                try {
-                    while (true) {
-                        const { value, done } = await reader.read();
-                        if (done) break;
-                        buffer += decoder.decode(value, { stream: true });
-                        const lines = buffer.split(/\r?\n/);
-                        buffer = lines.pop(); // keep the unfinished line
-                        for (const line of lines) {
-                            const m = line.match(
-                                /Card:\s*((?:[0-9A-F]{2}\s*){4,10})/i,
-                            );
-                            if (m) {
-                                this.onScan(
-                                    m[1].replace(/\s+/g, "").toUpperCase(),
-                                );
-                            }
-                        }
-                    }
-                } catch (e) {
-                    console.error("RFID read error", e); // e.g. cable pulled
-                } finally {
-                    reader.releaseLock();
-                    this._rfidReader = null;
-                }
-            }
-
-            try {
-                await port.close();
-            } catch (e) {
-                // already closed
-            }
-            const unexpected = this.rfidKeepReading;
-            this._rfidPort = null;
-            this.rfidConnected = false;
-            this.rfidKeepReading = false;
-            if (unexpected) {
-                this.showRfidStatus(
-                    "error",
-                    "RFID reader disconnected. Plug it back in (it reconnects by itself) or click Connect RFID.",
-                );
-            }
-        },
-
-        async disconnectRfid() {
-            this.rfidKeepReading = false;
-            try {
-                if (this._rfidReader) await this._rfidReader.cancel();
-            } catch (e) {
-                console.error(e);
-            }
-            if (this._rfidLoop) await this._rfidLoop; // the loop closes the port
-        },
-
-        showRfidStatus(type, text) {
-            this.rfidStatus = { type, text, source: this.activeScanSource };
+        showRfidStatus(type, text, source = null) {
+            this.rfidStatus = { type, text, source };
             clearTimeout(this.rfidStatusTimer);
             this.rfidStatusTimer = setTimeout(() => {
                 this.rfidStatus = null;
             }, 6000);
         },
 
-        // One scan = time in if outside, time out if inside.
-        // The single time in/out flow for BOTH sources: the RFID reader (Web Serial)
-        // and the QR scanner (keyboard input) call this. The backend decides which
-        // kind of code it is (/scan/lookup) and says so in data.source.
-        async onScan(code) {
-            code = String(code || "").trim();
-            if (!code) return;
+        async onScanResult(data) {
+            const src = data.source;
+            const name = data.user?.name;
 
-            // 1) Same raw code within 5 seconds = the same scan (card left on the reader)
-            const now = Date.now();
-            if (code === this.scanLastCode && now - this.scanLastAt < 5000) return;
-            this.scanLastCode = code;
-            this.scanLastAt = now;
-
-            if (this.rfidBusy) return;
-            if (
-                this.showCheckIn ||
-                this.showCheckOut ||
-                this.showLinkCard ||
-                this.notEnough
-            ) {
+            if (data.result === "in") {
+                const short = data.short_minutes > 0;
                 this.showRfidStatus(
-                    "warn",
-                    "Finish or close the open window first, then scan again.",
+                    short ? "warn" : "success",
+                    short
+                        ? `${name} timed in — negative balance ${this.formatMinutesBalance(-data.short_minutes)}. Ask them to buy time.`
+                        : `${name} timed in.`,
+                    src,
                 );
-                this.scanLastCode = null; // allow an immediate retry
+                this.postDisplay({ kind: "in", name, mode: data.mode, balance: data.balance });
+                await this.refreshLounge();
                 return;
             }
 
-            this.rfidBusy = true;
-            try {
-                const res = await axios.post(
-                    "/api/lounge/scan/lookup",
-                    { code },
-                    { headers: this.headers() },
-                );
-                const data = res.data;
-                this.activeScanSource = data.source;
-
-                if (!data.linked) {
-                    this.postDisplay({ kind: "unknown", source: data.source });
-                    if (data.source === "rfid") {
-                        this.openLinkCard(data.uid); // new card -> link it
-                    } else {
-                        this.showRfidStatus("error", data.message);
-                    }
-                    return;
+            if (data.result === "out") {
+                let text = data.message;
+                if (data.mode === "consumable") {
+                    text = `${name} timed out — ${this.formatMinutesBalance(data.balance)} left`;
                 }
-
-                // 2) Same PERSON within 5 seconds = the same scan, whichever source
-                if (
-                    data.user.id === this.scanLastUserId &&
-                    now - this.scanLastUserAt < 5000
-                ) {
-                    return;
-                }
-                this.scanLastUserId = data.user.id;
-                this.scanLastUserAt = now;
-
-                if (data.active_session) {
-                    await this.rfidTimeOut(data.active_session, data.user);
-                    return;
-                }
-
-                await this.rfidCheckIn(data.user);
-            } catch (e) {
-                this.showRfidStatus(
-                    "error",
-                    e.response?.data?.message ||
-                        "Lookup failed. Check the internet connection.",
-                );
-            } finally {
-                this.rfidBusy = false;
-                this.activeScanSource = null;
-            }
-        },
-
-        // ── QR scanner (keyboard-style) ──
-        // The T27H types the QR text then presses Enter (some scanners send Tab).
-        submitScanInput() {
-            const code = this.scanBuffer;
-            this.scanBuffer = "";
-            this.onScan(code);
-        },
-
-        // Keep the hidden scanner input focused, EXCEPT while staff use a text box
-        // (search, names, amounts). Buttons don't count: if a clicked button kept
-        // focus, the scanner's Enter would press it again.
-        keepScannerFocused() {
-            const input = this.$refs.scanInput;
-            if (!input || document.hidden) return;
-            const el = document.activeElement;
-            if (el === input) return;
-            const typing =
-                el &&
-                (el.isContentEditable ||
-                    el.tagName === "TEXTAREA" ||
-                    el.tagName === "SELECT" ||
-                    (el.tagName === "INPUT" &&
-                        !["button", "submit", "checkbox", "radio", "range", "reset"].includes(
-                            (el.type || "").toLowerCase(),
-                        )));
-            if (!typing) input.focus({ preventScroll: true });
-        },
-
-        // Card tapped by someone already inside. The preview says what the
-        // time out would do, then:
-        //   free (Level 2/3)              -> time out right away
-        //   consumable, enough balance    -> time out right away
-        //   consumable, balance too low   -> "Not enough time" window
-        //   pays hourly                   -> normal bill window (cash to collect)
-        // Always solo=1, so one card never takes the rest of a group out.
-        async rfidTimeOut(session, user) {
-            const res = await axios.post(
-                `/api/lounge/check-out/${session.id}?preview=1&solo=1`,
-                {},
-                { headers: this.headers() },
-            );
-            const line = res.data.line_items?.[0];
-            if (!line) throw new Error("No preview");
-
-            if (line.is_free) {
-                const done = await this.rfidCheckout(session.id);
-                this.showRfidStatus("success", `${user.name} timed out`);
-                this.postDisplay({
-                    kind: "out",
-                    name: user.name,
-                    mode: "free",
-                    used: done.duration,
-                });
+                this.showRfidStatus("success", text, src);
+                this.postDisplay({ kind: "out", name, mode: data.mode, used: data.used, balance: data.balance });
+                await this.refreshLounge();
                 return;
             }
 
-            if (line.billing_mode === "consumable") {
-                if (line.new_balance >= 0) {
-                    const done = await this.rfidCheckout(session.id);
-                    this.showRfidStatus(
-                        "success",
-                        `${user.name} timed out — ${this.formatMinutesBalance(done.new_balance)} left`,
-                    );
-                    this.postDisplay({
-                        kind: "out",
-                        name: user.name,
-                        mode: "consumable",
-                        used: done.duration,
-                        balance: done.new_balance,
-                    });
+            // Would end below zero: not timed out. Open the "Not enough time" window.
+            if (data.result === "short") {
+                this.postDisplay({ kind: "short", name, short: data.short_minutes, used: data.used, balance: data.balance });
+                if (this.anyWindowOpen) {
+                    this.showRfidStatus("warn", `${data.message} Finish or close the open window first, then scan again.`, src);
+                    this._scanner?.forgetLastCode();
                 } else {
-                    this.openNotEnough(session, user, line);
+                    this.showRfidStatus("warn", data.message, src);
+                    this.openNotEnough(data);
                 }
                 return;
             }
 
-            this.showRfidStatus(
-                "info",
-                `${user.name} — timing out. Confirm the bill.`,
-            );
-            await this.openCheckout(session, true);
-            // Tell the customer screen once staff confirm the bill (confirmCheckout)
-            this._rfidHourlyOut = { name: user.name };
-        },
-
-        // Sends one RFID result to the customer screen. Never breaks the counter
-        // if the display tab isn't open.
-        postDisplay(msg) {
-            try {
-                this._displayChannel?.postMessage(msg);
-            } catch (e) {
-                console.error("Display message failed", e);
+            if (data.result === "duplicate") {
+                this.showRfidStatus("info", data.message, src);
+                return;
             }
+
+            if (data.result === "unknown") {
+                this.postDisplay({ kind: "unknown", source: src });
+                // A new RFID card -> offer to link it (staff only), unless a window is open
+                if (src === "rfid" && data.uid) {
+                    if (this.anyWindowOpen) {
+                        this.showRfidStatus("warn", "New card: finish or close the open window first, then tap again.", src);
+                        this._scanner?.forgetLastCode();
+                    } else {
+                        this.openLinkCard(data.uid);
+                    }
+                } else {
+                    this.showRfidStatus("error", data.message, src);
+                }
+                return;
+            }
+
+            if (data.result === "see_staff") {
+                this.postDisplay({ kind: "see_staff", source: src });
+                // An old hourly session: open its bill (just this person)
+                const session = data.session_id
+                    ? this.activeSessions.find((s) => s.id === data.session_id)
+                    : null;
+                if (data.reason === "hourly_bill" && session && !this.anyWindowOpen) {
+                    this.showRfidStatus("info", `${name} — pays by the hour. Confirm the bill.`, src);
+                    await this.openCheckout(session, true);
+                    this._rfidHourlyOut = { name };
+                } else {
+                    this.showRfidStatus("warn", data.message, src);
+                }
+                return;
+            }
+
+            this.showRfidStatus("error", data.message || "Scan failed.", src);
         },
 
-        // Real (non-preview) time out for one person. Returns their line item.
-        async rfidCheckout(sessionId) {
-            const res = await axios.post(
-                `/api/lounge/check-out/${sessionId}?solo=1`,
-                {},
-                { headers: this.headers() },
-            );
+        // Active sessions, quietly (no spinner)
+        async refreshLounge() {
             await this.fetchSessions(true);
-            await this.fetchHistory();
-            return res.data.line_items?.[0] || {};
+        },
+
+        // How far below zero a consumable member already is (timed in negative)
+        shortMinutes(session) {
+            if (session.billing_mode !== "consumable") return 0;
+            const bal = session.user?.consumable_minutes ?? 0;
+            return bal < 0 ? -bal : 0;
         },
 
         // ── "Not enough time" window ──
-        openNotEnough(session, user, line) {
-            const short = -line.new_balance;
+        // From a staff scan ("short"): the member is still checked in.
+        openNotEnough(data) {
+            const short = data.short_minutes;
             this.notEnough = {
-                session,
-                user,
+                sessionId: data.session_id,
+                source: data.source,
+                user: { id: data.user.id, name: data.user.name, cash: data.wallet?.cash ?? 0 },
                 shortMinutes: short,
-                newBalance: line.new_balance,
+                newBalance: data.balance_after, // if timed out now, without buying
                 hours: Math.min(24, Math.max(1, Math.ceil(short / 60))),
                 paymentMethod: "cash",
-                source: this.activeScanSource, // for the "via QR/RFID" badge
                 bought: false, // time already bought, only the time out is left
                 busy: false,
                 error: null,
@@ -2396,9 +2218,8 @@ export default {
         },
 
         closeNotEnough() {
-            this.notEnough = null;
-            this.scanLastCode = null; // allow an immediate re-tap
-            this.scanLastUserId = null;
+            this.notEnough = null; // they stay checked in
+            this._scanner?.forgetLastCode();
         },
 
         // Same prices as the Buy Time page: ₱100 per 3 hours, ₱40 per extra hour
@@ -2417,18 +2238,12 @@ export default {
                 try {
                     await axios.post(
                         "/api/lounge/consumable/buy",
-                        {
-                            user_id: n.user.id,
-                            hours: n.hours,
-                            payment_method: n.paymentMethod,
-                        },
+                        { user_id: n.user.id, hours: n.hours, payment_method: n.paymentMethod },
                         { headers: this.headers() },
                     );
                     n.bought = true;
                 } catch (e) {
-                    n.error =
-                        e.response?.data?.message ||
-                        "Couldn't buy the time. Nothing was charged.";
+                    n.error = e.response?.data?.message || "Couldn't buy the time. Nothing was charged.";
                     n.busy = false;
                     return;
                 }
@@ -2445,29 +2260,28 @@ export default {
             await this.finishNotEnough("timed out");
         },
 
+        // Times out just this person (staff checkout). Balance may go negative.
         async finishNotEnough(action) {
             const n = this.notEnough;
             try {
-                const done = await this.rfidCheckout(n.session.id);
-                const bal = done.new_balance ?? 0;
-                const balText =
-                    bal >= 0
-                        ? `${this.formatMinutesBalance(bal)} left`
-                        : `balance ${this.formatMinutesBalance(bal)}`;
+                const res = await axios.post(
+                    `/api/lounge/check-out/${n.sessionId}?solo=1`,
+                    {},
+                    { headers: this.headers() },
+                );
+                const line = res.data.line_items?.[0] || {};
+                const bal = line.new_balance ?? 0;
                 this.notEnough = null;
-                this.activeScanSource = n.source;
                 this.showRfidStatus(
                     bal >= 0 ? "success" : "warn",
-                    `${n.user.name} ${action} — ${balText}`,
+                    `${n.user.name} ${action} — ` +
+                        (bal >= 0
+                            ? `${this.formatMinutesBalance(bal)} left`
+                            : `negative balance ${this.formatMinutesBalance(bal)}`),
+                    n.source,
                 );
-                this.activeScanSource = null;
-                this.postDisplay({
-                    kind: "out",
-                    name: n.user.name,
-                    mode: "consumable",
-                    used: done.duration,
-                    balance: bal,
-                });
+                this.postDisplay({ kind: "out", name: n.user.name, mode: "consumable", used: line.duration, balance: bal });
+                await this.refreshLounge();
             } catch (e) {
                 n.error =
                     (n.bought
@@ -2478,36 +2292,13 @@ export default {
             }
         },
 
-        // Time in through the same flow as the Check In button
-        // (same rules, same CN number, same printed slip)
-        async rfidCheckIn(user) {
-            this.resetCheckIn();
-            this.checkInForm.customer_type = "member";
-            this.selectUser(user); // picks consumable time if they have a balance
-            if (this.checkInError) {
-                this.showRfidStatus("warn", this.checkInError);
-                this.resetCheckIn();
-                return;
-            }
-
-            // Read before submitting (the form resets afterwards)
-            const mode = [2, 3].includes(user.level)
-                ? "free"
-                : this.checkInForm.billing_mode; // 'consumable' or 'hourly'
-
-            await this.submitCheckIn();
-
-            if (this.checkInError) {
-                this.showRfidStatus("error", this.checkInError);
-                this.resetCheckIn();
-            } else {
-                this.showRfidStatus("success", `${user.name} timed in.`);
-                this.postDisplay({
-                    kind: "in",
-                    name: user.name,
-                    mode,
-                    balance: user.consumable_minutes ?? 0,
-                });
+        // Sends one result to the customer screen in this browser (if it's open).
+        // Never breaks the counter if the display tab isn't open.
+        postDisplay(msg) {
+            try {
+                this._displayChannel?.postMessage(msg);
+            } catch (e) {
+                console.error("Display message failed", e);
             }
         },
 
@@ -2523,8 +2314,7 @@ export default {
         closeLinkCard() {
             this.showLinkCard = false;
             this.linkUid = null;
-            this.scanLastCode = null; // allow an immediate re-tap
-            this.scanLastUserId = null;
+            this._scanner?.forgetLastCode(); // allow an immediate re-tap
         },
 
         searchLinkUsers() {

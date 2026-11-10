@@ -184,7 +184,9 @@ export const routes = [
         path: "/lounge/display",
         name: "lounge-display",
         component: LoungeDisplay,
-        beforeEnter: requiresStaffOrAdmin,
+        // No route guard: the kiosk screen runs with a kiosk token and NO staff login.
+        // The page shows "Kiosk not paired" without a valid token; pairing is staff-only
+        // on the server, and the kiosk token can only call /lounge/scan.
     },
     {
         path: "/admin/lounge-settings",

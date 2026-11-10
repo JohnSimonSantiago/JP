@@ -120,6 +120,41 @@
                         {{ saving ? "Saving..." : "Save Pricing" }}
                     </button>
                 </div>
+
+                <!-- Kiosk screens (/lounge/display) -->
+                <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mt-6">
+                    <h3 class="font-semibold text-gray-800 mb-1">Kiosk screens</h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Set up a kiosk by opening /lounge/display on that screen while
+                        logged in as staff. Unpairing makes every kiosk screen show
+                        "Kiosk not paired — please see staff" until it's set up again.
+                    </p>
+                    <p
+                        v-if="kioskMessage"
+                        class="text-sm mb-3"
+                        :class="kioskSuccess ? 'text-green-600' : 'text-red-600'"
+                    >
+                        {{ kioskMessage }}
+                    </p>
+                    <button
+                        @click="unpairKiosks"
+                        :disabled="kioskBusy"
+                        class="border px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        :class="
+                            kioskConfirm
+                                ? 'border-red-500 bg-red-600 text-white hover:bg-red-700'
+                                : 'border-red-200 text-red-600 hover:bg-red-50'
+                        "
+                    >
+                        {{
+                            kioskBusy
+                                ? "Unpairing..."
+                                : kioskConfirm
+                                  ? "Click again to unpair all kiosk screens"
+                                  : "Unpair all kiosk screens"
+                        }}
+                    </button>
+                </div>
             </div>
         </div>
     </Layout>
@@ -134,6 +169,10 @@ export default {
             saving: false,
             message: null,
             success: false,
+            kioskBusy: false,
+            kioskConfirm: false, // two clicks to unpair, so a stray click can't do it
+            kioskMessage: null,
+            kioskSuccess: false,
             form: {
                 hourly_rate: 40,
                 half_hour_rate: 25,
@@ -165,6 +204,32 @@ export default {
                 console.error(e.response?.data || e);
             } finally {
                 this.loading = false;
+            }
+        },
+
+        async unpairKiosks() {
+            if (!this.kioskConfirm) {
+                this.kioskConfirm = true;
+                clearTimeout(this._kioskConfirmTimer);
+                this._kioskConfirmTimer = setTimeout(() => (this.kioskConfirm = false), 5000);
+                return;
+            }
+            this.kioskConfirm = false;
+            this.kioskBusy = true;
+            this.kioskMessage = null;
+            try {
+                const res = await axios.post(
+                    "/api/lounge/kiosk/revoke-all",
+                    {},
+                    { headers: { Authorization: `Bearer ${localStorage.getItem("auth-token")}` } },
+                );
+                this.kioskSuccess = true;
+                this.kioskMessage = res.data.message;
+            } catch (e) {
+                this.kioskSuccess = false;
+                this.kioskMessage = e.response?.data?.message || "Couldn't unpair the kiosk screens.";
+            } finally {
+                this.kioskBusy = false;
             }
         },
 

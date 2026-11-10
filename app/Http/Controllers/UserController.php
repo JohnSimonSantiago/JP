@@ -551,7 +551,7 @@ $endDate = $startDate->copy()->addMonth();
     {
         try {
             // Get all users ordered by stars (descending), then by level (descending)
-            $users = User::orderBy('stars', 'desc')
+            $users = User::notKiosk()->orderBy('stars', 'desc')
                         ->orderBy('level', 'desc')
                         ->orderBy('created_at', 'asc') // Earlier users win ties
                        ->select(['id', 'name', 'username', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday'])
@@ -587,7 +587,7 @@ $endDate = $startDate->copy()->addMonth();
                 ]);
             }
 
-            $users = User::where('name', 'LIKE', '%' . $query . '%')
+            $users = User::notKiosk()->where('name', 'LIKE', '%' . $query . '%')
                         ->select(['id', 'name', 'bio', 'level', 'stars', 'is_premium', 'profile_image', 'gender', 'birthday', 'consumable_minutes']) // ADDED bio
                         ->limit(10)
                         ->get();

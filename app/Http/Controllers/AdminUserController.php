@@ -16,7 +16,7 @@ class AdminUserController extends Controller
     public function index()
     {
         try {
-            $users = User::select([
+            $users = User::notKiosk()->select([
                 'id', 'name', 'full_name', 'email', 'role', 'is_approved', 
                 'created_at', 'profile_image', 'level', 'points', 'stars', 'valid_id'
             ])

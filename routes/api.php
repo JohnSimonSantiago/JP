@@ -257,9 +257,6 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
         Route::post('/rfid/lookup', [LoungeController::class, 'rfidLookup']);
         Route::post('/rfid/link', [LoungeController::class, 'rfidLink']);
         Route::post('/scan/lookup', [LoungeController::class, 'scanLookup']); // RFID card or member QR, auto-detected
-        // "Needs payment" list: members who timed out with a negative balance (literal route first)
-        Route::get('/needs-payment', [LoungeController::class, 'needsPayment']);
-        Route::post('/needs-payment/{id}/pay-later', [LoungeController::class, 'payLater']);
         Route::get('/consumable/search', [LoungeController::class, 'searchLevel1Users']);
         Route::post('/consumable/buy', [LoungeController::class, 'buyConsumableTime']);
         Route::post('/consumable/overwrite', [LoungeController::class, 'overwriteConsumableBalance']);
@@ -271,10 +268,9 @@ Route::get('/lounge/my-session', [LoungeController::class, 'myActiveSession']);
         Route::post('/kiosk/revoke-all', [LoungeController::class, 'kioskRevokeAll']);
     });
 
-    // Lounge routes a paired kiosk screen may use (plus staff/admin). Nothing else.
+    // The only lounge route a paired kiosk screen may use (plus staff/admin).
     Route::middleware(['kiosk_or_staff'])->prefix('lounge')->group(function () {
-        Route::post('/scan', [LoungeController::class, 'scan']);                  // THE time in/out decision
-        Route::get('/kiosk/waiting', [LoungeController::class, 'kioskWaiting']); // "Please see staff: Juan D."
+        Route::post('/scan', [LoungeController::class, 'scan']); // THE time in/out decision
     });
 });
 Route::prefix('point-shop')->group(function () {

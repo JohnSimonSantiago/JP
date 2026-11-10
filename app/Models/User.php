@@ -380,6 +380,18 @@ public function getLoyaltyProgressForShop($shopId)
     }
 
     /**
+     * Scope to leave out the Lounge Kiosk account (role "kiosk") from people lists:
+     * search, user management, leaderboards. Not a global scope on purpose: Sanctum
+     * still has to find the kiosk account to accept a paired screen's token.
+     */
+    public function scopeNotKiosk($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('role', '!=', 'kiosk')->orWhereNull('role');
+        });
+    }
+
+    /**
      * Scope to get only pending approval users.
      */
     public function scopePendingApproval($query)

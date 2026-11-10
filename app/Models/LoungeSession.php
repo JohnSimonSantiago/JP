@@ -22,13 +22,11 @@ class LoungeSession extends Model
         'billing_mode',
         'notified_thresholds',
         'receipt_number',
-        'payment_pending_at',
     ];
 
     protected $casts = [
         'checked_in_at'        => 'datetime',
         'checked_out_at'       => 'datetime',
-        'payment_pending_at'   => 'datetime',
         'is_free'              => 'boolean',
         'total_bill'           => 'decimal:2',
         'notified_thresholds'  => 'array',

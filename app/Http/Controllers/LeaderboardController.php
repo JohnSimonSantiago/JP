@@ -13,7 +13,7 @@ class LeaderboardController extends Controller
     {
         try {
             // Get current season users ordered by stars
-            $users = User::orderBy('stars', 'desc')
+            $users = User::notKiosk()->orderBy('stars', 'desc')
                 ->orderBy('level', 'desc')
                 ->orderBy('name', 'asc')
                 ->select(['id', 'name', 'username', 'level', 'stars', 'is_premium', 'profile_image'])
@@ -144,11 +144,11 @@ class LeaderboardController extends Controller
             $currentSeason = Season::getOrCreateCurrentSeason();
             
             // Get various statistics
-            $totalUsers = User::count();
-            $premiumUsers = User::where('is_premium', true)->count();
-            $totalStars = User::sum('stars');
-            $averageStars = User::avg('stars');
-            $topUser = User::orderBy('stars', 'desc')->first();
+            $totalUsers = User::notKiosk()->count();
+            $premiumUsers = User::notKiosk()->where('is_premium', true)->count();
+            $totalStars = User::notKiosk()->sum('stars');
+            $averageStars = User::notKiosk()->avg('stars');
+            $topUser = User::notKiosk()->orderBy('stars', 'desc')->first();
 
             return response()->json([
                 'success' => true,
