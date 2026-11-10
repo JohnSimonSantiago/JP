@@ -63,7 +63,9 @@ class LoginController extends Controller
 {
     // For API, revoke current token
     if (request()->expectsJson() && Auth::guard('sanctum')->check()) {
-        $user = $request->user();
+        // This route isn't behind auth:sanctum, so $request->user() (default "web"
+        // guard) is always null here; ask the sanctum guard for the token's user.
+        $user = Auth::guard('sanctum')->user();
         if ($user && $user->currentAccessToken()) {
             $user->currentAccessToken()->delete();
         }
