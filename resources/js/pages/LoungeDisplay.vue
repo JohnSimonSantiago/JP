@@ -29,9 +29,16 @@
 
         <!-- Unknown card -->
         <template v-else-if="msg.kind === 'unknown'">
-            <i class="pi pi-id-card text-white text-8xl mb-10"></i>
+            <i
+                class="text-white text-8xl mb-10"
+                :class="msg.source === 'qr' ? 'pi pi-qrcode' : 'pi pi-id-card'"
+            ></i>
             <div class="text-white text-7xl font-bold">
-                Card not registered
+                {{
+                    msg.source === "qr"
+                        ? "QR code not recognised"
+                        : "Card not registered"
+                }}
             </div>
             <div class="text-white/80 text-4xl mt-6">
                 Please see the counter

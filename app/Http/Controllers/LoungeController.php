@@ -92,7 +92,7 @@ class LoungeController extends Controller
         if ($request->payment_method === 'balance' && $user->cash < $amount) {
             return response()->json([
                 'success' => false,
-                'message' => 'Insufficient app balance.',
+                'message' => 'Not enough Coins.',
             ], 422);
         }
 
@@ -114,6 +114,12 @@ class LoungeController extends Controller
         }
 
         $user->refresh();
+
+        // Buying time pays off a negative balance first (increment above). Once the
+        // balance is back to 0 or more, they're off the "Needs payment" list.
+        if ($user->consumable_minutes >= 0) {
+            $this->clearPaymentPending($user->id);
+        }
 
         ConsumablePurchase::create([
             'user_id'        => $user->id,
@@ -160,6 +166,11 @@ class LoungeController extends Controller
         }
 
         $user->update(['consumable_minutes' => $request->minutes]);
+
+        // Set to 0 or more by staff: nothing owed anymore, off the "Needs payment" list
+        if ($user->consumable_minutes >= 0) {
+            $this->clearPaymentPending($user->id);
+        }
 
         return response()->json([
             'success' => true,
@@ -264,19 +275,35 @@ class LoungeController extends Controller
             'receipt_number' => 'nullable|integer',
         ]);
 
+        return $this->startSession($request->only([
+            'customer_name', 'user_id', 'customer_type', 'group_id',
+            'billing_mode', 'school', 'receipt_number',
+        ]));
+    }
+
+    // The one time-in path: the Check In window and /scan both use it.
+    // $in = already-validated check-in fields.
+    private function startSession(array $in)
+    {
+        // Every field present (missing ones = null), so the code below can read them directly
+        $in = array_merge(array_fill_keys([
+            'customer_name', 'user_id', 'customer_type', 'group_id',
+            'billing_mode', 'school', 'receipt_number',
+        ], null), $in);
+
         $userLevel = 1;
         $isFree = false;
-        $billingMode = $request->billing_mode ?? 'hourly';
+        $billingMode = $in['billing_mode'] ?? 'hourly';
 
-        if ($request->user_id) {
-            $user = User::find($request->user_id);
+        if ($in['user_id']) {
+            $user = User::find($in['user_id']);
             $userLevel = $user->level ?? 1;
             $isFree = in_array($userLevel, [2, 3]);
         }
 
         // Consumable mode is Level 1 only — balance may be 0 or negative, it just counts down past zero
         if ($billingMode === 'consumable') {
-            if (!$request->user_id || $userLevel !== 1 || !isset($user)) {
+            if (!$in['user_id'] || $userLevel !== 1 || !isset($user)) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Consumable time is only available for Level 1 members.',
@@ -286,17 +313,24 @@ class LoungeController extends Controller
         }
 
         // Free (Level 2/3) and walk-ins always stay hourly
-        if ($isFree || $request->customer_type === 'walk_in') {
+        if ($isFree || $in['customer_type'] === 'walk_in') {
             $billingMode = 'hourly';
+        }
+
+        // Level 1 members ALWAYS use consumable minutes, never hourly, even with a
+        // 0 or negative balance (it just counts down further). Enforced here so the
+        // web page and the mobile kiosk behave the same.
+        if ($in['user_id'] && $in['customer_type'] === 'member' && !$isFree && $userLevel === 1) {
+            $billingMode = 'consumable';
         }
 
         // One active session per member. The row lock makes a second simultaneous
         // check-in (kiosk + web at the same second) wait, then see the first one.
-        $session = DB::transaction(function () use ($request, $userLevel, $isFree, $billingMode) {
-            if ($request->user_id) {
-                User::where('id', $request->user_id)->lockForUpdate()->first();
+        $session = DB::transaction(function () use ($in, $userLevel, $isFree, $billingMode) {
+            if ($in['user_id']) {
+                User::where('id', $in['user_id'])->lockForUpdate()->first();
 
-                $alreadyIn = LoungeSession::where('user_id', $request->user_id)
+                $alreadyIn = LoungeSession::where('user_id', $in['user_id'])
                     ->where('status', 'active')
                     ->exists();
 
@@ -306,13 +340,13 @@ class LoungeController extends Controller
             }
 
             return LoungeSession::create([
-                'customer_name'  => $request->customer_name,
-                'school'         => $request->school,
-                'user_id'        => $request->user_id,
-                'customer_type'  => $request->customer_type,
+                'customer_name'  => $in['customer_name'],
+                'school'         => $in['school'],
+                'user_id'        => $in['user_id'],
+                'customer_type'  => $in['customer_type'],
                 'user_level'     => $userLevel,
-                'group_id'       => $request->group_id,
-                'receipt_number' => $request->receipt_number,
+                'group_id'       => $in['group_id'],
+                'receipt_number' => $in['receipt_number'],
                 'checked_in_at'  => now(),
                 'status'         => 'active',
                 'is_free'        => $isFree,
@@ -324,7 +358,7 @@ class LoungeController extends Controller
         if (!$session) {
             return response()->json([
                 'success' => false,
-                'message' => "{$request->customer_name} is already checked in.",
+                'message' => "{$in['customer_name']} is already checked in.",
             ], 422);
         }
 
@@ -351,23 +385,35 @@ class LoungeController extends Controller
 
     public function checkOut(Request $request, $id)
     {
+        return $this->runCheckout(
+            $id,
+            $request->query('preview') === '1',
+            $request->query('solo') === '1',     // just this person, even if in a group
+            $request->input('override_total'),
+        );
+    }
+
+    // The one time-out path: the bill window, group checkout and /scan all use it.
+    // $isPreview = work out the bill without saving.
+    private function runCheckout($id, bool $isPreview, bool $soloOut, $overrideTotal = null)
+    {
         $session = LoungeSession::findOrFail($id);
 
         if ($session->status === 'completed') {
             return response()->json(['success' => false, 'message' => 'Session already completed'], 400);
         }
 
-        $isPreview = $request->query('preview') === '1';
         $checkedOutAt = now();
         $pricing = LoungePricing::first();
 
-        // "solo=1" forces just this one person, even if they're in a group.
-        $soloOut = $request->query('solo') === '1';
 
         // Gather everyone at this "table". Solo session = group of one.
         $sessions = ($session->group_id && !$soloOut)
             ? LoungeSession::with('user')->where('group_id', $session->group_id)
-                ->where('status', 'active')->get()
+                ->where('status', 'active')
+                // Time-in order (same as the group card): ties in the override split go to the first members
+                ->orderBy('checked_in_at')->orderBy('id')
+                ->get()
             : collect([$session->load('user')]);
 
         $lineItems = [];
@@ -407,10 +453,21 @@ class LoungeController extends Controller
             $lineItems[] = $line;
         }
 
-        // Admin override — final amount the operator actually charges
-        $finalTotal = $request->has('override_total') && $request->override_total !== null
-            ? (float) $request->override_total
+        // Admin override — final amount the operator actually charges, always in whole pesos
+        $isOverride = $overrideTotal !== null && $overrideTotal !== '';
+        $finalTotal = $isOverride
+            ? (int) round(max(0, (float) $overrideTotal))
             : $computedTotal;
+
+        // What each person actually pays. Without an override that's just their own bill.
+        // With an override, it's split in whole pesos by splitWholePesos() (the only place
+        // that does this split; preview and final time out both use it).
+        $shares = $isOverride
+            ? $this->splitWholePesos($finalTotal, array_column($lineItems, 'bill'))
+            : array_column($lineItems, 'bill');
+        foreach ($lineItems as $i => $line) {
+            $lineItems[$i]['share'] = $shares[$i];
+        }
 
         if ($isPreview) {
             return response()->json([
@@ -422,28 +479,35 @@ class LoungeController extends Controller
             ]);
         }
 
-        // Distribute the final total: if overridden, scale each paid line proportionally
-        $payable = $computedTotal > 0 ? $computedTotal : 1;
+        $pendingIds = []; // sessions that ended with a negative balance
         foreach ($sessions as $s) {
             $line = collect($lineItems)->firstWhere('id', $s->id);
 
             if ($s->billing_mode === 'consumable') {
                 // Deduct elapsed minutes from the member's balance (can go negative, no cap)
+                $owes = false;
                 if ($s->user) {
                     $s->user->decrement('consumable_minutes', $line['minutes_used']);
+                    $owes = $s->user->consumable_minutes < 0;
+                }
+
+                // Still negative after timing out -> onto the "Needs payment" list.
+                // One entry per member: an older unpaid entry is replaced by this one.
+                if ($owes) {
+                    $this->clearPaymentPending($s->user_id);
+                    $pendingIds[] = $s->id;
                 }
 
                 $s->update([
-                    'checked_out_at' => $checkedOutAt,
-                    'status'         => 'completed',
-                    'total_bill'     => 0,
+                    'checked_out_at'     => $checkedOutAt,
+                    'status'             => 'completed',
+                    'total_bill'         => 0,
+                    'payment_pending_at' => $owes ? $checkedOutAt : null,
                 ]);
                 continue;
             }
 
-            $share = $s->is_free
-                ? 0
-                : round(($line['bill'] / $payable) * $finalTotal, 2);
+            $share = $s->is_free ? 0 : $line['share'];
 
             $s->update([
                 'checked_out_at' => $checkedOutAt,
@@ -452,11 +516,123 @@ class LoungeController extends Controller
             ]);
         }
 
+        foreach ($lineItems as $i => $line) {
+            $lineItems[$i]['payment_pending'] = in_array($line['id'], $pendingIds);
+        }
+
         return response()->json([
             'success'    => true,
             'total_bill' => $finalTotal,
             'line_items' => $lineItems,
         ]);
+    }
+
+    // ─── Needs payment ──────────────────────────────────────────────────────────
+
+    // Members who timed out with a negative balance and haven't paid yet.
+    public function needsPayment()
+    {
+        return response()->json(['success' => true, 'needs_payment' => $this->needsPaymentList()]);
+    }
+
+    private function needsPaymentList(): array
+    {
+        $rows = LoungeSession::with('user:id,name,username,level,consumable_minutes,cash')
+            ->whereNotNull('payment_pending_at')
+            ->orderBy('payment_pending_at')
+            ->get();
+
+        $list = [];
+        foreach ($rows as $s) {
+            $balance = (int) ($s->user->consumable_minutes ?? 0);
+
+            // Already back to 0+ some other way (e.g. balance edited): tidy up, skip
+            if (!$s->user || $balance >= 0) {
+                $s->update(['payment_pending_at' => null]);
+                continue;
+            }
+
+            $list[] = [
+                'session_id'         => $s->id,
+                'user_id'            => $s->user_id,
+                'name'               => $s->user->name,
+                'checked_in_at'      => $s->checked_in_at,
+                'checked_out_at'     => $s->checked_out_at,
+                'payment_pending_at' => $s->payment_pending_at,
+                'minutes_used'       => (int) Carbon::parse($s->checked_in_at)->diffInMinutes($s->checked_out_at),
+                'balance'            => $balance,     // e.g. -25
+                'owed_minutes'       => -$balance,    // e.g. 25
+                'user'               => $s->user,     // for the Buy time window
+            ];
+        }
+
+        return $list;
+    }
+
+    // "Pay next visit": off the list now; the balance stays negative and is paid
+    // off automatically by their next time purchase.
+    public function payLater($id)
+    {
+        $session = LoungeSession::with('user:id,name')->findOrFail($id);
+
+        if (!$session->payment_pending_at) {
+            return response()->json(['success' => false, 'message' => 'This member is not on the Needs payment list.'], 422);
+        }
+
+        $this->clearPaymentPending($session->user_id);
+
+        $name = $session->user->name ?? $session->customer_name;
+        return response()->json(['success' => true, 'message' => "{$name} will pay next visit."]);
+    }
+
+    // Take a member off the "Needs payment" list (all of their unpaid entries).
+    private function clearPaymentPending(?int $userId): void
+    {
+        if (!$userId) return;
+        LoungeSession::where('user_id', $userId)
+            ->whereNotNull('payment_pending_at')
+            ->update(['payment_pending_at' => null]);
+    }
+
+    // ─── Override split ─────────────────────────────────────────────────────────
+
+    // Splits a whole-peso total across people in proportion to their own bills,
+    // with no centavos, and the shares always add up to exactly $total.
+    //   1. Everyone gets the whole-peso part of their fair share (rounded down).
+    //   2. The pesos left over go ₱1 each to whoever lost the most in step 1.
+    //      Ties (e.g. equal bills) go to the first people in the list (time-in order).
+    // Equal bills, ₱250: 3 people = 84, 83, 83 · 4 people = 63, 63, 62, 62.
+    // People with a ₱0 bill (free / consumable time) always get ₱0.
+    private function splitWholePesos(int $total, array $bills): array
+    {
+        // Bills in centavos so the math stays in whole numbers (no float rounding)
+        $weights = array_map(fn ($b) => max(0, (int) round(((float) $b) * 100)), $bills);
+        $sum = array_sum($weights);
+
+        if ($sum === 0 || $total <= 0) {
+            return array_fill(0, count($bills), 0);
+        }
+
+        $shares = [];
+        $remainders = [];
+        foreach ($weights as $i => $w) {
+            $shares[$i] = intdiv($total * $w, $sum);
+            $remainders[$i] = ($total * $w) % $sum;
+        }
+
+        // Biggest rounding loss first; on a tie, the earlier person first
+        $order = array_keys($weights);
+        usort($order, fn ($a, $b) => [$remainders[$b], $a] <=> [$remainders[$a], $b]);
+
+        $leftover = $total - array_sum($shares);
+        foreach ($order as $i) {
+            if ($leftover <= 0) break;
+            if ($weights[$i] === 0) continue;
+            $shares[$i]++;
+            $leftover--;
+        }
+
+        return $shares;
     }
 
     // ─── Billing Calculator ─────────────────────────────────────────────────────
@@ -600,12 +776,19 @@ class LoungeController extends Controller
     {
         $request->validate(['group_id' => 'nullable|string']);
 
+        return response()->json(['success' => true, 'number' => $this->nextReceiptNumber($request->group_id)]);
+    }
+
+    // Next CN number for this Manila month (shared by /reserve-receipt and /scan).
+    private function nextReceiptNumber(?string $groupId): int
+    {
+
         $now   = Carbon::now('Asia/Manila');
         $year  = (int) $now->format('Y');
         $month = (int) $now->format('n');
 
         // Lock so two simultaneous check-ins can't grab the same number.
-        $number = DB::transaction(function () use ($year, $month, $request) {
+        $number = DB::transaction(function () use ($year, $month, $groupId) {
             $last = LoungeReceipt::where('year', $year)
                 ->where('month', $month)
                 ->lockForUpdate()
@@ -617,13 +800,13 @@ class LoungeController extends Controller
                 'year'     => $year,
                 'month'    => $month,
                 'number'   => $next,
-                'group_id' => $request->group_id,
+                'group_id' => $groupId,
             ]);
 
             return $next;
         });
 
-        return response()->json(['success' => true, 'number' => $number]);
+        return $number;
     }
 
     // ─── RFID cards ─────────────────────────────────────────────────────────────
@@ -635,6 +818,7 @@ class LoungeController extends Controller
     }
 
     // A card was tapped: whose card is it, and are they already inside?
+    // (Kept for existing callers; /scan/lookup does the same for cards and QR codes.)
     public function rfidLookup(Request $request)
     {
         $request->validate(['uid' => 'required|string|max:64']);
@@ -644,12 +828,259 @@ class LoungeController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid card.'], 422);
         }
 
-        $user = User::where('rfid_uid', $uid)
-            ->select('id', 'name', 'username', 'level', 'consumable_minutes', 'cash')
-            ->first();
+        return $this->scanResult('rfid', ['uid' => $uid]);
+    }
+
+    // One endpoint for anything scanned at the counter: an RFID card ID or a
+    // member QR (levelup://user/{id}). The format decides which lookup runs.
+    public function scanLookup(Request $request)
+    {
+        $request->validate(['code' => 'required|string|max:255']);
+        $code = $this->detectScanCode($request->code);
+
+        if (!$code) {
+            return response()->json([
+                'success' => false,
+                'source'  => null,
+                'message' => 'Unknown code — not a card or a member QR.',
+            ], 422);
+        }
+
+        return $this->scanResult($code['source'], $code);
+    }
+
+    // What was scanned? The only place that decides between QR and RFID.
+    //   "levelup://user/123"            -> ['source' => 'qr',   'user_id' => 123]
+    //   "43 A8 7D 1A" / "43A87D1A"      -> ['source' => 'rfid', 'uid' => '43A87D1A']
+    //   anything else                   -> null
+    private function detectScanCode(string $raw): ?array
+    {
+        $raw = trim($raw);
+
+        // Member QR. Only the "user/<id>" ending is required, so a keyboard
+        // scanner that mistypes the "levelup://" part still works.
+        if (preg_match('~(?:^|[^a-z0-9])user/(\d{1,10})/?$~i', $raw, $m)) {
+            return ['source' => 'qr', 'user_id' => (int) $m[1]];
+        }
+
+        // RFID card ID: 4, 7 or 10 bytes in hex, with optional spaces, colons or dashes
+        $hex = preg_replace('/[\s:\-]/', '', $raw);
+        if (preg_match('/^[0-9A-Fa-f]{8,20}$/', $hex)) {
+            return ['source' => 'rfid', 'uid' => strtoupper($hex)];
+        }
+
+        return null;
+    }
+
+    // Who does a detected code belong to? (QR = user ID, RFID = linked card)
+    private function findScanUser(array $code): ?User
+    {
+        $query = User::select('id', 'name', 'username', 'level', 'consumable_minutes', 'cash');
+        return $code['source'] === 'qr'
+            ? $query->where('id', $code['user_id'])->first()
+            : $query->where('rfid_uid', $code['uid'])->first();
+    }
+
+    // "Juan Dela Cruz" -> "Juan C."  (public screens: first name + last initial)
+    private function shortName(?string $name): string
+    {
+        $parts = preg_split('/\s+/', trim((string) $name)) ?: [];
+        if (count($parts) <= 1) return $parts[0] ?? '';
+        return $parts[0] . ' ' . mb_strtoupper(mb_substr(end($parts), 0, 1)) . '.';
+    }
+
+    // ─── Scan (time in/out) ─────────────────────────────────────────────────────
+
+    // THE time in/out decision for a scanned card or member QR, used by the staff
+    // dashboard and by kiosk screens. Reuses startSession() and runCheckout().
+    //   result: in | out | unknown | see_staff | duplicate
+    public function scan(Request $request)
+    {
+        $request->validate(['code' => 'required|string|max:255']);
+        $code = $this->detectScanCode($request->code);
+
+        if (!$code) {
+            return response()->json([
+                'success' => false,
+                'result'  => 'unknown',
+                'source'  => null,
+                'message' => 'Unknown code — not a card or a member QR.',
+            ], 422);
+        }
+
+        $base = ['success' => true, 'source' => $code['source'], 'uid' => $code['uid'] ?? null];
+        $user = $this->findScanUser($code);
 
         if (!$user) {
-            return response()->json(['success' => true, 'linked' => false, 'uid' => $uid]);
+            return response()->json($base + [
+                'result'  => 'unknown',
+                'message' => $code['source'] === 'qr'
+                    ? 'Unknown QR — not a member.'
+                    : 'Unknown card — link it to a member.',
+            ]);
+        }
+
+        $who = [
+            'id'           => $user->id,
+            'name'         => $user->name,
+            'display_name' => $this->shortName($user->name),
+            'level'        => $user->level,
+        ];
+        $base['user'] = $who;
+
+        // Same person within a few seconds = one scan, even across screens/devices
+        $window = now()->subSeconds(10);
+        $justIn = LoungeSession::where('user_id', $user->id)->where('status', 'active')
+            ->where('checked_in_at', '>=', $window)->exists();
+        $justOut = LoungeSession::where('user_id', $user->id)->where('status', 'completed')
+            ->where('checked_out_at', '>=', $window)->exists();
+        if ($justIn || $justOut) {
+            return response()->json($base + [
+                'result'  => 'duplicate',
+                'message' => $justIn ? "{$user->name} just timed in." : "{$user->name} just timed out.",
+            ]);
+        }
+
+        $active = LoungeSession::where('user_id', $user->id)->where('status', 'active')->first();
+
+        // ── Not inside: time in ──
+        if (!$active) {
+            $receipt = $this->nextReceiptNumber(null); // saved on the session for reprints
+            $res = $this->startSession([
+                'customer_name'  => $user->name,
+                'user_id'        => $user->id,
+                'customer_type'  => 'member',
+                'receipt_number' => $receipt,
+            ]);
+            $data = $res->getData(true);
+
+            if (!($data['success'] ?? false)) {
+                return response()->json($base + [
+                    'result'  => 'see_staff',
+                    'message' => $data['message'] ?? 'Could not time in.',
+                ]);
+            }
+
+            $session = $data['session'];
+            $balance = (int) $user->consumable_minutes;
+            $mode = $session['is_free'] ? 'free' : $session['billing_mode']; // free | consumable
+
+            return response()->json($base + [
+                'result'         => 'in',
+                'mode'           => $mode,
+                'balance'        => $mode === 'consumable' ? $balance : null,
+                'owes_minutes'   => $mode === 'consumable' && $balance < 0 ? -$balance : 0,
+                'session_id'     => $session['id'],
+                'receipt_number' => $session['receipt_number'],
+                'message'        => "{$user->name} timed in.",
+            ]);
+        }
+
+        // ── Inside, on an old hourly session (from before "members always consumable") ──
+        if ($active->billing_mode !== 'consumable' && !$active->is_free) {
+            return response()->json($base + [
+                'result'     => 'see_staff',
+                'reason'     => 'hourly_bill',
+                'session_id' => $active->id,
+                'message'    => "{$user->name} pays by the hour — please see staff to time out.",
+            ]);
+        }
+
+        // ── Inside: time out (free or consumable), just this person ──
+        $out = $this->runCheckout($active->id, false, true)->getData(true);
+        $line = $out['line_items'][0] ?? [];
+        $balance = (int) $user->fresh()->consumable_minutes;
+        $mode = !empty($line['is_free']) ? 'free' : 'consumable';
+        $owes = $mode === 'consumable' && $balance < 0;
+
+        return response()->json($base + [
+            'result'          => 'out',
+            'mode'            => $mode,
+            'used'            => $line['duration'] ?? null,
+            'balance'         => $mode === 'consumable' ? $balance : null,
+            'owes_minutes'    => $owes ? -$balance : 0,
+            'payment_pending' => (bool) ($line['payment_pending'] ?? false),
+            'session_id'      => $active->id,
+            'message'         => $owes
+                ? "{$user->name} timed out — owes " . $this->minutesText(-$balance) . '. Please see staff.'
+                : "{$user->name} timed out.",
+        ]);
+    }
+
+    // 95 -> "1h 35m"
+    private function minutesText(int $minutes): string
+    {
+        return intdiv($minutes, 60) . 'h ' . ($minutes % 60) . 'm';
+    }
+
+    // ─── Kiosk screens ──────────────────────────────────────────────────────────
+
+    // Staff on /lounge/display: "Set up this screen as a kiosk". Returns a token for
+    // the Lounge Kiosk account, which can only use the kiosk routes.
+    public function kioskPair(Request $request)
+    {
+        $kiosk = User::where('role', 'kiosk')->first();
+        if (!$kiosk) {
+            $kiosk = new User();
+            $kiosk->name = 'Lounge Kiosk';
+            $kiosk->email = 'kiosk@levelinglounge.local';
+            $kiosk->password = bcrypt(\Illuminate\Support\Str::random(64)); // nobody logs in as the kiosk
+            $kiosk->role = 'kiosk';
+            $kiosk->level = 1;
+            $kiosk->points = 0;
+            $kiosk->stars = 0;
+            $kiosk->is_approved = false; // the login form refuses it; only paired tokens work
+            $kiosk->save();
+        }
+
+        $token = $kiosk->createToken('kiosk:' . ($request->user()->name ?? 'staff'))->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'token'   => $token,
+            'message' => 'This screen is now a kiosk.',
+        ]);
+    }
+
+    // Staff: un-pair every kiosk screen (they go back to "Not set up").
+    public function kioskRevokeAll()
+    {
+        $kiosk = User::where('role', 'kiosk')->first();
+        $count = $kiosk ? $kiosk->tokens()->count() : 0;
+        if ($kiosk) $kiosk->tokens()->delete();
+
+        return response()->json(['success' => true, 'message' => "Removed {$count} kiosk screen(s)."]);
+    }
+
+    // Kiosk/staff: who is waiting to pay, as short names for the public screen.
+    public function kioskWaiting()
+    {
+        $names = collect($this->needsPaymentList())
+            ->map(fn ($row) => $this->shortName($row['name']))
+            ->values();
+
+        return response()->json(['success' => true, 'waiting' => $names]);
+    }
+
+    // Shared answer for every scan: who is it, and are they already inside?
+    // Same shape for RFID and QR (plus "source"), so the page runs one time in/out flow.
+    private function scanResult(string $source, array $code)
+    {
+        $user = $this->findScanUser($code);
+
+        $base = [
+            'success' => true,
+            'source'  => $source,
+            'uid'     => $code['uid'] ?? null, // card ID, needed to link an unknown card
+        ];
+
+        if (!$user) {
+            return response()->json($base + [
+                'linked'  => false,
+                'message' => $source === 'qr'
+                    ? 'Unknown QR — not a member.'
+                    : 'Unknown card — link it to a member.',
+            ]);
         }
 
         $session = LoungeSession::with('user:id,name,level,profile_image,consumable_minutes')
@@ -657,10 +1088,8 @@ class LoungeController extends Controller
             ->where('status', 'active')
             ->first();
 
-        return response()->json([
-            'success'        => true,
+        return response()->json($base + [
             'linked'         => true,
-            'uid'            => $uid,
             'user'           => $user,
             'active_session' => $session,
         ]);

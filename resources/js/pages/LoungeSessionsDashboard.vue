@@ -12,6 +12,42 @@
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
+                    <!-- QR scanner (Clabel T27H, types like a keyboard + Enter). Hidden,
+                         always listening; refocuses itself unless you're typing in a text box. -->
+                    <input
+                        ref="scanInput"
+                        v-model="scanBuffer"
+                        @keydown.enter.prevent="submitScanInput"
+                        @keydown.tab.prevent="submitScanInput"
+                        @focus="scannerFocused = true"
+                        @blur="scannerFocused = false"
+                        type="text"
+                        autocomplete="off"
+                        autocapitalize="off"
+                        spellcheck="false"
+                        aria-label="QR scanner input"
+                        class="absolute opacity-0 w-px h-px -left-[9999px]"
+                    />
+                    <span
+                        class="hidden sm:flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg border"
+                        :class="
+                            scannerFocused
+                                ? 'border-green-200 bg-green-50 text-green-700'
+                                : 'border-gray-200 text-gray-400'
+                        "
+                        :title="
+                            scannerFocused
+                                ? 'QR scanner is listening'
+                                : 'Paused while you type in a box. Click an empty spot to resume.'
+                        "
+                    >
+                        <span
+                            class="w-2 h-2 rounded-full"
+                            :class="scannerFocused ? 'bg-green-500' : 'bg-gray-300'"
+                        ></span>
+                        <i class="pi pi-qrcode"></i>
+                        {{ scannerFocused ? "Scanner ready" : "Scanner paused" }}
+                    </span>
                     <button
                         @click="connectRfid"
                         :disabled="rfidConnected"
@@ -49,7 +85,17 @@
                         rfidStatus.type === 'error',
                 }"
             >
-                <i class="pi pi-id-card mr-2"></i>{{ rfidStatus.text }}
+                <i
+                    class="mr-2"
+                    :class="
+                        rfidStatus.source === 'qr' ? 'pi pi-qrcode' : 'pi pi-id-card'
+                    "
+                ></i>{{ rfidStatus.text }}
+                <span
+                    v-if="rfidStatus.source"
+                    class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-white/70 border border-current"
+                    >via {{ rfidStatus.source === "qr" ? "QR" : "RFID" }}</span
+                >
             </div>
 
             <!-- Loading / empty -->
@@ -682,40 +728,12 @@
                                     class="block text-xs font-medium text-gray-500 mb-1"
                                     >Billing</label
                                 >
+                                <!-- Members always use consumable time (no "Pay by Hour") -->
                                 <div
-                                    class="grid grid-cols-2 gap-2 bg-gray-100 p-1 rounded-lg"
+                                    class="bg-gray-100 rounded-lg px-3 py-1.5 text-sm font-medium text-indigo-600 flex items-center gap-2"
                                 >
-                                    <button
-                                        type="button"
-                                        @click="
-                                            checkInForm.billing_mode = 'hourly'
-                                        "
-                                        :class="
-                                            checkInForm.billing_mode ===
-                                            'hourly'
-                                                ? 'bg-white shadow-sm text-indigo-600'
-                                                : 'text-gray-500'
-                                        "
-                                        class="py-1.5 rounded-md text-sm font-medium transition-all"
-                                    >
-                                        Pay by Hour
-                                    </button>
-                                    <button
-                                        type="button"
-                                        @click="
-                                            checkInForm.billing_mode =
-                                                'consumable'
-                                        "
-                                        :class="
-                                            checkInForm.billing_mode ===
-                                            'consumable'
-                                                ? 'bg-white shadow-sm text-indigo-600'
-                                                : 'text-gray-500'
-                                        "
-                                        class="py-1.5 rounded-md text-sm font-medium transition-all"
-                                    >
-                                        Use Consumable Time
-                                    </button>
+                                    <i class="pi pi-clock text-xs"></i>
+                                    Consumable time
                                 </div>
                                 <p
                                     class="text-xs mt-1"
@@ -737,7 +755,8 @@
                                             (selectedUser.consumable_minutes ??
                                                 0) <= 0
                                         "
-                                        >— no time to use, buy time first</span
+                                        >— counts down below zero; they'll need
+                                        to buy time</span
                                     >
                                 </p>
                             </div>
@@ -870,9 +889,17 @@
                                             : 'text-gray-800'
                                     "
                                 >
-                                    {{
-                                        line.is_free ? "Free" : "₱" + line.bill
-                                    }}
+                                    <template v-if="line.is_free"
+                                        >Free</template
+                                    >
+                                    <template v-else>
+                                        <!-- Override: show the original bill crossed out -->
+                                        <span
+                                            v-if="line.share != line.bill"
+                                            class="text-xs text-gray-400 line-through font-normal mr-1"
+                                            >₱{{ line.bill }}</span
+                                        >₱{{ line.share ?? line.bill }}
+                                    </template>
                                 </span>
                             </div>
 
@@ -912,6 +939,7 @@
                                     v-model.number="overrideTotal"
                                     type="number"
                                     min="0"
+                                    step="1"
                                     :placeholder="checkoutResult.computed_total"
                                     class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
                                 />
@@ -1067,10 +1095,7 @@
                             <button
                                 v-for="pm in [
                                     { key: 'cash', label: 'Cash' },
-                                    {
-                                        key: 'balance',
-                                        label: `App balance (₱${Number(notEnough.user.cash || 0).toFixed(2)})`,
-                                    },
+                                    { key: 'balance', label: 'Coins' },
                                 ]"
                                 :key="pm.key"
                                 @click="notEnough.paymentMethod = pm.key"
@@ -1082,6 +1107,12 @@
                                 "
                             >
                                 {{ pm.label }}
+                                <template v-if="pm.key === 'balance'">
+                                    (<CoinAmount
+                                        :value="notEnough.user.cash || 0"
+                                        :label="false"
+                                    />)
+                                </template>
                             </button>
                         </div>
                         <p
@@ -1092,7 +1123,7 @@
                             "
                             class="text-xs text-red-500 mb-2"
                         >
-                            Not enough app balance for this amount.
+                            Not enough Coins for this amount.
                         </p>
                         <p class="text-xs text-gray-500">
                             Balance after time out:
@@ -1157,8 +1188,11 @@
     </Layout>
 </template>
 <script>
+import CoinAmount from "@/components/CoinAmount.vue";
+import { RECEIPTS_ENABLED } from "@/config/features";
 export default {
     name: "LoungeSessionsDashboard",
+    components: { CoinAmount },
     data() {
         return {
             activeSessions: [],
@@ -1205,9 +1239,18 @@ export default {
 
             // RFID reader (ESP32 on USB, read through Chrome's Web Serial)
             rfidConnected: false,
-            rfidBusy: false,
-            rfidLastUid: null,
-            rfidLastAt: 0,
+            rfidBusy: false, // one scan (RFID or QR) at a time
+
+            // Shared scan flow (RFID card or QR) — debounce covers both sources
+            scanLastCode: null, // same raw code again within 5s = same scan
+            scanLastAt: 0,
+            scanLastUserId: null, // same PERSON again within 5s (card then QR) = same scan
+            scanLastUserAt: 0,
+            activeScanSource: null, // 'rfid' | 'qr' while a scan is being handled (for the badge)
+
+            // QR scanner (keyboard-style) input
+            scanBuffer: "",
+            scannerFocused: false,
             rfidStatus: null, // { type: 'success' | 'info' | 'warn' | 'error', text }
             rfidStatusTimer: null,
             rfidKeepReading: false,
@@ -1283,11 +1326,20 @@ export default {
             if (this.rangePreset === "month") return "This month";
             return "Range";
         },
+        // The backend's total (override already rounded to whole pesos there)
         displayTotal() {
-            if (this.overrideOn && this.overrideTotal !== null) {
-                return this.overrideTotal;
-            }
-            return this.checkoutResult?.computed_total ?? 0;
+            return this.checkoutResult?.total_bill ?? 0;
+        },
+    },
+
+    watch: {
+        // Typing an override re-asks the backend for the split, so the preview
+        // shows exactly what will be saved (the split rule lives only in Laravel)
+        overrideTotal() {
+            this.refreshCheckoutPreview();
+        },
+        overrideOn() {
+            this.refreshCheckoutPreview();
         },
     },
 
@@ -1304,6 +1356,12 @@ export default {
         }, 1000);
 
         this.autoConnectRfid();
+
+        // QR scanner: keep its hidden input focused (checked twice a second + on focus changes)
+        this._scanFocusTimer = setInterval(() => this.keepScannerFocused(), 500);
+        this._onFocusOut = () => setTimeout(() => this.keepScannerFocused(), 0);
+        document.addEventListener("focusout", this._onFocusOut);
+        this.$nextTick(() => this.keepScannerFocused());
 
         // Customer screen (/lounge/display) listens on this channel
         if ("BroadcastChannel" in window) {
@@ -1322,6 +1380,8 @@ export default {
         }
         this.disconnectRfid();
         this._displayChannel?.close();
+        clearInterval(this._scanFocusTimer);
+        document.removeEventListener("focusout", this._onFocusOut);
     },
 
     methods: {
@@ -1554,12 +1614,10 @@ export default {
             this.userResults = [];
             this.userSearch = u.name;
 
-            // Default Level 1 members to consumable time if they have a balance
-            if (u.level === 1 && (u.consumable_minutes ?? 0) > 0) {
-                this.checkInForm.billing_mode = "consumable";
-            } else {
-                this.checkInForm.billing_mode = "hourly";
-            }
+            // Level 1 members ALWAYS use consumable time, even at 0 or negative
+            // (same rule the backend enforces in checkIn). Level 2/3 are free.
+            this.checkInForm.billing_mode =
+                u.level === 1 ? "consumable" : "hourly";
         },
 
         // ── Check-in flows ──
@@ -1620,14 +1678,8 @@ export default {
                 this.checkInError = "Enter a name before adding another.";
                 return;
             }
-            if (
-                this.checkInForm.billing_mode === "consumable" &&
-                (this.selectedUser?.consumable_minutes ?? 0) <= 0
-            ) {
-                this.checkInError =
-                    "This member has no consumable time balance.";
-                return;
-            }
+            // (No balance check: members time in on consumable time even at 0 or
+            // negative; the balance just counts down further.)
             // First time queuing turns this into a group
             if (!this.checkInForm.group_id) {
                 this.checkInForm.group_id = this.newGroupId();
@@ -1663,15 +1715,8 @@ export default {
         async submitCheckIn() {
             this.checkInError = null;
 
-            if (
-                this.checkInForm.customer_name &&
-                this.checkInForm.billing_mode === "consumable" &&
-                (this.selectedUser?.consumable_minutes ?? 0) <= 0
-            ) {
-                this.checkInError =
-                    "This member has no consumable time balance.";
-                return;
-            }
+            // (No balance check: members time in on consumable time even at 0 or
+            // negative, same as the backend.)
 
             // Build the full list: queued people + the one currently in the form (if filled)
             const people = [...this.pendingGroup];
@@ -1743,7 +1788,8 @@ export default {
                     console.error("CN reserve failed", e);
                 }
 
-                // Print the slip (one per event)
+                // Print the slip (one per event). Skipped when RECEIPTS_ENABLED is off;
+                // the CN number above is still reserved either way.
                 this.printCheckInSlip({
                     people,
                     school,
@@ -1781,6 +1827,7 @@ export default {
 
         // ── Receipt printing ──
         // Opens a hidden 80mm window and prints one slip. Reusable for reprints.
+        // Every print goes through here, so the switch in config/features.js covers all of them.
         printCheckInSlip({
             people,
             school,
@@ -1789,6 +1836,8 @@ export default {
             openTime,
             durationMinutes,
         }) {
+            if (!RECEIPTS_ENABLED) return; // receipts off: no pop-up, no print dialog
+
             const now = new Date();
             const dateStr = now.toLocaleDateString("en-PH");
             const timeIn = now.toLocaleTimeString("en-PH", {
@@ -1944,13 +1993,16 @@ export default {
         },
 
         async loadCheckoutPreview(sessionId, soloOut = false) {
+            const requestNo = (this._previewRequestNo = (this._previewRequestNo || 0) + 1);
             try {
                 const soloParam = soloOut ? "&solo=1" : "";
                 const res = await axios.post(
                     `/api/lounge/check-out/${sessionId}?preview=1${soloParam}`,
-                    {},
+                    this.overridePayload(),
                     { headers: this.headers() },
                 );
+                // Ignore an older answer that arrives after a newer one
+                if (requestNo !== this._previewRequestNo) return;
                 if (res.data.success) {
                     this.checkoutResult = res.data;
                     this._checkoutId = sessionId;
@@ -1960,12 +2012,31 @@ export default {
             }
         },
 
-        async confirmCheckout() {
-            this.confirmingCheckout = true;
+        // Same override value for the preview and the real time out
+        overridePayload() {
             const payload = {};
-            if (this.overrideOn && this.overrideTotal !== null) {
+            if (
+                this.overrideOn &&
+                this.overrideTotal !== null &&
+                this.overrideTotal !== ""
+            ) {
                 payload.override_total = this.overrideTotal;
             }
+            return payload;
+        },
+
+        refreshCheckoutPreview() {
+            if (!this.showCheckOut || !this._checkoutId) return;
+            clearTimeout(this._previewTimer);
+            this._previewTimer = setTimeout(() => {
+                this.loadCheckoutPreview(this._checkoutId, this.checkoutSolo);
+            }, 300);
+        },
+
+        async confirmCheckout() {
+            this.confirmingCheckout = true;
+            clearTimeout(this._previewTimer);
+            const payload = this.overridePayload();
             try {
                 const soloParam = this.checkoutSolo ? "?solo=1" : "";
                 const res = await axios.post(
@@ -2074,7 +2145,7 @@ export default {
                                 /Card:\s*((?:[0-9A-F]{2}\s*){4,10})/i,
                             );
                             if (m) {
-                                this.onRfidTap(
+                                this.onScan(
                                     m[1].replace(/\s+/g, "").toUpperCase(),
                                 );
                             }
@@ -2116,21 +2187,26 @@ export default {
         },
 
         showRfidStatus(type, text) {
-            this.rfidStatus = { type, text };
+            this.rfidStatus = { type, text, source: this.activeScanSource };
             clearTimeout(this.rfidStatusTimer);
             this.rfidStatusTimer = setTimeout(() => {
                 this.rfidStatus = null;
             }, 6000);
         },
 
-        // One tap = time in if outside, time out if inside
-        async onRfidTap(uid) {
-            // Same card again within 5 seconds = the same tap (card left on the reader)
+        // One scan = time in if outside, time out if inside.
+        // The single time in/out flow for BOTH sources: the RFID reader (Web Serial)
+        // and the QR scanner (keyboard input) call this. The backend decides which
+        // kind of code it is (/scan/lookup) and says so in data.source.
+        async onScan(code) {
+            code = String(code || "").trim();
+            if (!code) return;
+
+            // 1) Same raw code within 5 seconds = the same scan (card left on the reader)
             const now = Date.now();
-            if (uid === this.rfidLastUid && now - this.rfidLastAt < 5000)
-                return;
-            this.rfidLastUid = uid;
-            this.rfidLastAt = now;
+            if (code === this.scanLastCode && now - this.scanLastAt < 5000) return;
+            this.scanLastCode = code;
+            this.scanLastAt = now;
 
             if (this.rfidBusy) return;
             if (
@@ -2141,26 +2217,41 @@ export default {
             ) {
                 this.showRfidStatus(
                     "warn",
-                    "Finish or close the open window first, then tap again.",
+                    "Finish or close the open window first, then scan again.",
                 );
-                this.rfidLastUid = null; // allow an immediate retry
+                this.scanLastCode = null; // allow an immediate retry
                 return;
             }
 
             this.rfidBusy = true;
             try {
                 const res = await axios.post(
-                    "/api/lounge/rfid/lookup",
-                    { uid },
+                    "/api/lounge/scan/lookup",
+                    { code },
                     { headers: this.headers() },
                 );
                 const data = res.data;
+                this.activeScanSource = data.source;
 
                 if (!data.linked) {
-                    this.postDisplay({ kind: "unknown" });
-                    this.openLinkCard(data.uid);
+                    this.postDisplay({ kind: "unknown", source: data.source });
+                    if (data.source === "rfid") {
+                        this.openLinkCard(data.uid); // new card -> link it
+                    } else {
+                        this.showRfidStatus("error", data.message);
+                    }
                     return;
                 }
+
+                // 2) Same PERSON within 5 seconds = the same scan, whichever source
+                if (
+                    data.user.id === this.scanLastUserId &&
+                    now - this.scanLastUserAt < 5000
+                ) {
+                    return;
+                }
+                this.scanLastUserId = data.user.id;
+                this.scanLastUserAt = now;
 
                 if (data.active_session) {
                     await this.rfidTimeOut(data.active_session, data.user);
@@ -2172,11 +2263,40 @@ export default {
                 this.showRfidStatus(
                     "error",
                     e.response?.data?.message ||
-                        "Card lookup failed. Check the internet connection.",
+                        "Lookup failed. Check the internet connection.",
                 );
             } finally {
                 this.rfidBusy = false;
+                this.activeScanSource = null;
             }
+        },
+
+        // ── QR scanner (keyboard-style) ──
+        // The T27H types the QR text then presses Enter (some scanners send Tab).
+        submitScanInput() {
+            const code = this.scanBuffer;
+            this.scanBuffer = "";
+            this.onScan(code);
+        },
+
+        // Keep the hidden scanner input focused, EXCEPT while staff use a text box
+        // (search, names, amounts). Buttons don't count: if a clicked button kept
+        // focus, the scanner's Enter would press it again.
+        keepScannerFocused() {
+            const input = this.$refs.scanInput;
+            if (!input || document.hidden) return;
+            const el = document.activeElement;
+            if (el === input) return;
+            const typing =
+                el &&
+                (el.isContentEditable ||
+                    el.tagName === "TEXTAREA" ||
+                    el.tagName === "SELECT" ||
+                    (el.tagName === "INPUT" &&
+                        !["button", "submit", "checkbox", "radio", "range", "reset"].includes(
+                            (el.type || "").toLowerCase(),
+                        )));
+            if (!typing) input.focus({ preventScroll: true });
         },
 
         // Card tapped by someone already inside. The preview says what the
@@ -2268,6 +2388,7 @@ export default {
                 newBalance: line.new_balance,
                 hours: Math.min(24, Math.max(1, Math.ceil(short / 60))),
                 paymentMethod: "cash",
+                source: this.activeScanSource, // for the "via QR/RFID" badge
                 bought: false, // time already bought, only the time out is left
                 busy: false,
                 error: null,
@@ -2276,7 +2397,8 @@ export default {
 
         closeNotEnough() {
             this.notEnough = null;
-            this.rfidLastUid = null; // allow an immediate re-tap
+            this.scanLastCode = null; // allow an immediate re-tap
+            this.scanLastUserId = null;
         },
 
         // Same prices as the Buy Time page: ₱100 per 3 hours, ₱40 per extra hour
@@ -2333,10 +2455,12 @@ export default {
                         ? `${this.formatMinutesBalance(bal)} left`
                         : `balance ${this.formatMinutesBalance(bal)}`;
                 this.notEnough = null;
+                this.activeScanSource = n.source;
                 this.showRfidStatus(
                     bal >= 0 ? "success" : "warn",
                     `${n.user.name} ${action} — ${balText}`,
                 );
+                this.activeScanSource = null;
                 this.postDisplay({
                     kind: "out",
                     name: n.user.name,
@@ -2399,7 +2523,8 @@ export default {
         closeLinkCard() {
             this.showLinkCard = false;
             this.linkUid = null;
-            this.rfidLastUid = null; // allow an immediate re-tap
+            this.scanLastCode = null; // allow an immediate re-tap
+            this.scanLastUserId = null;
         },
 
         searchLinkUsers() {

@@ -69,6 +69,7 @@ class Kernel extends HttpKernel
         // Your admin middleware is correctly added
         'admin' => \App\Http\Middleware\AdminMiddleware::class,
         'staff_or_admin' => \App\Http\Middleware\StaffOrAdminMiddleware::class,
+        'kiosk_or_staff' => \App\Http\Middleware\KioskOrStaffMiddleware::class, // paired /lounge/display screens
     ];
 
     // You can remove this duplicate $routeMiddleware array since $middlewareAliases is the new way
