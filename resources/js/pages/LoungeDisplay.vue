@@ -148,6 +148,15 @@
 
         <!-- ── Kiosk: would end below zero -> NOT timed out, still checked in ── -->
         <template v-else-if="msg.kind === 'short'">
+            <!-- Negative balance at time out: big pulsing ERROR between two warning icons -->
+            <div class="flex items-center justify-center gap-8 mb-10">
+                <i class="pi pi-exclamation-triangle text-white text-8xl"></i>
+                <span
+                    class="bg-white text-red-600 text-8xl font-extrabold tracking-widest rounded-2xl px-12 py-4 shadow-xl animate-pulse"
+                    >ERROR</span
+                >
+                <i class="pi pi-exclamation-triangle text-white text-8xl"></i>
+            </div>
             <div class="text-white/80 text-5xl font-semibold">{{ msg.name }}</div>
             <div class="text-white text-7xl font-bold mt-4">Not enough time</div>
             <div class="text-white/80 text-4xl mt-10 uppercase tracking-wide">
@@ -157,7 +166,7 @@
                 {{ formatMinutes(-msg.short) }}
             </div>
             <div
-                class="text-white text-4xl mt-8 bg-black/25 rounded-2xl px-10 py-5 font-semibold"
+                class="text-white text-4xl mt-8 bg-black/20 rounded-2xl px-10 py-5 font-semibold"
             >
                 Please see staff to time out.
             </div>
@@ -172,38 +181,132 @@
             </div>
         </template>
 
-        <!-- ── Kiosk: time in / time out ── -->
-        <template v-else-if="msg.kind === 'in' || msg.kind === 'out'">
-            <img
-                v-if="msg.kind === 'in'"
-                src="/MainIcon.png"
-                alt=""
-                class="w-24 h-24 object-contain mb-6 opacity-90"
-            />
-            <div class="text-white text-7xl font-bold">
-                {{ msg.kind === "in" ? "Welcome" : "See you" }}, {{ msg.name }}!
-            </div>
-            <!-- Balance, big enough to read from across the room -->
-            <template v-if="msg.mode === 'free'">
-                <div class="text-white text-8xl font-extrabold mt-10">
-                    Free member
-                </div>
-            </template>
-            <template v-else-if="msg.mode === 'consumable'">
-                <div class="text-white/80 text-4xl mt-10 uppercase tracking-wide">
-                    {{ msg.kind === "in" ? "Balance" : "Balance left" }}
-                </div>
-                <div class="text-white text-9xl font-extrabold tabular-nums mt-2">
-                    {{ formatMinutes(msg.balance) }}
-                </div>
-                <div
-                    v-if="msg.short > 0"
-                    class="text-white text-4xl mt-8 bg-black/25 rounded-2xl px-10 py-5 font-semibold"
+        <!-- ── Kiosk: time out with a negative balance (ERROR screen, red card) ── -->
+        <template
+            v-else-if="(msg.kind === 'in' || msg.kind === 'out') && isTimeOutError"
+        >
+            <!-- Negative balance at time out: big pulsing ERROR between two warning icons -->
+            <div class="flex items-center justify-center gap-8 mb-10">
+                <i class="pi pi-exclamation-triangle text-white text-8xl"></i>
+                <span
+                    class="bg-white text-red-600 text-8xl font-extrabold tracking-widest rounded-2xl px-12 py-4 shadow-xl animate-pulse"
+                    >ERROR</span
                 >
-                    Negative balance — please buy time from staff
+                <i class="pi pi-exclamation-triangle text-white text-8xl"></i>
+            </div>
+            <div class="text-white text-7xl font-bold">
+                See you, {{ msg.name }}!
+            </div>
+            <div class="text-white/80 text-4xl mt-10 uppercase tracking-wide">
+                Balance left
+            </div>
+            <div class="text-white text-9xl font-extrabold tabular-nums mt-2">
+                {{ formatMinutes(msg.balance) }}
+            </div>
+            <div
+                class="text-white text-4xl mt-8 bg-black/20 rounded-2xl px-10 py-5 font-semibold"
+            >
+                Negative balance — please buy time from staff
+            </div>
+        </template>
+
+        <!-- ── Kiosk: time in / time out (green card) ── -->
+        <template v-else-if="msg.kind === 'in' || msg.kind === 'out'">
+            <!-- Time in slides in from the left, time out from the right -->
+            <transition
+                appear
+                :name="msg.kind === 'in' ? 'slide-from-left' : 'slide-from-right'"
+            >
+                <div :key="msgSeq" class="flex flex-col items-center w-full">
+                    <!-- TIME IN / TIME OUT label (with its direction icon) -->
+                    <span
+                        class="inline-flex items-center gap-6 bg-white text-green-700 text-8xl font-extrabold tracking-wider rounded-full px-20 py-6 shadow-xl"
+                    >
+                        <i
+                            class="pi text-7xl"
+                            :class="msg.kind === 'in' ? 'pi-sign-in' : 'pi-sign-out'"
+                        ></i>
+                        {{ msg.kind === "in" ? "TIME IN" : "TIME OUT" }}
+                    </span>
+
+                    <div class="text-white text-7xl font-bold mt-8">
+                        {{ msg.kind === "in" ? "Welcome" : "See you" }},
+                        {{ msg.name }}!
+                    </div>
+
+                    <!-- TIME IN: name + remaining balance -->
+                    <template v-if="msg.kind === 'in'">
+                        <div
+                            v-if="msg.mode === 'free'"
+                            class="text-white text-8xl font-extrabold mt-10"
+                        >
+                            Free member
+                        </div>
+                        <template v-else-if="msg.mode === 'consumable'">
+                            <div
+                                class="text-white/80 text-4xl mt-10 uppercase tracking-wide"
+                            >
+                                Balance
+                            </div>
+                            <!-- Negative: big bold balance on a red badge (card stays green) -->
+                            <div
+                                v-if="isNegativeBalance"
+                                class="inline-flex items-center gap-6 bg-red-600 text-white text-9xl font-extrabold tabular-nums rounded-3xl px-12 py-4 mt-4 shadow-xl"
+                            >
+                                <i class="pi pi-exclamation-triangle text-7xl"></i>
+                                {{ formatMinutes(msg.balance) }}
+                            </div>
+                            <!-- Zero or positive -->
+                            <div
+                                v-else
+                                class="text-white text-9xl font-extrabold tabular-nums mt-2"
+                            >
+                                {{ formatMinutes(msg.balance) }}
+                            </div>
+                            <div
+                                v-if="isNegativeBalance"
+                                class="text-white text-4xl mt-8 bg-black/25 rounded-2xl px-10 py-5 font-semibold"
+                            >
+                                Negative balance — please buy time from staff
+                            </div>
+                        </template>
+                        <!-- walk-ins / old hourly sessions: no balance line -->
+                    </template>
+
+                    <!-- TIME OUT: small summary list -->
+                    <div
+                        v-else
+                        class="mt-10 w-full max-w-3xl bg-black/15 rounded-3xl px-10 py-4 divide-y divide-white/20"
+                    >
+                        <div
+                            v-if="msg.used"
+                            class="flex items-baseline justify-between gap-6 py-4"
+                        >
+                            <span class="text-white/80 text-4xl">Time used</span>
+                            <span class="text-white text-5xl font-bold tabular-nums">{{
+                                msg.used
+                            }}</span>
+                        </div>
+                        <div
+                            v-if="msg.mode === 'free'"
+                            class="flex items-baseline justify-between gap-6 py-4"
+                        >
+                            <span class="text-white/80 text-4xl">Membership</span>
+                            <span class="text-white text-5xl font-bold">Free member</span>
+                        </div>
+                        <div
+                            v-else-if="msg.mode === 'consumable'"
+                            class="flex items-baseline justify-between gap-6 py-4"
+                        >
+                            <span class="text-white/80 text-4xl">Balance left</span>
+                            <span
+                                class="text-white text-7xl font-extrabold tabular-nums"
+                                >{{ formatMinutes(msg.balance) }}</span
+                            >
+                        </div>
+                    </div>
                 </div>
-            </template>
-            <!-- walk-ins / old hourly sessions: no balance line -->
+            </transition>
         </template>
 
         <!-- Small status line (no controls): scanner + RFID -->
@@ -253,6 +356,7 @@ export default {
             scannerState: { rfidSupported: false, rfidConnected: false, scannerFocused: false },
 
             msg: null, // { kind: 'in' | 'out' | 'short' | 'see_staff', name, mode, balance, used, short, note }
+            msgSeq: 0, // +1 per result, so each one slides in fresh
             now: new Date(),
             isFullscreen: !!document.fullscreenElement,
         };
@@ -268,12 +372,37 @@ export default {
                 return false;
             }
         },
+        // The member's remaining balance on this result, in minutes, or null when
+        // there isn't one (free members, walk-ins, "please see staff").
+        // "short" = a kiosk time out that would end at this (negative) balance.
+        resultBalance() {
+            const m = this.msg;
+            if (!m) return null;
+            if (m.kind === "short") return -m.short;
+            if ((m.kind === "in" || m.kind === "out") && m.mode === "consumable") {
+                return m.balance ?? null;
+            }
+            return null;
+        },
+        // Negative = below 0 (0 itself is fine)
+        isNegativeBalance() {
+            return this.resultBalance !== null && this.resultBalance < 0;
+        },
+        // Time out with a negative balance -> the ERROR screen
+        isTimeOutError() {
+            return (
+                this.isNegativeBalance &&
+                (this.msg.kind === "out" || this.msg.kind === "short")
+            );
+        },
         bgClass() {
             if (this.mode !== "kiosk") return "bg-gray-950";
             if (!this.msg) return "bg-gray-950";
             if (this.msg.kind === "see_staff") return "bg-amber-600";
-            if (this.msg.kind === "short" || this.msg.short > 0) return "bg-red-700";
-            return "bg-green-700"; // welcome and goodbye
+            // time out with a negative balance: whole screen red, white text
+            if (this.isTimeOutError) return "bg-red-600";
+            // welcome and goodbye (time in stays green even with a negative balance)
+            return "bg-green-700";
         },
         clock() {
             return this.now.toLocaleTimeString("en-PH", {
@@ -484,6 +613,7 @@ export default {
 
         show(msg) {
             this.msg = msg;
+            this.msgSeq++;
             clearTimeout(this._hide); // a new scan restarts the 8 seconds
             this._hide = setTimeout(() => (this.msg = null), SHOW_SECONDS * 1000);
         },
@@ -504,3 +634,26 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.slide-from-left-enter-active,
+.slide-from-right-enter-active {
+    transition:
+        transform 0.45s ease-out,
+        opacity 0.45s ease-out;
+}
+.slide-from-left-enter-from {
+    transform: translateX(-160px);
+    opacity: 0;
+}
+.slide-from-right-enter-from {
+    transform: translateX(160px);
+    opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .slide-from-left-enter-active,
+    .slide-from-right-enter-active {
+        transition: none;
+    }
+}
+</style>
