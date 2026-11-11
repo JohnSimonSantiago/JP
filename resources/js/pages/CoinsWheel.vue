@@ -628,6 +628,101 @@
                         </div>
                     </template>
                 </div>
+
+                <!-- Top Coin Holders -->
+                <div
+                    class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mt-6"
+                >
+                    <div class="flex items-center gap-2 mb-1">
+                        <CoinIcon size="20px" />
+                        <h3 class="font-semibold text-gray-800">
+                            Top Coin Holders
+                        </h3>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Members with the most Coins right now, highest first.
+                    </p>
+
+                    <div
+                        v-if="loadingTopHolders && topHolders.length === 0"
+                        class="text-center py-6 text-gray-400"
+                    >
+                        <i class="pi pi-spin pi-spinner"></i>
+                    </div>
+
+                    <p
+                        v-else-if="topHolders.length === 0"
+                        class="text-sm text-gray-400 text-center py-6"
+                    >
+                        {{
+                            topHoldersError ||
+                            "No members have Coins yet."
+                        }}
+                    </p>
+
+                    <template v-else>
+                        <ol class="divide-y divide-gray-100">
+                            <li
+                                v-for="(u, i) in topHolders"
+                                :key="u.id"
+                                class="flex items-center gap-3 py-2"
+                            >
+                                <span
+                                    class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-xs font-bold"
+                                    :class="
+                                        i === 0
+                                            ? 'bg-yellow-100 text-yellow-700'
+                                            : i === 1
+                                              ? 'bg-gray-200 text-gray-700'
+                                              : i === 2
+                                                ? 'bg-orange-100 text-orange-700'
+                                                : 'bg-indigo-50 text-indigo-600'
+                                    "
+                                >
+                                    #{{ i + 1 }}
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="text-sm font-medium text-gray-800 truncate"
+                                    >
+                                        {{ u.name }}
+                                    </p>
+                                    <p
+                                        v-if="u.username"
+                                        class="text-xs text-gray-400 truncate"
+                                    >
+                                        @{{ u.username }}
+                                    </p>
+                                </div>
+                                <span
+                                    class="text-sm font-semibold text-gray-800"
+                                >
+                                    <CoinAmount :value="u.cash" />
+                                </span>
+                            </li>
+                        </ol>
+
+                        <p
+                            v-if="topHoldersError"
+                            class="text-xs text-red-500 text-center mt-3"
+                        >
+                            {{ topHoldersError }}
+                        </p>
+
+                        <button
+                            v-if="topHoldersHasMore"
+                            @click="fetchTopHolders(topHoldersPage + 1)"
+                            :disabled="loadingTopHolders"
+                            class="mt-4 w-full border border-gray-200 text-gray-600 hover:bg-gray-50 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                        >
+                            <i
+                                v-if="loadingTopHolders"
+                                class="pi pi-spin pi-spinner text-xs"
+                            ></i>
+                            {{ loadingTopHolders ? "Loading..." : "Load More" }}
+                        </button>
+                    </template>
+                </div>
             </template>
         </div>
 
@@ -658,12 +753,20 @@
 <script>
 import { Html5Qrcode } from "html5-qrcode";
 import CoinAmount from "@/components/CoinAmount.vue";
+import CoinIcon from "@/components/CoinIcon.vue";
 
 export default {
     name: "CoinsWheel",
-    components: { CoinAmount },
+    components: { CoinAmount, CoinIcon },
     data() {
         return {
+            // Top Coin Holders (10 at a time, "Load More" adds the next 10)
+            topHolders: [],
+            topHoldersPage: 0,
+            topHoldersHasMore: false,
+            loadingTopHolders: false,
+            topHoldersError: null,
+
             // Settings
             loadingSettings: true,
             isEnabled: false,
@@ -1143,10 +1246,36 @@ export default {
         formatCash(cash) {
             return parseFloat(cash || 0).toFixed(2);
         },
+
+        // Top Coin Holders: page 1 on load, then each "Load More" appends the next page
+        async fetchTopHolders(page = 1) {
+            if (this.loadingTopHolders) return;
+            this.loadingTopHolders = true;
+            this.topHoldersError = null;
+            try {
+                const res = await axios.get("/api/admin/coins/top-holders", {
+                    params: { page },
+                });
+                if (res.data.success) {
+                    const known = new Set(this.topHolders.map((u) => u.id));
+                    this.topHolders = this.topHolders.concat(
+                        res.data.users.filter((u) => !known.has(u.id)),
+                    );
+                    this.topHoldersPage = res.data.page;
+                    this.topHoldersHasMore = res.data.has_more;
+                }
+            } catch (error) {
+                console.error("Failed to fetch top coin holders:", error);
+                this.topHoldersError = "Couldn't load the list. Try again.";
+            } finally {
+                this.loadingTopHolders = false;
+            }
+        },
     },
     mounted() {
         this.fetchSettings();
         this.fetchHistory();
+        this.fetchTopHolders();
     },
     beforeUnmount() {
         this.closeScanner(); // release the camera if admin leaves mid-scan

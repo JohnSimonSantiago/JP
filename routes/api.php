@@ -236,6 +236,7 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::get('/coins/search', [CoinController::class, 'search']);
     Route::post('/coins/grant', [CoinController::class, 'grant']);
     Route::get('/coins/history', [CoinController::class, 'history']);
+    Route::get('/coins/top-holders', [CoinController::class, 'topHolders']); // Top Coin Holders, ?page=N
     Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last
 
     // Lounge pricing (admin only)

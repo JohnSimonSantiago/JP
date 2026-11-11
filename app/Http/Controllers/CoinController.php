@@ -255,6 +255,28 @@ class CoinController extends Controller
         ]);
     }
 
+    /**
+     * Top Coin Holders: members ranked by their Coins balance (users.cash),
+     * highest first, 10 per page. Members with 0 Coins are skipped, and so is the
+     * Lounge Kiosk account. Only public fields (no email or other private info).
+     */
+    public function topHolders()
+    {
+        $page = User::notKiosk()
+            ->where('cash', '>', 0)
+            ->orderByDesc('cash')
+            ->orderBy('id') // stable order, so pages never repeat or skip a member
+            ->select('id', 'name', 'username', 'cash')
+            ->simplePaginate(10);
+
+        return response()->json([
+            'success'   => true,
+            'users'     => $page->items(),
+            'page'      => $page->currentPage(),
+            'has_more'  => $page->hasMorePages(),
+        ]);
+    }
+
     // ─── Members: their own wheel ───────────────────────────────────────────────
 
     public function myWheel(Request $request)
