@@ -1,0 +1,16 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.get_login_creds",
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.johnsimonsantiago.LevelUpApp",
+      "sha256_cert_fingerprints": [
+        "D0:D2:01:38:BD:D3:C2:FB:F7:D1:C0:81:EF:87:D3:B0:A8:7D:5F:7A:BD:19:E3:B7:AA:DB:6A:B6:74:1B:E7:60",
+        "48:5F:D6:04:8C:EB:B5:D5:D1:B1:4B:66:C2:EB:11:93:4C:8A:04:CE:2A:F1:79:D4:42:98:F8:44:FB:A3:CD:4B"
+      ]
+    }
+  }
+]
