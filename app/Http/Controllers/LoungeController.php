@@ -670,14 +670,58 @@ class LoungeController extends Controller
 
     // ─── Assign a session to a group ────────────────────────────────────────────
 
+    // Moves one active session into a group (existing or new group_id), or out of
+    // its group when group_id is null (solo). Only group_id changes: timers,
+    // billing_mode, checked_in_at and receipt numbers stay as they are.
+    // If the person's OLD group is left with a single active session, that last
+    // person becomes solo too (no leftover groups of 1). The NEW group is never
+    // dissolved: "+ Add to group" starts a group of 1 on purpose, then adds people.
     public function assignGroup(Request $request, $id)
     {
-        $request->validate(['group_id' => 'required|string']);
+        // "present" so a request that forgets the field can't remove someone by accident
+        $request->validate(['group_id' => 'present|nullable|string|max:64']);
+        $newGroupId = $request->input('group_id') ?: null;
 
-        $session = LoungeSession::findOrFail($id);
-        $session->update(['group_id' => $request->group_id]);
+        $result = DB::transaction(function () use ($id, $newGroupId) {
+            $session = LoungeSession::lockForUpdate()->findOrFail($id);
 
-        return response()->json(['success' => true, 'session' => $session]);
+            if ($session->status !== 'active') {
+                return null;
+            }
+
+            $oldGroupId = $session->group_id;
+
+            if ($oldGroupId === $newGroupId) {
+                return ['session' => $session, 'dissolved_session_id' => null];
+            }
+
+            $session->update(['group_id' => $newGroupId]);
+
+            // Auto-dissolve: the old group now has one person left -> make them solo
+            $dissolvedId = null;
+            if ($oldGroupId) {
+                $left = LoungeSession::where('group_id', $oldGroupId)
+                    ->where('status', 'active')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($left->count() === 1) {
+                    $left->first()->update(['group_id' => null]);
+                    $dissolvedId = $left->first()->id;
+                }
+            }
+
+            return ['session' => $session->fresh(), 'dissolved_session_id' => $dissolvedId];
+        });
+
+        if (!$result) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only active sessions can be moved.',
+            ], 422);
+        }
+
+        return response()->json(['success' => true] + $result);
     }
 
     // ─── Reserve next monthly CN number (one per check-in event) ─────────────────

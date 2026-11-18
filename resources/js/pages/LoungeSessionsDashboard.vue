@@ -224,6 +224,14 @@
                             + Add to group
                         </button>
                         <button
+                            v-if="groupedSessions.length > 0"
+                            @click="openMovePicker(session)"
+                            title="Move this person into an existing group"
+                            class="flex-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium py-2 rounded-lg text-sm transition-colors"
+                        >
+                            Move to group
+                        </button>
+                        <button
                             @click="openCheckout(session)"
                             class="flex-1 bg-red-50 hover:bg-red-100 text-red-600 font-medium py-2 rounded-lg text-sm transition-colors"
                         >
@@ -304,6 +312,13 @@
                                 >
                                     {{ getElapsed(m) }}
                                 </p>
+                                <button
+                                    @click="openMovePicker(m)"
+                                    title="Move this person to another group, a new group or solo"
+                                    class="text-indigo-400 hover:text-indigo-600 text-xs px-2 py-1 rounded hover:bg-indigo-50 transition-colors"
+                                >
+                                    Move
+                                </button>
                                 <button
                                     @click="openCheckout(m, true)"
                                     title="Check out just this person"
@@ -1053,6 +1068,57 @@
                 </div>
             </div>
 
+            <!-- ── Move Person Modal (fix a wrong grouping, no check out) ── -->
+            <div
+                v-if="movePicker"
+                class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50"
+            >
+                <div
+                    class="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 p-6"
+                >
+                    <h3 class="text-lg font-bold text-gray-800 mb-1">
+                        Move {{ movePicker.session.customer_name }}
+                    </h3>
+                    <p class="text-sm text-gray-500 mb-4">
+                        Now in:
+                        <span class="font-medium text-gray-700">{{
+                            movePicker.currentLabel
+                        }}</span
+                        >. Their timer, billing and receipt stay the same.
+                    </p>
+
+                    <div class="space-y-2">
+                        <button
+                            v-for="opt in movePicker.options"
+                            :key="opt.key"
+                            @click="moveTo(opt)"
+                            :disabled="movePicker.busy"
+                            class="w-full flex items-center justify-between border border-gray-200 hover:border-indigo-300 hover:bg-indigo-50 rounded-lg px-4 py-2.5 text-sm text-left transition-colors disabled:opacity-50"
+                        >
+                            <span class="font-medium text-gray-800">
+                                <i class="mr-2 text-gray-400" :class="opt.icon"></i
+                                >{{ opt.label }}
+                            </span>
+                            <span v-if="opt.hint" class="text-xs text-gray-400">{{
+                                opt.hint
+                            }}</span>
+                        </button>
+                    </div>
+
+                    <p v-if="movePicker.error" class="text-sm text-red-500 mt-3">
+                        {{ movePicker.error }}
+                    </p>
+
+                    <button
+                        @click="movePicker = null"
+                        :disabled="movePicker.busy"
+                        class="w-full mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                    >
+                        Cancel
+                    </button>
+                </div>
+            </div>
+
             <!-- ── Not Enough Time Modal (staff scan of a member who'd end below zero) ── -->
             <div
                 v-if="notEnough"
@@ -1270,6 +1336,9 @@ export default {
             // "Not enough time" window: staff scanned a member who'd end below zero
             notEnough: null,
 
+            // "Move" window: { session, currentLabel, options, busy, error }
+            movePicker: null,
+
             // Link-a-card modal
             showLinkCard: false,
             linkUid: null,
@@ -1289,7 +1358,8 @@ export default {
                 this.showCheckIn ||
                 this.showCheckOut ||
                 this.showLinkCard ||
-                !!this.notEnough
+                !!this.notEnough ||
+                !!this.movePicker
             );
         },
 
@@ -1682,6 +1752,87 @@ export default {
         // From an existing group card
         addToExistingGroup(groupId) {
             this.openCheckIn(groupId);
+        },
+
+        // ── Move a person (fix a wrong grouping, no check out) ──
+        // Choices: the other active groups (by letter), a new group, or solo.
+        openMovePicker(session) {
+            const groups = this.groupedSessions;
+            const currentIdx = groups.findIndex(
+                (g) => g.group_id === session.group_id,
+            );
+            const options = groups
+                .map((g, idx) => ({
+                    key: g.group_id,
+                    groupId: g.group_id,
+                    label: `Group ${this.groupLabel(idx)}`,
+                    hint: `${g.members.length} ${g.members.length === 1 ? "person" : "people"}`,
+                    icon: "pi pi-users",
+                }))
+                .filter((o) => o.groupId !== session.group_id);
+
+            options.push({
+                key: "__new",
+                groupId: "__new",
+                label: "New group",
+                hint: "start a new table",
+                icon: "pi pi-plus",
+            });
+            if (session.group_id) {
+                options.push({
+                    key: "__solo",
+                    groupId: null,
+                    label: "No group (solo)",
+                    hint: "",
+                    icon: "pi pi-user",
+                });
+            }
+
+            this.movePicker = {
+                session,
+                currentLabel:
+                    currentIdx >= 0
+                        ? `Group ${this.groupLabel(currentIdx)}`
+                        : "no group (solo)",
+                options,
+                busy: false,
+                error: null,
+            };
+        },
+
+        async moveTo(opt) {
+            const p = this.movePicker;
+            if (!p || p.busy) return;
+            p.busy = true;
+            p.error = null;
+            const groupId = opt.groupId === "__new" ? this.newGroupId() : opt.groupId;
+            try {
+                const res = await axios.post(
+                    `/api/lounge/assign-group/${p.session.id}`,
+                    { group_id: groupId },
+                    { headers: this.headers() },
+                );
+                const where =
+                    opt.groupId === null
+                        ? "solo"
+                        : opt.groupId === "__new"
+                          ? "a new group"
+                          : opt.label;
+                let text = `${p.session.customer_name} moved to ${where}.`;
+                if (res.data.dissolved_session_id) {
+                    const last = this.activeSessions.find(
+                        (s) => s.id === res.data.dissolved_session_id,
+                    );
+                    text += ` ${p.currentLabel} had one person left${last ? ` (${last.customer_name})` : ""}, now solo.`;
+                }
+                this.movePicker = null;
+                this.showRfidStatus("success", text);
+                await this.fetchSessions(true);
+            } catch (e) {
+                p.error =
+                    e.response?.data?.message || "Couldn't move this person.";
+                p.busy = false;
+            }
         },
 
         // Clears the single-person form fields (keeps group_id + queue)
