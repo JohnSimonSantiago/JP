@@ -30,7 +30,7 @@ The Expo/React Native mobile app (LevelUpApp, a separate repo) uses this same La
 - **Roles:** `users.role` is `admin`, `staff`, `shop_owner`, `kiosk`, or a regular user. Backend middleware aliases: `admin`, `staff_or_admin`, and `kiosk_or_staff` (`app/Http/Middleware`). Frontend guards in `routes.js` read `localStorage.user` and only affect the UI; the real check is always the backend middleware. The `kiosk` role is the "Lounge Kiosk" account used by paired kiosk screens; hide it from people lists with `User::notKiosk()` (not a global scope: Sanctum must still find it).
 - **API layout (`routes/api.php`):** public routes first, then `auth:sanctum` groups, then nested `admin` and `staff_or_admin` (`/lounge/*`) groups, then a small `kiosk_or_staff` group (`POST /lounge/scan` only). Point-shop routes sit in their own block at the bottom.
 - **Scheduler (`app/Console/Kernel.php`):** expires memberships daily, sends lounge push reminders every minute (hourly reminder and the warning before the next 30-min block), and runs `lounge:notify-consumable` (warnings when the consumable balance is low). Push notifications go through `App\Services\PushNotificationService` to the user's `push_token` (from the mobile app).
-- **Key business logic locations:** lounge billing is in `LoungeController::calculateBill()`; check-in and checkout run through `startSession()` and `runCheckout()` (the endpoints and `/lounge/scan` all use them); the group override split is `splitWholePesos()`; shop discounts are in `Shop::calculateDiscount()` (`app/Models/Shop.php`); lounge prices come from the `LoungePricing` model (edited on `LoungeSettings.vue`).
+- **Key business logic locations:** lounge billing is in `LoungeController::calculateBill()`; check-in and checkout run through `startSession()` and `runCheckout()` (the endpoints and `/lounge/scan` all use them); the group override split is `splitWholePesos()`; shop discounts are in `Shop::calculateDiscount()` (`app/Models/Shop.php`); lounge prices and the standard membership prices come from the `LoungePricing` model (edited on `LoungeSettings.vue`); net profit is `NetProfitController`.
 - **Coins = `users.cash`:** the wallet is shown as "Coins" (1 Coin = ₱1) everywhere in the web UI, with `CoinAmount` / `formatCoins()`. Display only: the column, model attribute and API keys stay `cash` (the mobile app depends on them). Real-money amounts (bills, rates, reports, owner earnings) stay ₱.
 - **Feature switches:** `resources/js/config/features.js`. `RECEIPTS_ENABLED = false` turns off the 80mm check-in slip printing (CN numbers are still reserved).
 
@@ -45,7 +45,7 @@ The Expo/React Native mobile app (LevelUpApp, a separate repo) uses this same La
 - In `routes/api.php`, wildcard routes must come AFTER literal routes (otherwise a string like "walk-in-order" gets treated as an ID). New `{id}` routes also get `->whereNumber('id')`.
 - New columns: check `$fillable` and `$casts` (missing entries fail silently). `decimal:2` casts come back as strings ("1500.50"); convert with `Number()` in Vue.
 - `Shop::calculateDiscount()` is the single source of truth for discount math. Extend it, don't duplicate it.
-- Walk-in/cash orders never enter the discount or payout system.
+- Shop counter (walk-in) orders paid in **cash** never enter the discount or payout system (the cash stays with the shop). Counter orders paid with a member's **Coins** do, exactly like online Coins orders (`calculateDiscount()`, frozen discount slices, `shop_claim_amount`, `unremitted`).
 - Store `receipt_number` on sessions when they're created (needed for reprints).
 - `??` doesn't catch "0" strings; use `> 0` checks when summing money fields.
 - Private files (expense receipts, valid IDs) go on the `local` disk (`storage/app/...`) and are served by an authenticated route; never on the `public` disk. Replacing/removing a file deletes the old one only after the database save succeeds.
@@ -79,8 +79,16 @@ The Expo/React Native mobile app (LevelUpApp, a separate repo) uses this same La
 - Served by `GET /api/admin/users/{user}/valid-id` (admin) and `GET /api/user/valid-id` (own ID only), `Cache-Control: private, no-store`. The web admin pages load them as a blob via `utils/validId.js`; the mobile app sends the bearer token with the image request.
 - Deleting a user deletes their file. `php artisan valid-ids:make-private` (dry run by default; `--go`, `--delete-orphans`) moved the old public files; it stays for checking that nothing is on the public disk.
 
-## Known gaps
-- The Check In window reserves the CN number after checking people in and doesn't save it on the session (`receipt_number` stays empty); `/lounge/scan` time-ins do save it.
+## Revenue and net profit (what counts as real money)
+- **Revenue** = lounge bills (`lounge_sessions.total_bill`, completed, on `checked_out_at`) + buy time paid in cash/GCash (`consumable_purchases.amount`, `payment_method = 'cash'`, on `created_at`) + memberships (`memberships.amount_paid`, on `approved_at`).
+- **Not revenue:** buy time paid with Coins (`payment_method = 'balance'`). Coins are never bought directly (they come from the membership credit, wheel prizes and refunds), so counting them again would double-count. Shop orders paid with Coins are a cost (payouts), not income. Shop cash counter orders belong to the shop owner. Points, stars, bets, trades and loyalty never involve money.
+- **Costs** = expenses (`expenses.amount`, on `spent_at`) + shop payouts (`payouts.amount`, on the day paid out). "Owed to shops" (completed, unremitted claims) is shown separately, not as a cost.
+- Every report must use these rules: the General Report's buy time revenue is cash only, and Statistics → Net Profit (`GET /admin/reports/net-profit`) uses them all.
+
+## Memberships
+- Monthly: approval sets a 1-month period; renewing is a new application after it ends. Gifted memberships have `source = 'gifted'`.
+- `amount_paid` is frozen when approved ("Amount received", defaulting to the standard price in Lounge Settings, also used when the app approves without an amount); gifts save 0. Never compute membership revenue from a hardcoded price. Admins can correct a paid amount (`POST /admin/memberships/{id}/amount`).
+- `php artisan memberships:backfill-amounts` (dry run by default, `--go`) filled old rows; it's safe to rerun.
 
 ## Communication
 - Keep explanations short and non-technical, with analogies. Give a clear recommendation, not a list of open-ended options.
