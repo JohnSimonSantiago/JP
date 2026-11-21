@@ -48,7 +48,7 @@ The Expo/React Native mobile app (LevelUpApp, a separate repo) uses this same La
 - Walk-in/cash orders never enter the discount or payout system.
 - Store `receipt_number` on sessions when they're created (needed for reprints).
 - `??` doesn't catch "0" strings; use `> 0` checks when summing money fields.
-- Private files (expense receipts) go on the `local` disk (`storage/app/...`) and are served by an admin-only route; never on the `public` disk. Replacing/removing a file deletes the old one only after the database save succeeds.
+- Private files (expense receipts, valid IDs) go on the `local` disk (`storage/app/...`) and are served by an authenticated route; never on the `public` disk. Replacing/removing a file deletes the old one only after the database save succeeds.
 - Money splits are always whole pesos and must add up exactly (see `splitWholePesos()`).
 
 ## Lounge billing (LoungeController)
@@ -74,8 +74,12 @@ The Expo/React Native mobile app (LevelUpApp, a separate repo) uses this same La
 - Receipts: private, `storage/app/expense-receipts`, served by `GET /admin/expenses/{id}/receipt` (the page loads it as a blob with the token).
 - Totals: the list returns the total and per-category totals for the filters (database SUM/GROUP BY); `/summary` gives fixed-period cards (this month so far vs last month up to the same day); `/due-this-month` gives template status (logged / due / overdue, `due_day` capped at the month's last day). Templates never create expenses by themselves.
 
+## Valid IDs (private)
+- Uploaded at signup (JPG/PNG only), stored on the `local` disk at `storage/app/valid_ids/...` (`users.valid_id` holds the path). All rules live in `App\Services\ValidIdFiles`.
+- Served by `GET /api/admin/users/{user}/valid-id` (admin) and `GET /api/user/valid-id` (own ID only), `Cache-Control: private, no-store`. The web admin pages load them as a blob via `utils/validId.js`; the mobile app sends the bearer token with the image request.
+- Deleting a user deletes their file. `php artisan valid-ids:make-private` (dry run by default; `--go`, `--delete-orphans`) moved the old public files; it stays for checking that nothing is on the public disk.
+
 ## Known gaps
-- Valid IDs (`UserController`, `valid_ids/`) are still on the `public` disk. Planned: move them to private storage like expense receipts.
 - The Check In window reserves the CN number after checking people in and doesn't save it on the session (`receipt_number` stays empty); `/lounge/scan` time-ins do save it.
 
 ## Communication
