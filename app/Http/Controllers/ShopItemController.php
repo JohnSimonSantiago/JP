@@ -731,7 +731,7 @@ class ShopItemController extends Controller
             'items.*.quantity'     => 'required|integer|min:1',
             'customer_type'        => 'required|in:user,walk_in',
             'walk_in_name'         => 'nullable|string|max:100',
-            'user_id'              => 'nullable|exists:users,id',
+            'user_id'              => 'nullable|required_if:payment_method,balance|exists:users,id', // Coins need a member
             'payment_method'       => 'required|in:balance,cash',
         ]);
 
@@ -749,9 +749,16 @@ class ShopItemController extends Controller
                         $item->decrement('stock', $quantity);
                     }
 
-                    if ($request->payment_method === 'balance' && $request->user_id) {
-                        $customer = \App\Models\User::findOrFail($request->user_id);
-                        $cost = $item->cash_price * $quantity;
+                    // Paid with a member's Coins: same discounts and shop claim as an online
+                    // Coins order (Shop::calculateDiscount), so the owner gets paid out.
+                    // Paid in cash: no discounts, no claim; the cash stays with the shop.
+                    $coins = $request->payment_method === 'balance';
+                    $discount = $coins ? $shop->calculateDiscount($item->cash_price) : null;
+                    $pricePerItem = $coins ? $discount['customer_pays'] : $item->cash_price;
+
+                    if ($coins) {
+                        $customer = \App\Models\User::lockForUpdate()->findOrFail($request->user_id);
+                        $cost = $pricePerItem * $quantity;
                         if ($customer->cash < $cost) {
                             throw new \Exception("Not enough Coins for this member.");
                         }
@@ -765,11 +772,18 @@ class ShopItemController extends Controller
                         'customer_type'  => $request->customer_type,
                         'walk_in_name'   => $request->walk_in_name ?? null,
                         'payment_method' => $request->payment_method,
-                        'price_paid'     => $item->cash_price,
+                        'price_paid'     => $pricePerItem,
                         'quantity'       => $quantity,
                         'currency_type'  => 'cash',
                         'status'         => 'completed',
-                    ]);
+                    ] + ($coins ? [
+                        // frozen "receipt" numbers (per unit), like online Coins orders
+                        'list_price'            => $discount['list_price'],
+                        'admin_discount_amount' => $discount['admin_discount_amount'],
+                        'store_discount_amount' => $discount['store_discount_amount'],
+                        'shop_claim_amount'     => $discount['shop_claim_amount'],
+                        'payout_status'         => 'unremitted',
+                    ] : []));
                 }
             });
 
