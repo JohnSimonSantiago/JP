@@ -388,7 +388,7 @@
                                     <div class="flex gap-2">
                                         <button
                                             v-if="user.valid_id"
-                                            @click="idModalUser = user"
+                                            @click="openIdModal(user)"
                                             class="inline-flex items-center px-3 py-1 border border-transparent text-sm leading-4 font-medium rounded-md text-purple-700 bg-purple-100 hover:bg-purple-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
                                         >
                                             View ID
@@ -515,7 +515,7 @@
             <div
                 v-if="idModalUser"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                @click.self="idModalUser = null"
+                @click.self="closeIdModal"
             >
                 <div
                     class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4"
@@ -535,13 +535,25 @@
                             {{ idModalUser.full_name || "Not provided" }}
                         </div>
                     </div>
-                    <img
-                        :src="`/storage/${idModalUser.valid_id}`"
-                        alt="Valid ID"
-                        class="w-full rounded-lg object-contain max-h-80"
-                    />
+                    <div
+                        class="w-full min-h-[10rem] flex items-center justify-center bg-gray-50 rounded-lg"
+                    >
+                        <i
+                            v-if="idImage.loading"
+                            class="pi pi-spin pi-spinner text-2xl text-gray-400"
+                        ></i>
+                        <p v-else-if="idImage.error" class="text-sm text-red-500 px-4 text-center">
+                            {{ idImage.error }}
+                        </p>
+                        <img
+                            v-else
+                            :src="idImage.url"
+                            alt="Valid ID"
+                            class="w-full rounded-lg object-contain max-h-80"
+                        />
+                    </div>
                     <button
-                        @click="idModalUser = null"
+                        @click="closeIdModal"
                         class="mt-4 w-full px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                     >
                         Close
@@ -553,6 +565,8 @@
 </template>
 
 <script>
+import { loadValidIdUrl } from "@/utils/validId";
+
 export default {
     name: "AdminUserApproval",
     data() {
@@ -563,6 +577,7 @@ export default {
             error: null,
             processingUsers: {},
             idModalUser: null,
+            idImage: { url: null, loading: false, error: null }, // temporary in-memory image
             currentUserId: null,
             isCurrentUserAdmin: false,
             searchQuery: "",
@@ -631,7 +646,38 @@ export default {
             this.visibleCount = this.pageSize;
         },
     },
+    beforeUnmount() {
+        this.closeIdModal(); // release the in-memory image
+    },
+
     methods: {
+        // ── Valid ID viewer: private file, loaded with the login token ──
+        async openIdModal(user) {
+            this.closeIdModal();
+            this.idModalUser = user;
+            this.idImage = { url: null, loading: true, error: null };
+            try {
+                const url = await loadValidIdUrl(user.id);
+                if (this.idModalUser !== user) return URL.revokeObjectURL(url); // closed meanwhile
+                this.idImage.url = url;
+            } catch (e) {
+                if (this.idModalUser === user) {
+                    this.idImage.error =
+                        e.response?.status === 404
+                            ? "No valid ID file was found for this user."
+                            : "Couldn't load the ID. Try again.";
+                }
+            } finally {
+                if (this.idModalUser === user) this.idImage.loading = false;
+            }
+        },
+
+        closeIdModal() {
+            if (this.idImage.url) URL.revokeObjectURL(this.idImage.url);
+            this.idImage = { url: null, loading: false, error: null };
+            this.idModalUser = null;
+        },
+
         setupAxiosToken() {
             const token = localStorage.getItem("auth-token");
             if (token) {

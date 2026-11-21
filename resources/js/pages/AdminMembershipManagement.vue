@@ -225,7 +225,7 @@
                         </div>
                         <button
                             v-if="m.user?.valid_id"
-                            @click="idModalUser = m.user"
+                            @click="openIdModal(m.user)"
                             class="flex items-center gap-2 bg-purple-100 text-purple-700 font-semibold px-4 py-2 rounded-lg hover:bg-purple-200 transition-colors text-sm"
                         >
                             <i class="pi pi-id-card"></i>
@@ -367,19 +367,31 @@
             <div
                 v-if="idModalUser"
                 class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
-                @click.self="idModalUser = null"
+                @click.self="closeIdModal"
             >
                 <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">
                         Valid ID — {{ idModalUser.name }}
                     </h3>
-                    <img
-                        :src="`/storage/${idModalUser.valid_id}`"
-                        alt="Valid ID"
-                        class="w-full rounded-lg object-contain max-h-80"
-                    />
+                    <div
+                        class="w-full min-h-[10rem] flex items-center justify-center bg-gray-50 rounded-lg"
+                    >
+                        <i
+                            v-if="idImage.loading"
+                            class="pi pi-spin pi-spinner text-2xl text-gray-400"
+                        ></i>
+                        <p v-else-if="idImage.error" class="text-sm text-red-500 px-4 text-center">
+                            {{ idImage.error }}
+                        </p>
+                        <img
+                            v-else
+                            :src="idImage.url"
+                            alt="Valid ID"
+                            class="w-full rounded-lg object-contain max-h-80"
+                        />
+                    </div>
                     <button
-                        @click="idModalUser = null"
+                        @click="closeIdModal"
                         class="mt-4 w-full px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors"
                     >
                         Close
@@ -391,6 +403,7 @@
 </template>
 <script>
 import axios from "axios";
+import { loadValidIdUrl } from "@/utils/validId";
 
 export default {
     name: "AdminMembershipManagement",
@@ -409,9 +422,41 @@ export default {
             active: [],
             loadingActive: false,
             idModalUser: null,
+            idImage: { url: null, loading: false, error: null }, // temporary in-memory image
         };
     },
+    beforeUnmount() {
+        this.closeIdModal(); // release the in-memory image
+    },
+
     methods: {
+        // ── Valid ID viewer: private file, loaded with the login token ──
+        async openIdModal(user) {
+            this.closeIdModal();
+            this.idModalUser = user;
+            this.idImage = { url: null, loading: true, error: null };
+            try {
+                const url = await loadValidIdUrl(user.id);
+                if (this.idModalUser !== user) return URL.revokeObjectURL(url); // closed meanwhile
+                this.idImage.url = url;
+            } catch (e) {
+                if (this.idModalUser === user) {
+                    this.idImage.error =
+                        e.response?.status === 404
+                            ? "No valid ID file was found for this user."
+                            : "Couldn't load the ID. Try again.";
+                }
+            } finally {
+                if (this.idModalUser === user) this.idImage.loading = false;
+            }
+        },
+
+        closeIdModal() {
+            if (this.idImage.url) URL.revokeObjectURL(this.idImage.url);
+            this.idImage = { url: null, loading: false, error: null };
+            this.idModalUser = null;
+        },
+
         setupAxiosToken() {
             const token = localStorage.getItem("auth-token");
             if (token)

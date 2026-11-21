@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Services\ValidIdFiles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -393,10 +394,14 @@ public function changePassword(Request $request, User $user)
 
             $userName = $user->name;
             $userId = $user->id;
+            $validIdPath = $user->valid_id;
 
             // Log out the user everywhere before removing
             $user->tokens()->delete();
             $user->delete();
+
+            // Their valid ID goes with the account
+            ValidIdFiles::delete($validIdPath);
 
             $adminName = $currentAdmin ? $currentAdmin->name : 'Unknown Admin';
             Log::info("User {$userName} (ID: {$userId}) deleted by admin {$adminName}");

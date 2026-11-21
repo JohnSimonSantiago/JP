@@ -19,6 +19,7 @@ use App\Http\Controllers\LoungeController;
 use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\CoinController;
 use App\Http\Controllers\ExpenseController;
+use App\Http\Controllers\ValidIdController;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +88,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/stats', [UserController::class, 'getUserStats']); // Get user statistics with age
         Route::get('/memberships', [UserController::class, 'getMembershipHistory']);
         Route::post('/memberships', [UserController::class, 'createMembership']);
+        Route::get('/valid-id', [ValidIdController::class, 'mine']); // the logged-in user's OWN valid ID (private)
     });
 
     // Users routes (for searching/listing)
@@ -184,6 +186,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // User approval management
   Route::get('/users', [AdminUserController::class, 'index']);
     Route::get('/users/{user}', [AdminUserController::class, 'show']);
+    Route::get('/users/{user}/valid-id', [ValidIdController::class, 'adminShow']); // private file, admin only
     Route::post('/users/{user}/approve', [AdminUserController::class, 'approve']);
     Route::post('/users/{user}/revoke', [AdminUserController::class, 'revoke']);
     Route::delete('/users/{user}', [AdminUserController::class, 'destroy']);

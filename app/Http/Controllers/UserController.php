@@ -122,7 +122,7 @@ public function signUp(Request $request)
         'name' => ['required', 'string', 'min:4', 'max:255', 'regex:/^[A-Za-z0-9]+$/', 'unique:users,name'],
         'password' => 'required|string|min:8|confirmed',
         'full_name' => 'required|string|max:255',
-        'valid_id' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        'valid_id' => 'required|file|mimes:jpg,jpeg,png|max:5120', // photos only (no PDF)
     ], [
         'name.unique' => 'This username is already taken.',
         'name.min' => 'Username must be at least 4 characters.',
@@ -133,12 +133,17 @@ public function signUp(Request $request)
         'password.confirmed' => 'Password confirmation does not match.',
         'full_name.required' => 'Full name is required.',
         'valid_id.required' => 'Please upload a school ID, selfie, or valid ID.',
-        'valid_id.mimes' => 'Your ID or selfie must be a JPG, PNG, or PDF.',
+        'valid_id.mimes' => 'Your ID or selfie must be a JPG or PNG photo.',
         'valid_id.max' => 'Your ID or selfie must be under 5MB.',
     ]);
 
+    $validIdPath = null;
     try {
-        $validIdPath = $request->file('valid_id')->store('valid_ids', 'public');
+        // PRIVATE disk: no public URL (see App\Services\ValidIdFiles)
+        $validIdPath = $request->file('valid_id')->store(
+            \App\Services\ValidIdFiles::DIR,
+            \App\Services\ValidIdFiles::DISK,
+        );
 
 $newUser = new User();
 $newUser->name = $request->name;
@@ -189,6 +194,11 @@ $newUser->name = $request->name;
             
     } catch (\Exception $e) {
         \Log::error('User signup error: ' . $e->getMessage());
+
+        // The account wasn't created: don't leave their ID file behind
+        if ($validIdPath && !User::where('valid_id', $validIdPath)->exists()) {
+            \App\Services\ValidIdFiles::delete($validIdPath);
+        }
         
         return response()->json([
             'message' => 'Failed to create user',
