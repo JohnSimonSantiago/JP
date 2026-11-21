@@ -144,6 +144,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [ShopItemController::class, 'store']); // Create new item
 
             // Order Management (must come BEFORE the /{shopItem} wildcards)
+            Route::get('/purchases', [ShopItemController::class, 'orderHistory']); // full history: ?status=&page=
             Route::get('/purchases/pending', [ShopItemController::class, 'getPendingPurchases']);
             Route::post('/purchases/{purchase}/approve', [ShopItemController::class, 'approvePurchase']);
             Route::post('/purchases/{purchase}/reject', [ShopItemController::class, 'rejectPurchase']);

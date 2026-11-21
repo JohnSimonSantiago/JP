@@ -219,12 +219,34 @@
             </div>
         </div>
 
-        <!-- Recent Orders -->
-        <div v-if="recentOrders.length > 0">
-            <h4 class="text-md font-medium mb-4">Recent Orders</h4>
+        <!-- Order History: every order (completed, rejected, pending), 20 at a time -->
+        <div v-if="historyCounts.all > 0">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                <h4 class="text-md font-medium">Order History</h4>
+                <div class="flex flex-wrap gap-1 bg-gray-100 p-1 rounded-lg text-sm">
+                    <button
+                        v-for="f in historyFilters"
+                        :key="f.key"
+                        @click="setHistoryStatus(f.key)"
+                        class="px-3 py-1 rounded-md font-medium transition-all"
+                        :class="historyStatus === f.key ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500'"
+                    >
+                        {{ f.label }} ({{ historyCounts[f.key] }})
+                    </button>
+                </div>
+            </div>
+
+            <p v-if="historyError" class="text-sm text-red-500 mb-3">{{ historyError }}</p>
+            <p
+                v-else-if="!loadingHistory && historyOrders.length === 0"
+                class="text-sm text-gray-400 text-center py-6"
+            >
+                No {{ historyStatus === "completed" ? "completed" : historyStatus }} orders.
+            </p>
+
             <div class="space-y-3">
                 <div
-                    v-for="order in recentOrders"
+                    v-for="order in historyOrders"
                     :key="order.id"
                     class="flex items-center justify-between p-4 border border-gray-200 rounded-lg"
                 >
@@ -262,12 +284,25 @@
                                                 : order.user?.name
                                         }}
                                         • Qty: {{ order.quantity }}
+                                        •
+                                        {{
+                                            order.customer_type === "walk_in" && order.payment_method === "cash"
+                                                ? "Counter, cash"
+                                                : order.customer_type === "walk_in"
+                                                  ? "Counter, Coins"
+                                                  : "App, Coins"
+                                        }}
                                     </p>
                                     <p class="text-sm text-gray-500">
                                         {{
-                                            new Date(
-                                                order.created_at,
-                                            ).toLocaleDateString()
+                                            new Date(order.created_at).toLocaleString("en-PH", {
+                                                timeZone: "Asia/Manila",
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric",
+                                                hour: "numeric",
+                                                minute: "2-digit",
+                                            })
                                         }}
                                         • Total: ₱{{
                                             formatCash(
@@ -276,7 +311,7 @@
                                             )
                                         }}
                                         <span
-                                            v-if="order.shop_claim_amount > 0"
+                                            v-if="order.shop_claim_amount > 0 && order.status !== 'rejected'"
                                             class="text-purple-700 font-medium"
                                         >
                                             • You earn ₱{{
@@ -288,10 +323,16 @@
                                             in payouts
                                         </span>
                                     </p>
+                                    <p
+                                        v-if="order.status === 'rejected' && order.rejection_reason"
+                                        class="text-xs text-red-500 mt-0.5"
+                                    >
+                                        Reason: {{ order.rejection_reason }}
+                                    </p>
                                 </div>
                                 <span
                                     :class="[
-                                        'px-3 py-1 rounded-full text-sm ml-4',
+                                        'px-3 py-1 rounded-full text-sm ml-4 capitalize',
                                         order.status === 'completed'
                                             ? 'bg-green-100 text-green-800'
                                             : order.status === 'rejected'
@@ -306,11 +347,22 @@
                     </div>
                 </div>
             </div>
+
+            <div v-if="loadingHistory" class="text-center py-4 text-gray-400">
+                <i class="pi pi-spin pi-spinner"></i>
+            </div>
+            <button
+                v-else-if="historyPage < historyLastPage"
+                @click="fetchHistory(false)"
+                class="mt-4 w-full border border-gray-200 text-gray-600 hover:bg-gray-50 py-2 rounded-lg text-sm font-medium"
+            >
+                Load more
+            </button>
         </div>
 
         <!-- Empty Orders State -->
         <div
-            v-if="recentOrders.length === 0 && pendingOrders.length === 0"
+            v-if="!loadingHistory && historyCounts.all === 0 && pendingOrders.length === 0"
             class="text-center py-12"
         >
             <i class="pi pi-shopping-cart text-gray-300 text-5xl mb-4"></i>
@@ -513,6 +565,21 @@ export default {
     emits: ["orders-changed"],
     data() {
         return {
+            // Order History (all orders, filtered by status, 20 per page)
+            historyOrders: [],
+            historyStatus: "all",
+            historyPage: 1,
+            historyLastPage: 1,
+            historyCounts: { all: 0, completed: 0, rejected: 0, pending: 0 },
+            historyFilters: [
+                { key: "all", label: "All" },
+                { key: "completed", label: "Completed" },
+                { key: "rejected", label: "Rejected" },
+                { key: "pending", label: "Pending" },
+            ],
+            loadingHistory: false,
+            historyError: null,
+
             showNewOrder: false,
             shopItems: [],
             orderItems: [],
@@ -532,7 +599,53 @@ export default {
             );
         },
     },
+    watch: {
+        // The page reloads its order lists after approve / reject / a new counter order
+        recentOrders() {
+            this.fetchHistory(true);
+        },
+    },
+
+    mounted() {
+        this.fetchHistory(true);
+    },
+
     methods: {
+        setHistoryStatus(status) {
+            if (this.historyStatus === status) return;
+            this.historyStatus = status;
+            this.fetchHistory(true);
+        },
+
+        // reset = start again at page 1; otherwise add the next page
+        async fetchHistory(reset = true) {
+            const requestNo = (this._historyRequestNo = (this._historyRequestNo || 0) + 1);
+            const page = reset ? 1 : this.historyPage + 1;
+            this.loadingHistory = true;
+            this.historyError = null;
+            try {
+                const res = await axios.get(`/api/shops/${this.shop.id}/items/purchases`, {
+                    params: { status: this.historyStatus, page },
+                });
+                if (requestNo !== this._historyRequestNo) return; // a newer request won
+                const incoming = res.data.orders || [];
+                if (reset) {
+                    this.historyOrders = incoming;
+                } else {
+                    const known = new Set(this.historyOrders.map((o) => o.id));
+                    this.historyOrders = this.historyOrders.concat(incoming.filter((o) => !known.has(o.id)));
+                }
+                this.historyPage = res.data.pagination.current_page;
+                this.historyLastPage = res.data.pagination.last_page;
+                this.historyCounts = res.data.counts;
+            } catch (e) {
+                if (requestNo !== this._historyRequestNo) return;
+                this.historyError = e.response?.data?.message || "Couldn't load the order history.";
+            } finally {
+                if (requestNo === this._historyRequestNo) this.loadingHistory = false;
+            }
+        },
+
         async approveOrder(order) {
             try {
                 const response = await axios.post(

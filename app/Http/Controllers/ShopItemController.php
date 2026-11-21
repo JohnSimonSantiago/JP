@@ -562,6 +562,49 @@ class ShopItemController extends Controller
         }
     }
 
+    // Full order history for a shop (owner or admin), newest first, 20 per page.
+    //   ?status=all (default) | pending | completed (approved) | rejected  &page=
+    // Also returns how many orders each status has, for the filter chips.
+    public function orderHistory(Request $request, Shop $shop)
+    {
+        if (!$shop->canBeEditedBy(Auth::user())) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate(['status' => 'nullable|in:all,pending,completed,rejected']);
+        $status = $request->query('status', 'all');
+
+        $query = $shop->purchases()
+            ->with(['user:id,name,profile_image', 'shopItem:id,name,image'])
+            ->orderByDesc('created_at')
+            ->orderByDesc('id');
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+        $page = $query->paginate(20);
+
+        $counts = $shop->purchases()
+            ->selectRaw('status, COUNT(*) AS n')
+            ->groupBy('status')
+            ->pluck('n', 'status');
+
+        return response()->json([
+            'success'    => true,
+            'orders'     => $page->items(),
+            'pagination' => [
+                'current_page' => $page->currentPage(),
+                'last_page'    => $page->lastPage(),
+                'total'        => $page->total(),
+            ],
+            'counts'     => [
+                'all'       => (int) $counts->sum(),
+                'pending'   => (int) ($counts['pending'] ?? 0),
+                'completed' => (int) ($counts['completed'] ?? 0),
+                'rejected'  => (int) ($counts['rejected'] ?? 0),
+            ],
+        ]);
+    }
+
     public function getPendingPurchases(Shop $shop)
     {
         if (!$shop->canBeEditedBy(Auth::user())) {
