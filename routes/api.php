@@ -18,6 +18,7 @@ use App\Http\Controllers\MembershipController;
 use App\Http\Controllers\LoungeController;
 use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\CoinController;
+use App\Http\Controllers\ExpenseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -238,6 +239,25 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::get('/coins/history', [CoinController::class, 'history']);
     Route::get('/coins/top-holders', [CoinController::class, 'topHolders']); // Top Coin Holders, ?page=N
     Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last
+
+    // Expenses (admin only). Literal routes first, then {id} routes (numbers only).
+    Route::get('/expenses/categories', [ExpenseController::class, 'categories']);
+    Route::post('/expenses/categories', [ExpenseController::class, 'storeCategory']);
+    Route::put('/expenses/categories/{id}', [ExpenseController::class, 'updateCategory'])->whereNumber('id');
+    Route::post('/expenses/categories/{id}/toggle', [ExpenseController::class, 'toggleCategory'])->whereNumber('id');
+    Route::delete('/expenses/categories/{id}', [ExpenseController::class, 'destroyCategory'])->whereNumber('id');
+    Route::get('/expenses', [ExpenseController::class, 'index']);   // ?from&to&category_id&search&page
+    Route::get('/expenses/summary', [ExpenseController::class, 'summary']); // fixed-period cards
+    Route::get('/expenses/due-this-month', [ExpenseController::class, 'dueThisMonth']); // template status
+    Route::get('/expenses/templates', [ExpenseController::class, 'templates']);
+    Route::post('/expenses/templates', [ExpenseController::class, 'storeTemplate']);
+    Route::put('/expenses/templates/{id}', [ExpenseController::class, 'updateTemplate'])->whereNumber('id');
+    Route::post('/expenses/templates/{id}/toggle', [ExpenseController::class, 'toggleTemplate'])->whereNumber('id');
+    Route::delete('/expenses/templates/{id}', [ExpenseController::class, 'destroyTemplate'])->whereNumber('id');
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::get('/expenses/{id}/receipt', [ExpenseController::class, 'receipt'])->whereNumber('id'); // private photo
+    Route::post('/expenses/{id}', [ExpenseController::class, 'update'])->whereNumber('id'); // POST: file uploads
+    Route::delete('/expenses/{id}', [ExpenseController::class, 'destroy'])->whereNumber('id');
 
     // Lounge pricing (admin only)
     Route::get('/lounge/pricing', [LoungeController::class, 'getPricing']);

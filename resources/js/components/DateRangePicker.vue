@@ -58,6 +58,15 @@
 export default {
     name: "DateRangePicker",
     emits: ["change"],
+    props: {
+        // Which preset to start on. Default "today" (every existing page).
+        // e.g. <DateRangePicker initial-mode="month" /> starts on "This month".
+        initialMode: {
+            type: String,
+            default: "today",
+            validator: (v) => ["today", "yesterday", "week", "month", "all"].includes(v),
+        },
+    },
     data() {
         return {
             mode: "today",
@@ -145,6 +154,13 @@ export default {
     mounted() {
         const today = this.localDate(new Date());
         this.todayDate = today;
+
+        if (this.initialMode !== "today") {
+            this.mode = this.initialMode;
+            this.onModeChange(); // sets the dates and fires once
+            return;
+        }
+
         this.fromDate = today;
         this.toDate = today;
         this.emit(); // fire once so parent loads "today" on open

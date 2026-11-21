@@ -22,6 +22,7 @@ import LoungeBuyTime from "./pages/LoungeBuyTime.vue";
 import LoungeDisplay from "./pages/LoungeDisplay.vue"; // customer screen (2nd monitor)
 import CoinsWheel from "./pages/CoinsWheel.vue";
 import Statistics from "@/pages/Statistics.vue";
+import AdminExpenses from "@/pages/AdminExpenses.vue";
 
 const requiresShopOwner = (to, from, next) => {
     // Get user from localStorage or your auth store
@@ -205,6 +206,12 @@ export const routes = [
         name: "statistics",
         component: Statistics,
         beforeEnter: requiresAdmin,
+    },
+    {
+        path: "/admin/expenses",
+        name: "admin-expenses",
+        component: AdminExpenses,
+        beforeEnter: requiresAdmin, // admin only (no staff yet)
     },
     {
         path: "/admin/coins",
