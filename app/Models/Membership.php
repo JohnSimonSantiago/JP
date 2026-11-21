@@ -17,11 +17,15 @@ class Membership extends Model
         'type',
         'status',
         'source',
+        'amount_paid', // frozen when approved; gifted = 0
+        'approved_at',
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'amount_paid' => 'decimal:2',
+        'approved_at' => 'datetime',
     ];
 
     /**

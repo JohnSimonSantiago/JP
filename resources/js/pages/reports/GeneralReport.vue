@@ -79,7 +79,7 @@
                             class="flex justify-between text-xs pl-2"
                         >
                             <span class="text-gray-400"
-                                >of which paid with Coins (1 Coin = ₱1)</span
+                                >+ paid with Coins (not revenue)</span
                             >
                             <span class="text-gray-400">
                                 ₱{{ money(totalBuyBalance) }}
@@ -354,11 +354,13 @@ export default {
         },
 
         // ── Buy time ──
+        // Revenue = buy time paid in cash/GCash only. Paid with Coins is NOT new money
+        // (Coins come from the membership fee, wheel prizes or refunds), so it's left out
+        // here and in the daily numbers, same as the Net Profit report.
         totalBuyRevenue() {
-            return this.purchases.reduce(
-                (sum, p) => sum + Number(p.amount || 0),
-                0,
-            );
+            return this.purchases
+                .filter((p) => p.payment_method !== "balance")
+                .reduce((sum, p) => sum + Number(p.amount || 0), 0);
         },
         totalBuyBalance() {
             return this.purchases
@@ -431,7 +433,7 @@ export default {
             this.purchases.forEach((p) => {
                 const d = this.dayKey(p.created_at);
                 if (map[d]) {
-                    map[d].buy += Number(p.amount || 0);
+                    if (p.payment_method !== "balance") map[d].buy += Number(p.amount || 0); // cash only
                     map[d].buyMinutes += Number(p.minutes_added || 0);
                 }
             });

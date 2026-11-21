@@ -86,6 +86,37 @@
                         </div>
                     </div>
 
+                    <!-- Standard membership prices: the default "Amount received" when approving -->
+                    <div class="border-t border-gray-100 pt-4 mb-4">
+                        <p class="text-sm font-medium text-gray-700 mb-1">Membership prices</p>
+                        <p class="text-xs text-gray-400 mb-3">
+                            The default when approving a paid membership. Each membership saves
+                            the amount actually received, so changing these never changes past ones.
+                        </p>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 2 (₱ / month)</label>
+                                <input
+                                    v-model="form.membership_level2_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Level 3 (₱ / month)</label>
+                                <input
+                                    v-model="form.membership_level3_price"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Preview -->
                     <div
                         class="bg-indigo-50 rounded-lg p-3 mb-4 text-sm text-indigo-800"
@@ -179,6 +210,8 @@ export default {
                 bundle_rate: 100,
                 bundle_hours: 3,
                 day_rate: 200,
+                membership_level2_price: 2500,
+                membership_level3_price: 3000,
             },
         };
     },

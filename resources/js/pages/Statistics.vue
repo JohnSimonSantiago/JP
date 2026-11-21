@@ -36,6 +36,7 @@ import BuyTimeReport from "@/pages/reports/BuyTimeReport.vue";
 import LoungeReport from "@/pages/reports/LoungeReport.vue";
 import ConsumableTimeBoughtReport from "@/pages/reports/ConsumableTimeBoughtReport.vue";
 import GeneralReport from "@/pages/reports/GeneralReport.vue";
+import NetProfitReport from "@/pages/reports/NetProfitReport.vue";
 
 export default {
     name: "Statistics",
@@ -44,6 +45,7 @@ export default {
         LoungeReport,
         ConsumableTimeBoughtReport,
         GeneralReport,
+        NetProfitReport,
     },
     data() {
         return {
@@ -53,6 +55,11 @@ export default {
                     key: "general",
                     label: "General",
                     component: "GeneralReport",
+                },
+                {
+                    key: "netProfit",
+                    label: "Net Profit",
+                    component: "NetProfitReport",
                 },
                 {
                     key: "buyTime",

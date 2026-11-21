@@ -52,6 +52,34 @@ class MembershipController extends Controller
         ]);
     }
 
+    // Standard price for a level (Lounge Settings). Only a default; each membership
+    // saves what was actually paid.
+    public static function standardPrice(string $type): float
+    {
+        $pricing = \App\Models\LoungePricing::first();
+        return (float) ($type === 'level_3'
+            ? ($pricing->membership_level3_price ?? 3000)
+            : ($pricing->membership_level2_price ?? 2500));
+    }
+
+    // Correct the amount paid on a membership (e.g. it was discounted). Gifts stay ₱0.
+    public function updateAmount(Request $request, $id)
+    {
+        $request->validate(['amount_paid' => 'required|numeric|min:0|max:99999999.99']);
+        $membership = Membership::findOrFail($id);
+
+        if ($membership->source === 'gifted') {
+            return response()->json(['success' => false, 'message' => 'Gifted memberships are always ₱0.'], 422);
+        }
+        if (!in_array($membership->status, ['approved', 'expired'])) {
+            return response()->json(['success' => false, 'message' => 'Only approved or expired memberships have an amount paid.'], 422);
+        }
+
+        $membership->update(['amount_paid' => round((float) $request->amount_paid, 2)]);
+
+        return response()->json(['success' => true, 'membership' => $membership, 'message' => 'Amount updated.']);
+    }
+
     public function history(Request $request)
     {
         $query = Membership::with('user:id,name,email,profile_image')
@@ -66,12 +94,16 @@ class MembershipController extends Controller
 
         $memberships = $query->get();
 
-        // Revenue = paid (applied) approvals only; gifts are free
-        $priceMap = ['level_2' => 2500, 'level_3' => 3000];
-        $revenue = $memberships
-            ->where('status', 'approved')
-            ->where('source', 'applied')
-            ->sum(fn ($m) => $priceMap[$m->type] ?? 0);
+        // Revenue = what was actually paid (amount_paid, frozen at approval; gifts are ₱0),
+        // counted on the APPROVAL day (Manila). Expired memberships still count.
+        $revenueQuery = Membership::whereNotNull('amount_paid');
+        if ($request->filled('from')) {
+            $revenueQuery->where('approved_at', '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
+        }
+        if ($request->filled('to')) {
+            $revenueQuery->where('approved_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
+        }
+        $revenue = (float) $revenueQuery->sum('amount_paid');
 
         return response()->json([
             'success' => true,
@@ -80,21 +112,31 @@ class MembershipController extends Controller
         ]);
     }
 
-    public function approve($id)
+    // amount_paid (optional): what was actually received. Default: the standard price
+    // for the level from Lounge Settings (also used when the mobile app approves).
+    public function approve(Request $request, $id)
     {
+        $request->validate(['amount_paid' => 'nullable|numeric|min:0|max:99999999.99']);
+
         $membership = Membership::with('user')->findOrFail($id);
 
         if ($membership->status !== 'pending') {
             return response()->json(['success' => false, 'message' => 'Membership is not pending'], 400);
         }
 
-$start = now();
+        $start = now();
         $end = $start->copy()->addMonth();
 
+        $amount = $request->filled('amount_paid')
+            ? round((float) $request->amount_paid, 2)
+            : self::standardPrice($membership->type);
+
         $membership->update([
-            'status' => 'approved',
-            'start_date' => $start,
-            'end_date' => $end,
+            'status'      => 'approved',
+            'start_date'  => $start,
+            'end_date'    => $end,
+            'amount_paid' => $amount, // frozen: later price changes never touch it
+            'approved_at' => $start,
         ]);
         $levelMap = ['level_2' => 2, 'level_3' => 3];
         $cashMap  = ['level_2' => 1000, 'level_3' => 1500];
@@ -186,6 +228,8 @@ $start = now();
             'type'       => $request->type,
             'status'     => 'approved',
             'source'     => 'gifted',
+            'amount_paid' => 0,        // gifts are free: ₱0 revenue
+            'approved_at' => now(),
             'start_date' => $start,
             'end_date'   => $end,
         ]);

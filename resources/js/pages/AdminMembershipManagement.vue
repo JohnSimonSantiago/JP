@@ -140,7 +140,18 @@
                         </div>
 
                         <!-- Actions -->
-                        <div class="flex justify-end gap-3">
+                        <div class="flex flex-wrap justify-end items-center gap-3">
+                            <!-- What was actually paid (defaults to the standard price) -->
+                            <label class="flex items-center gap-2 text-sm text-gray-600 mr-auto">
+                                Amount received ₱
+                                <input
+                                    v-model="approveAmounts[item.id]"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    class="w-28 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                                />
+                            </label>
                             <button
                                 @click="rejectMembership(item)"
                                 :disabled="processingIds.includes(item.id)"
@@ -358,7 +369,38 @@
                             >
                                 {{ m.status }}
                             </span>
+                            <!-- Amount paid (frozen at approval; gifted = ₱0) -->
+                            <template v-if="m.amount_paid !== null && m.amount_paid !== undefined">
+                                <template v-if="editingAmountId === m.id">
+                                    <input
+                                        v-model="editingAmountValue"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        class="w-24 border border-gray-300 rounded px-2 py-0.5 text-xs"
+                                        @keydown.enter="saveAmount(m)"
+                                    />
+                                    <button @click="saveAmount(m)" class="text-xs text-green-700 font-medium">Save</button>
+                                    <button @click="editingAmountId = null" class="text-xs text-gray-400">Cancel</button>
+                                </template>
+                                <template v-else>
+                                    <span class="text-xs font-semibold text-gray-700">
+                                        ₱{{ Number(m.amount_paid).toLocaleString("en-PH", { minimumFractionDigits: 2 }) }}
+                                    </span>
+                                    <button
+                                        v-if="m.source === 'applied'"
+                                        @click="startEditAmount(m)"
+                                        title="Correct the amount paid (e.g. a discount)"
+                                        class="text-gray-400 hover:text-indigo-600"
+                                    >
+                                        <i class="pi pi-pencil text-xs"></i>
+                                    </button>
+                                </template>
+                            </template>
                         </div>
+                        <p v-if="amountError && editingAmountId === m.id" class="text-xs text-red-500 mt-1">
+                            {{ amountError }}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -412,6 +454,11 @@ export default {
             memberships: [],
             loading: true,
             processingIds: [],
+            approveAmounts: {}, // membership id -> "Amount received" (defaults to the standard price)
+            standardPrices: { level_2: 2500, level_3: 3000 }, // from Lounge Settings
+            editingAmountId: null,
+            editingAmountValue: "",
+            amountError: null,
             history: [],
             loadingHistory: false,
             revenue: 0,
@@ -537,16 +584,65 @@ export default {
                     "/api/admin/memberships/pending",
                 );
                 this.memberships = data.memberships || [];
+                this.fillDefaultAmounts();
             } catch (e) {
                 console.error(e);
             } finally {
                 this.loading = false;
             }
         },
+        // Standard prices (Lounge Settings): only the default "Amount received"
+        async fetchStandardPrices() {
+            try {
+                const res = await axios.get("/api/admin/lounge/pricing");
+                const p = res.data.pricing || res.data;
+                if (p?.membership_level2_price) this.standardPrices.level_2 = Number(p.membership_level2_price);
+                if (p?.membership_level3_price) this.standardPrices.level_3 = Number(p.membership_level3_price);
+            } catch (e) {
+                console.error("Couldn't load standard membership prices", e);
+            }
+        },
+
+        fillDefaultAmounts() {
+            for (const item of this.memberships) {
+                if (this.approveAmounts[item.id] === undefined) {
+                    this.approveAmounts[item.id] = this.standardPrices[item.type] ?? "";
+                }
+            }
+        },
+
+        startEditAmount(m) {
+            this.amountError = null;
+            this.editingAmountId = m.id;
+            this.editingAmountValue = Number(m.amount_paid);
+        },
+
+        async saveAmount(m) {
+            this.amountError = null;
+            try {
+                const res = await axios.post(`/api/admin/memberships/${m.id}/amount`, {
+                    amount_paid: this.editingAmountValue,
+                });
+                m.amount_paid = res.data.membership.amount_paid;
+                this.editingAmountId = null;
+                this.fetchHistory(); // revenue total
+            } catch (e) {
+                this.amountError = e.response?.data?.message || "Couldn't save the amount.";
+            }
+        },
+
         async approveMembership(item) {
+            const amount = this.approveAmounts[item.id];
+            if (amount === "" || amount === null || amount === undefined || Number(amount) < 0) {
+                alert("Enter the amount received (0 or more).");
+                return;
+            }
             this.processingIds.push(item.id);
             try {
-                await axios.post(`/api/admin/memberships/${item.id}/approve`);
+                await axios.post(`/api/admin/memberships/${item.id}/approve`, {
+                    amount_paid: Number(amount),
+                });
+                this.fetchHistory();
                 this.memberships = this.memberships.filter(
                     (x) => x.id !== item.id,
                 );
@@ -585,6 +681,7 @@ export default {
     },
     async mounted() {
         this.setupAxiosToken();
+        await this.fetchStandardPrices();
         await this.fetchMemberships();
         await this.fetchActive();
         await this.fetchHistory();

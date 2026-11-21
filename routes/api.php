@@ -20,6 +20,7 @@ use App\Http\Controllers\PayoutController;
 use App\Http\Controllers\CoinController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\ValidIdController;
+use App\Http\Controllers\NetProfitController;
 
 /*
 |--------------------------------------------------------------------------
@@ -231,6 +232,7 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::get('/memberships/history', [MembershipController::class, 'history']);
     Route::post('/memberships/{id}/approve', [MembershipController::class, 'approve']);
     Route::post('/memberships/{id}/reject', [MembershipController::class, 'reject']);
+    Route::post('/memberships/{id}/amount', [MembershipController::class, 'updateAmount'])->whereNumber('id'); // correct amount paid
     Route::post('/memberships/gift', [MembershipController::class, 'gift']);
 
     // Coins wheel — admin settings (members spin for themselves)
@@ -244,6 +246,9 @@ Route::get('/point-shop/statistics', [AdminPricingController::class, 'getPointSh
     Route::get('/coins/member/{user}', [CoinController::class, 'member']); // wildcard last
 
     // Expenses (admin only). Literal routes first, then {id} routes (numbers only).
+    // Net profit report (admin only): ?from&to (Manila days, empty = all time)
+    Route::get('/reports/net-profit', [NetProfitController::class, 'show']);
+
     Route::get('/expenses/categories', [ExpenseController::class, 'categories']);
     Route::post('/expenses/categories', [ExpenseController::class, 'storeCategory']);
     Route::put('/expenses/categories/{id}', [ExpenseController::class, 'updateCategory'])->whereNumber('id');

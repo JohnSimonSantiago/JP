@@ -31,6 +31,9 @@ class LoungeController extends Controller
             'bundle_rate'    => 'required|numeric|min:0',
             'bundle_hours'   => 'required|integer|min:1',
             'day_rate'       => 'required|numeric|min:0',
+            // standard membership prices (defaults only; each membership saves what was paid)
+            'membership_level2_price' => 'sometimes|required|numeric|min:0',
+            'membership_level3_price' => 'sometimes|required|numeric|min:0',
         ]);
 
         $pricing = LoungePricing::first();
@@ -40,6 +43,8 @@ class LoungeController extends Controller
             'bundle_rate',
             'bundle_hours',
             'day_rate',
+            'membership_level2_price',
+            'membership_level3_price',
         ]));
 
         return response()->json(['success' => true, 'pricing' => $pricing]);
