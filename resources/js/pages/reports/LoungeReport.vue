@@ -104,7 +104,7 @@ export default {
         bestEarningDay() {
             const byDay = {};
             this.history.forEach((s) => {
-                const day = this.dayLabel(s.checked_in_at);
+                const day = this.dayLabel(s.checked_out_at);
                 byDay[day] = (byDay[day] || 0) + (Number(s.total_bill) || 0);
             });
             return this.topEntry(byDay);
@@ -154,8 +154,8 @@ export default {
         byDay() {
             const grouped = {};
             this.history.forEach((s) => {
-                grouped[this.dayLabel(s.checked_in_at)] =
-                    (grouped[this.dayLabel(s.checked_in_at)] || 0) + 1;
+                grouped[this.dayLabel(s.checked_out_at)] =
+                    (grouped[this.dayLabel(s.checked_out_at)] || 0) + 1;
             });
             return grouped;
         },
@@ -168,7 +168,7 @@ export default {
             try {
                 const res = await axios.get("/api/lounge/session-history", {
                     headers: this.headers(),
-                    params: { from, to },
+                    params: { from, to, date_by: "checkout" }, // same rule as revenue / Net Profit
                 });
                 if (res.data.success) this.history = res.data.sessions;
             } catch (e) {

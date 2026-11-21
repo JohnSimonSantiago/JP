@@ -645,18 +645,23 @@ class LoungeController extends Controller
             ->where('status', 'completed')
             ->orderBy('checked_out_at', 'desc');
 
-        // Timestamps are stored in UTC, but "a day" means a Manila calendar day
+        // Timestamps are stored in UTC, but "a day" means a Manila calendar day.
+        // date_by=checkout: filter by check-out time, like revenue / Net Profit (a session that
+        // runs past midnight counts on the day it was paid). Default: check-in time (unchanged
+        // for the lounge dashboard history and the mobile app).
+        $col = $request->query('date_by') === 'checkout' ? 'checked_out_at' : 'checked_in_at';
+
         if ($request->from) {
-            $query->where('checked_in_at', '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
+            $query->where($col, '>=', Carbon::parse($request->from, 'Asia/Manila')->startOfDay()->utc());
         }
 
         if ($request->to) {
-            $query->where('checked_in_at', '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
+            $query->where($col, '<=', Carbon::parse($request->to, 'Asia/Manila')->endOfDay()->utc());
         }
 
         if (!$request->from && !$request->to && $request->date) {
-            $query->where('checked_in_at', '>=', Carbon::parse($request->date, 'Asia/Manila')->startOfDay()->utc())
-                ->where('checked_in_at', '<=', Carbon::parse($request->date, 'Asia/Manila')->endOfDay()->utc());
+            $query->where($col, '>=', Carbon::parse($request->date, 'Asia/Manila')->startOfDay()->utc())
+                ->where($col, '<=', Carbon::parse($request->date, 'Asia/Manila')->endOfDay()->utc());
         }
 
         $sessions = $query->get();

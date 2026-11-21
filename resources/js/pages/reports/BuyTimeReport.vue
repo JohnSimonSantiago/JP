@@ -42,7 +42,7 @@
 
             <div v-if="history.length" class="grid grid-cols-2 gap-3 mb-6">
                 <div class="bg-emerald-50 rounded-lg p-3">
-                    <p class="text-xs text-emerald-400">Best revenue day</p>
+                    <p class="text-xs text-emerald-400">Best revenue day (cash)</p>
                     <p class="text-lg font-bold text-emerald-600">
                         ₱{{
                             bestRevenueDay
@@ -75,7 +75,7 @@
                 class="bg-white rounded-lg p-4 border border-gray-100"
             >
                 <p class="text-sm font-medium text-gray-600 mb-3">
-                    Revenue per day
+                    Revenue per day (cash)
                 </p>
                 <Chart
                     type="bar"
@@ -113,7 +113,7 @@ export default {
             const byDay = {};
             this.history.forEach((p) => {
                 const day = this.dayLabel(p.created_at);
-                byDay[day] = (byDay[day] || 0) + Number(p.amount || 0);
+                if (p.payment_method !== "balance") byDay[day] = (byDay[day] || 0) + Number(p.amount || 0); // cash only: Coins aren't revenue
             });
             return this.topEntry(byDay);
         },
@@ -129,14 +129,14 @@ export default {
             const byDay = {};
             this.history.forEach((p) => {
                 const day = this.dayLabel(p.created_at);
-                byDay[day] = (byDay[day] || 0) + Number(p.amount || 0);
+                if (p.payment_method !== "balance") byDay[day] = (byDay[day] || 0) + Number(p.amount || 0); // cash only: Coins aren't revenue
             });
             const labels = Object.keys(byDay);
             return {
                 labels,
                 datasets: [
                     {
-                        label: "Revenue (₱)",
+                        label: "Revenue, cash (₱)",
                         data: labels.map((l) => byDay[l]),
                         backgroundColor: "#6366f1",
                         borderRadius: 4,

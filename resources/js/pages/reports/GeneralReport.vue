@@ -333,7 +333,7 @@ export default {
                 // "All time": start from the earliest record we have
                 const dates = [
                     ...this.purchases.map((p) => this.dayKey(p.created_at)),
-                    ...this.sessions.map((s) => this.dayKey(s.checked_in_at)),
+                    ...this.sessions.map((s) => this.dayKey(s.checked_out_at)),
                 ];
                 if (!dates.length) return [];
                 start = dates.sort()[0];
@@ -438,7 +438,7 @@ export default {
                 }
             });
             this.sessions.forEach((s) => {
-                const d = this.dayKey(s.checked_in_at);
+                const d = this.dayKey(s.checked_out_at); // the day it was paid
                 if (map[d]) {
                     map[d].lounge += Number(s.total_bill || 0);
                     map[d].visits += 1;
@@ -694,7 +694,8 @@ export default {
                         headers: this.headers(),
                     }),
                     axios.get("/api/lounge/session-history", {
-                        params,
+                        // by check-out day, the same rule as revenue / Net Profit
+                        params: { ...params, date_by: "checkout" },
                         headers: this.headers(),
                     }),
                 ]);
