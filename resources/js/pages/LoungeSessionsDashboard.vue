@@ -1869,6 +1869,7 @@ export default {
         },
 
         resetCheckIn() {
+            this._reservedCn = null; // a new check-in event gets a new CN
             this.checkInForm = {
                 customer_name: "",
                 customer_type: "walk_in",
@@ -1936,6 +1937,23 @@ export default {
                     seen.add(id);
                 }
 
+                // One CN number per check-in event (the whole group shares one), reserved
+                // FIRST so it's saved on every session (receipt_number, needed for reprints).
+                // A retry after a partial failure reuses it, so the group stays on one CN.
+                let cn = this._reservedCn ?? null;
+                if (cn === null) {
+                    try {
+                        const res = await axios.post(
+                            "/api/lounge/reserve-receipt",
+                            { group_id: groupId },
+                            { headers: this.headers() },
+                        );
+                        if (res.data.success) cn = this._reservedCn = res.data.number;
+                    } catch (e) {
+                        console.error("CN reserve failed", e); // check-in still goes ahead
+                    }
+                }
+
                 // Check each person in, all sharing the same group_id (may be null for solo)
                 for (const person of people) {
                     await axios.post(
@@ -1944,23 +1962,11 @@ export default {
                             ...person,
                             group_id: groupId,
                             school: school,
+                            receipt_number: cn,
                         },
                         { headers: this.headers() },
                     );
                     done.push(person);
-                }
-
-                // One CN number per check-in event (whole group shares one)
-                let cn = null;
-                try {
-                    const res = await axios.post(
-                        "/api/lounge/reserve-receipt",
-                        { group_id: groupId },
-                        { headers: this.headers() },
-                    );
-                    if (res.data.success) cn = res.data.number;
-                } catch (e) {
-                    console.error("CN reserve failed", e);
                 }
 
                 // Print the slip (one per event). Skipped when RECEIPTS_ENABLED is off;
@@ -1975,6 +1981,7 @@ export default {
                 });
 
                 this.showCheckIn = false;
+                this._reservedCn = null; // this check-in event is done
                 this.resetCheckIn();
                 await this.fetchSessions();
             } catch (e) {
