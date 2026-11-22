@@ -23,7 +23,7 @@
                         <i class="pi pi-replay"></i> Manage Templates
                     </button>
                     <button
-                        @click="openAdd"
+                        @click="openAdd()"
                         class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                     >
                         <i class="pi pi-plus"></i> Add Expense
@@ -1158,6 +1158,8 @@ export default {
         // ── Add / edit ──
         // template = a "Due this month" item: pre-fill from it and link the expense to it
         openAdd(template = null) {
+            // Only a real "Due this month" item counts as a template (never a click event)
+            if (!template || !template.category) template = null;
             this.revokePreview();
             const archived = !!template?.category_archived;
             this.form = {
