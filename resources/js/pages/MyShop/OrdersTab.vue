@@ -773,10 +773,12 @@ export default {
                 return;
             }
             try {
-                const res = await axios.get(
-                    `/api/admin/users?search=${query}&per_page=5`,
-                );
-                this.userResults = res.data.users?.data || [];
+                // Search any logged-in user can use (the admin user list is admin-only,
+                // so non-admin shop owners couldn't find members)
+                const res = await axios.get("/api/users/search", {
+                    params: { q: query },
+                });
+                this.userResults = res.data.users || [];
             } catch (e) {
                 this.userResults = [];
             }
